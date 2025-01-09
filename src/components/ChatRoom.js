@@ -18,8 +18,8 @@ import styled from 'styled-components';
 
 // Socket configuration
 const SOCKET_URL = process.env.NODE_ENV === 'production' 
-  ? 'https://ruletka.top:5002' 
-  : 'http://localhost:5002';
+  ? 'wss://ruletka.top' 
+  : 'http://localhost:5001';
 
 const socket = io(SOCKET_URL, {
   path: '/socket.io',
@@ -630,9 +630,15 @@ const ChatRoom = ({ currentTheme }) => {
       
       if (localStream) {
         try {
+          console.log('Creating peer connection as initiator');
           const newPeer = createPeerConnection(true, localStream);
           if (newPeer) {
             setPeer(newPeer);
+            
+            newPeer.on('signal', signal => {
+              console.log('Sending initial signal to partner');
+              socket.emit('signal', { signal, roomId: newRoomId });
+            });
             
             // Устанавливаем таймер для проверки успешности соединения
             const connectionTimeout = setTimeout(() => {
@@ -644,6 +650,7 @@ const ChatRoom = ({ currentTheme }) => {
 
             // Очищаем таймер при успешном соединении
             newPeer.on('connect', () => {
+              console.log('Peer connection established successfully');
               clearTimeout(connectionTimeout);
             });
           }
@@ -651,6 +658,24 @@ const ChatRoom = ({ currentTheme }) => {
           console.error('Error in chat start:', err);
           handleConnectionError();
         }
+      } else {
+        console.error('No local stream available');
+        setConnectionError('Нет доступа к медиа устройствам');
+      }
+    });
+
+    socket.on('signal', async (data) => {
+      console.log('Received signal:', data);
+      try {
+        if (peer && data.signal) {
+          console.log('Applying received signal to peer');
+          await peer.signal(data.signal);
+        } else {
+          console.log('No peer available for signal or signal is empty');
+        }
+      } catch (err) {
+        console.error('Error processing signal:', err);
+        handleConnectionError();
       }
     });
 
@@ -741,7 +766,7 @@ const ChatRoom = ({ currentTheme }) => {
         clearInterval(chatTimerInterval);
       }
     };
-  }, [localStream, connectionStatus]);
+  }, [localStream, connectionStatus, createPeerConnection, handleConnectionError]);
 
   const nextPartner = () => {
     setIsNextTransition(true);
