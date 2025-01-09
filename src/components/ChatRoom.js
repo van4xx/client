@@ -106,6 +106,7 @@ const ChatRoom = ({ currentTheme }) => {
   const [chatDuration, setChatDuration] = useState(0);
   const [chatTimerInterval, setChatTimerInterval] = useState(null);
   const [partnerJoined, setPartnerJoined] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
 
   const videoFilters = {
     none: '',
@@ -809,7 +810,10 @@ const ChatRoom = ({ currentTheme }) => {
 
   const renderLocalVideo = () => {
     return (
-      <div className="video-box">
+      <div 
+        className="video-box"
+        onMouseDown={handleResizeStart}
+      >
         <div className="video-wrapper">
           {chatMode === 'video' ? (
             <video
@@ -880,7 +884,10 @@ const ChatRoom = ({ currentTheme }) => {
 
   const renderPartnerVideo = () => {
     return (
-      <div className="video-box">
+      <div 
+        className="video-box"
+        onMouseDown={handleResizeStart}
+      >
         <span className="user-label">Собеседник</span>
         <span className="chat-online-count">
           {connectionStatus === 'connected' ? formatTime(chatDuration) : ''}
@@ -947,11 +954,52 @@ const ChatRoom = ({ currentTheme }) => {
     return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
   };
 
+  const handleResizeStart = (e) => {
+    const videoBox = e.target.closest('.video-box');
+    if (!videoBox) return;
+
+    const startY = e.clientY;
+    const startHeight = videoBox.offsetHeight;
+
+    const handleMouseMove = (e) => {
+      const deltaY = e.clientY - startY;
+      const newHeight = startHeight + deltaY;
+      
+      const minHeight = 400;
+      const maxHeight = window.innerHeight * 0.9;
+      
+      const finalHeight = Math.min(Math.max(newHeight, minHeight), maxHeight);
+      videoBox.style.height = finalHeight + 'px';
+
+      const viewportHeight = window.innerHeight;
+      const heightPercentage = (finalHeight / viewportHeight) * 100;
+      
+      setIsExpanded(heightPercentage >= 80);
+    };
+
+    const handleMouseUp = () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+  };
+
+  const cancelSearch = () => {
+    setIsSearching(false);
+    setIsSearchingAnimation(false);
+    setConnectionStatus('idle');
+    if (roomId) {
+      socket.emit('leaveRoom', { roomId });
+    }
+  };
+
   return (
     <ChatContainer>
       <SpaceBackground theme={currentTheme} />
       <ChatContent>
-        <div className={`chat-container ${isConnected || isSearching ? 'chat-active' : ''}`}>
+        <div className={`chat-container ${isConnected || isSearching ? 'chat-active' : ''} ${isExpanded ? 'expanded' : ''}`}>
           {showPermissionDialog && (
             <div className="permission-message">
               <h3>Разрешите доступ к камере и микрофону</h3>
@@ -999,6 +1047,17 @@ const ChatRoom = ({ currentTheme }) => {
               </div>
               <div className="roulette-wheel"></div>
               <div className="searching-text">Ищем собеседника...</div>
+              <div className="searching-subtext">
+                {chatMode === 'video' ? 
+                  'Подбираем вам случайного собеседника для видеочата' : 
+                  'Подбираем вам случайного собеседника для аудиочата'}
+              </div>
+              <div className="searching-stats">
+                Сейчас онлайн: <span className="online-count-badge">{onlineCount}</span>
+              </div>
+              <button onClick={cancelSearch} className="cancel-search-btn">
+                Отменить поиск
+              </button>
             </div>
           )}
           

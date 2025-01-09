@@ -117,12 +117,12 @@
 
 .video-box:first-child {
   grid-area: local-video;
-  height: 550px;
+  height: 700px;
 }
 
 .video-box:last-child {
   grid-area: partner-video;
-  height: 550px;
+  height: 700px;
 }
 
 .control-buttons {
@@ -161,10 +161,68 @@
   overflow: hidden;
   box-shadow: 0 4px 6px rgba(0, 255, 0, 0.1);
   transition: transform 0.3s ease;
+  resize: vertical;
+  min-height: 400px;
+  max-height: 90vh;
 }
 
 .video-box:hover {
-  transform: scale(1.02);
+  transform: none;
+}
+
+.video-box::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 15px;
+  height: 15px;
+  cursor: ns-resize;
+  background: linear-gradient(135deg, transparent 50%, rgba(0, 255, 0, 0.5) 50%);
+}
+
+/* Скрываем чат когда видео большое */
+.video-box:first-child[style*="height: 8"] ~ .message-form,
+.video-box:first-child[style*="height: 9"] ~ .message-form,
+.video-box:last-child[style*="height: 8"] ~ .message-form,
+.video-box:last-child[style*="height: 9"] ~ .message-form {
+  display: none !important;
+}
+
+/* Кнопки управления при скрытом чате */
+.video-box:first-child[style*="height: 8"] ~ .control-buttons,
+.video-box:first-child[style*="height: 9"] ~ .control-buttons,
+.video-box:last-child[style*="height: 8"] ~ .control-buttons,
+.video-box:last-child[style*="height: 9"] ~ .control-buttons {
+  position: fixed;
+  bottom: 50%;
+  left: 50%;
+  transform: translate(-50%, 50%);
+  background: rgba(0, 0, 0, 0.8);
+  padding: 20px 40px;
+  border-radius: 30px;
+  z-index: 1002;
+  width: 100%;
+  max-width: 500px;
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(0, 255, 0, 0.2);
+  box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
+}
+
+.video-box:first-child[style*="height: 8"] ~ .control-buttons .btn-next,
+.video-box:first-child[style*="height: 9"] ~ .control-buttons .btn-next,
+.video-box:last-child[style*="height: 8"] ~ .control-buttons .btn-next,
+.video-box:last-child[style*="height: 9"] ~ .control-buttons .btn-next,
+.video-box:first-child[style*="height: 8"] ~ .control-buttons .btn-end,
+.video-box:first-child[style*="height: 9"] ~ .control-buttons .btn-end,
+.video-box:last-child[style*="height: 8"] ~ .control-buttons .btn-end,
+.video-box:last-child[style*="height: 9"] ~ .control-buttons .btn-end {
+  padding: 15px 40px;
+  font-size: 18px;
+  min-width: 200px;
 }
 
 .video-wrapper {
@@ -623,7 +681,7 @@
   }
 
   .video-box {
-    height: 350px;
+    height: 500px;
   }
 
   .messages-container {
@@ -647,7 +705,7 @@
 
 @media (max-width: 480px) {
   .video-box {
-    height: 300px;
+    height: 400px;
   }
 
   .control-btn {
@@ -751,12 +809,77 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.8);
+  background: rgba(0, 0, 0, 0.9);
   display: flex;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
   z-index: 1000;
   animation: fadeIn 0.3s ease;
+}
+
+.searching-text {
+  font-size: 2rem;
+  font-weight: 500;
+  color: #00ff00;
+  text-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
+  margin-top: 30px;
+  text-align: center;
+}
+
+.searching-subtext {
+  font-size: 1.2rem;
+  color: rgba(255, 255, 255, 0.8);
+  margin-top: 15px;
+  text-align: center;
+  max-width: 600px;
+  line-height: 1.5;
+}
+
+.cancel-search-btn {
+  margin-top: 30px;
+  padding: 12px 30px;
+  background: rgba(255, 0, 0, 0.2);
+  border: 1px solid rgba(255, 0, 0, 0.3);
+  color: #ff4444;
+  border-radius: 25px;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  font-weight: bold;
+  letter-spacing: 1px;
+}
+
+.cancel-search-btn:hover {
+  background: rgba(255, 0, 0, 0.3);
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(255, 0, 0, 0.2);
+}
+
+.cancel-search-btn:active {
+  transform: translateY(0);
+}
+
+.searching-stats {
+  margin-top: 20px;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 1rem;
+}
+
+.online-count-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(0, 255, 0, 0.1);
+  padding: 5px 10px;
+  border-radius: 15px;
+  margin-left: 5px;
+}
+
+.online-count-badge::before {
+  content: '🟢';
+  font-size: 0.8rem;
 }
 
 .roulette-wheel {
@@ -1340,4 +1463,120 @@
 .audio-control-btn.active {
   background: #FF9800;
   color: white;
+}
+
+/* Скрываем чат когда видео большое */
+.video-box.expanded ~ .message-form {
+  display: none !important;
+}
+
+/* Кнопки управления при скрытом чате */
+.video-box.expanded ~ .control-buttons {
+  position: fixed;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.8);
+  padding: 20px 40px;
+  border-radius: 30px;
+  z-index: 1002;
+  width: 100%;
+  max-width: 500px;
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(0, 255, 0, 0.2);
+  box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
+}
+
+.video-box.expanded ~ .control-buttons .btn-next,
+.video-box.expanded ~ .control-buttons .btn-end {
+  padding: 15px 40px;
+  font-size: 18px;
+  min-width: 200px;
+}
+
+/* Добавляем плавный переход */
+.message-form,
+.control-buttons {
+  transition: all 0.3s ease-in-out;
+}
+
+/* Стили для расширенного режима */
+.chat-container.expanded .message-form {
+  display: none !important;
+}
+
+.chat-container.expanded .control-buttons {
+  position: fixed;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.8);
+  padding: 20px 40px;
+  border-radius: 30px;
+  z-index: 1002;
+  width: 100%;
+  max-width: 500px;
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(0, 255, 0, 0.2);
+  box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
+}
+
+.chat-container.expanded .control-buttons .btn-next,
+.chat-container.expanded .control-buttons .btn-end {
+  padding: 15px 40px;
+  font-size: 18px;
+  min-width: 200px;
+  background: rgba(0, 255, 0, 0.2);
+  border: 1px solid rgba(0, 255, 0, 0.3);
+  color: #00ff00;
+  text-transform: uppercase;
+  font-weight: bold;
+  letter-spacing: 1px;
+  transition: all 0.3s ease;
+}
+
+.chat-container.expanded .control-buttons .btn-next:hover,
+.chat-container.expanded .control-buttons .btn-end:hover {
+  background: rgba(0, 255, 0, 0.3);
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(0, 255, 0, 0.2);
+}
+
+.chat-container.expanded .control-buttons .btn-end {
+  background: rgba(255, 0, 0, 0.2);
+  border-color: rgba(255, 0, 0, 0.3);
+  color: #ff4444;
+}
+
+.chat-container.expanded .control-buttons .btn-end:hover {
+  background: rgba(255, 0, 0, 0.3);
+  box-shadow: 0 5px 15px rgba(255, 0, 0, 0.2);
+}
+
+/* Добавляем плавные переходы */
+.message-form,
+.control-buttons,
+.btn-next,
+.btn-end {
+  transition: all 0.3s ease-in-out;
+}
+
+/* Удаляем старые стили */
+.video-box.expanded ~ .message-form,
+.video-box.expanded ~ .control-buttons,
+.video-box:first-child[style*="height: 8"] ~ .message-form,
+.video-box:first-child[style*="height: 9"] ~ .message-form,
+.video-box:last-child[style*="height: 8"] ~ .message-form,
+.video-box:last-child[style*="height: 9"] ~ .message-form,
+.video-box:first-child[style*="height: 8"] ~ .control-buttons,
+.video-box:first-child[style*="height: 9"] ~ .control-buttons,
+.video-box:last-child[style*="height: 8"] ~ .control-buttons,
+.video-box:last-child[style*="height: 9"] ~ .control-buttons {
+  display: none;
 } 
