@@ -22,9 +22,7 @@ import { useTheme } from '../context/ThemeContext';
 import './ChatRoom.css';
 import EmojiPicker from 'emoji-picker-react';
 
-const SOCKET_URL = process.env.NODE_ENV === 'production' 
-  ? 'https://ruletka.top' 
-  : 'http://localhost:5001';
+const SOCKET_URL = 'http://localhost:5001';
 
 const socket = io(SOCKET_URL, {
   transports: ['websocket', 'polling'],
@@ -32,7 +30,19 @@ const socket = io(SOCKET_URL, {
   reconnectionAttempts: 5,
   reconnectionDelay: 1000,
   autoConnect: true,
-  withCredentials: true
+  withCredentials: false
+});
+
+socket.on('connect', () => {
+  console.log('Connected to server with ID:', socket.id);
+});
+
+socket.on('connect_error', (error) => {
+  console.error('Connection error:', error);
+});
+
+socket.on('disconnect', (reason) => {
+  console.log('Disconnected:', reason);
 });
 
 function ChatRoom() {
@@ -263,20 +273,41 @@ function ChatRoom() {
 
   useEffect(() => {
     socket.on('connect', () => {
-      console.log('Connected to server');
+      console.log('Connected to server with ID:', socket.id);
     });
 
-    socket.on('connect_error', (error) => {
-      console.error('Connection error:', error);
+    socket.on('chatStart', ({ room }) => {
+      console.log('Chat started in room:', room);
+      setIsSearching(false);
+      setIsConnected(true);
+      setRoomId(room);
     });
 
-    socket.on('disconnect', (reason) => {
-      console.log('Disconnected:', reason);
+    socket.on('partnerLeft', () => {
+      console.log('Partner left');
+      setIsConnected(false);
+      setRoomId(null);
+      setPeer(null);
+    });
+
+    socket.on('message', (message) => {
+      console.log('Received message:', message);
+      setMessages(prev => [...prev, { ...message, sender: message.sender === socket.id ? 'me' : 'partner' }]);
+    });
+
+    socket.on('disconnect', () => {
+      console.log('Disconnected from server');
+      setIsConnected(false);
+      setIsSearching(false);
+      setRoomId(null);
+      setPeer(null);
     });
 
     return () => {
       socket.off('connect');
-      socket.off('connect_error');
+      socket.off('chatStart');
+      socket.off('partnerLeft');
+      socket.off('message');
       socket.off('disconnect');
     };
   }, []);
