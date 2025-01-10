@@ -232,57 +232,89 @@ function ChatRoom() {
     }
   };
 
-  useEffect(() => {
-    async function setupMediaStream() {
-      try {
-        const constraints = {
-          audio: {
-            echoCancellation: true,
-            noiseSuppression: true,
-            autoGainControl: true
-          },
-          video: chatMode === 'video' ? {
-            width: { ideal: 1280 },
-            height: { ideal: 720 },
-            frameRate: { min: 15, ideal: 30 }
-          } : false
-        };
+  const setupMediaStream = async () => {
+    try {
+      const constraints = {
+        audio: true,
+        video: chatMode === 'video' ? { 
+          width: { ideal: 640 },
+          height: { ideal: 480 }
+        } : false
+      };
 
-        const stream = await navigator.mediaDevices.getUserMedia(constraints);
-        console.log('Local stream:', stream);
-        console.log('Audio tracks:', stream.getAudioTracks().map(t => ({ enabled: t.enabled, muted: t.muted })));
-        console.log('Video tracks:', stream.getVideoTracks().map(t => ({ enabled: t.enabled, muted: t.muted })));
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      console.log('Local stream:', stream);
+      
+      // Проверяем и логируем треки
+      const audioTracks = stream.getAudioTracks();
+      const videoTracks = stream.getVideoTracks();
+      
+      console.log('Audio tracks:', audioTracks);
+      console.log('Video tracks:', videoTracks);
 
-        // Проверяем и включаем треки
-        stream.getTracks().forEach(track => {
-          track.enabled = true;
-          console.log(`${track.kind} track enabled:`, track.enabled);
-        });
+      // Включаем треки
+      audioTracks.forEach(track => {
+        track.enabled = true;
+        console.log('Audio track enabled:', track.enabled);
+      });
 
-        setLocalStream(stream);
+      videoTracks.forEach(track => {
+        track.enabled = true;
+        console.log('Video track enabled:', track.enabled);
+      });
 
-        if (localVideoRef.current) {
-          localVideoRef.current.srcObject = stream;
-          try {
-            await localVideoRef.current.play();
-            console.log('Local video playing');
-          } catch (err) {
-            console.error('Error playing local video:', err);
-          }
+      // Устанавливаем локальный поток
+      setLocalStream(stream);
+
+      // Обновляем локальное видео
+      if (localVideoRef.current) {
+        localVideoRef.current.srcObject = stream;
+        try {
+          await localVideoRef.current.play();
+          console.log('Local video playing');
+        } catch (err) {
+          console.error('Error playing local video:', err);
         }
-      } catch (err) {
-        console.error('Error accessing media devices:', err);
       }
+
+      // Создаем пира как инициатора
+      const newPeer = createPeer(true, stream, chatMode);
+      
+      newPeer.on('signal', (data) => {
+        console.log('Sending signal:', data.type);
+        socket.emit('signal', { 
+          signal: data, 
+          room: roomId 
+        });
+      });
+
+      newPeer.on('stream', (remoteStream) => {
+        console.log('Received remote stream');
+        if (remoteVideoRef.current) {
+          remoteVideoRef.current.srcObject = remoteStream;
+          remoteVideoRef.current.volume = 1;
+          remoteVideoRef.current.muted = false;
+          
+          remoteVideoRef.current.play()
+            .then(() => console.log('Remote stream playing successfully'))
+            .catch(err => {
+              console.error('Error playing remote stream:', err);
+              // Добавляем обработчик клика для воспроизведения
+              remoteVideoRef.current.addEventListener('click', () => {
+                remoteVideoRef.current.play()
+                  .then(() => console.log('Remote stream playing after click'))
+                  .catch(e => console.error('Error playing after click:', e));
+              });
+            });
+        }
+      });
+
+      setPeer(newPeer);
+
+    } catch (err) {
+      console.error('Error setting up media stream:', err);
     }
-
-    setupMediaStream();
-
-    return () => {
-      if (localStream) {
-        localStream.getTracks().forEach(track => track.stop());
-      }
-    };
-  }, [chatMode]);
+  };
 
   const startChat = () => {
     setIsSearching(true);
@@ -294,8 +326,16 @@ function ChatRoom() {
       peer.destroy();
       setPeer(null);
     }
-    setMessages([]);
-    socket.emit('nextPartner');
+    
+    if (localStream) {
+      localStream.getTracks().forEach(track => track.stop());
+      setLocalStream(null);
+    }
+    
+    setIsConnected(false);
+    setRoomId(null);
+    
+    socket.emit('startSearch');
   };
 
   const toggleMic = () => {
@@ -466,101 +506,20 @@ function ChatRoom() {
       console.log('Connected to server with ID:', socket.id);
     });
 
-    socket.on('chatStart', async ({ room }) => {
+    socket.on('chatStart', ({ room }) => {
       console.log('Chat started in room:', room);
-      setIsSearching(false);
-      setIsConnected(true);
       setRoomId(room);
+      setIsConnected(true);
+      setIsSearching(false);
 
-      if (!localStream) {
-        console.error('No local stream available');
-        return;
-      }
-
-      try {
-        const newPeer = createPeer(true, localStream, chatMode);
-        
-        newPeer.on('signal', data => {
-          console.log('Sending signal:', data.type);
-          socket.emit('signal', { signal: data, room });
-        });
-
-        newPeer.on('stream', stream => {
-          console.log('Received remote stream');
-          if (remoteVideoRef.current) {
-            remoteVideoRef.current.srcObject = stream;
-            remoteVideoRef.current.volume = 1;
-            remoteVideoRef.current.muted = false;
-            
-            remoteVideoRef.current.play()
-              .then(() => console.log('Remote video playing'))
-              .catch(err => {
-                console.error('Error playing remote video:', err);
-                // Пробуем воспроизвести по клику
-                remoteVideoRef.current.addEventListener('click', () => {
-                  remoteVideoRef.current.play();
-                });
-              });
-          }
-        });
-
-        setPeer(newPeer);
-      } catch (err) {
-        console.error('Error creating peer:', err);
-      }
+      // Получаем медиапоток
+      setupMediaStream();
     });
 
-    socket.on('signal', ({ signal }) => {
-      console.log('Received signal:', signal.type);
-      
-      if (!peer && localStream) {
-        // Если нет peer, создаем новый
-        console.log('Creating new peer as receiver');
-        const newPeer = createPeer(false, localStream, chatMode);
-
-        newPeer.on('signal', data => {
-          console.log('New peer sending signal:', data.type);
-          socket.emit('signal', { signal: data, room: roomId });
-        });
-
-        newPeer.on('stream', stream => {
-          console.log('New peer received stream');
-          handleStream(stream, remoteVideoRef);
-        });
-
-        newPeer.on('connect', () => {
-          console.log('New peer connection established');
-        });
-
-        // Важно: сначала устанавливаем peer, потом обрабатываем сигнал
-        setPeer(newPeer);
-        setTimeout(() => {
-          newPeer.signal(signal);
-        }, 100);
-
-      } else if (peer) {
-        // Если peer существует, проверяем состояние перед обработкой сигнала
-        try {
-          if (signal.type === 'answer' && peer._pc.signalingState !== 'stable') {
-            console.log('Processing answer signal');
-            peer.signal(signal);
-          } else if (signal.type === 'offer') {
-            console.log('Processing offer signal');
-            peer.signal(signal);
-          } else if (signal.candidate) {
-            console.log('Processing ICE candidate');
-            peer.signal(signal);
-          }
-        } catch (err) {
-          console.error('Error processing signal:', err);
-          // Если произошла ошибка, пересоздаем peer
-          peer.destroy();
-          const newPeer = createPeer(false, localStream, chatMode);
-          setPeer(newPeer);
-          setTimeout(() => {
-            newPeer.signal(signal);
-          }, 100);
-        }
+    socket.on('signal', (data) => {
+      console.log('Received signal:', data.type);
+      if (peer) {
+        peer.signal(data);
       }
     });
 
@@ -595,7 +554,7 @@ function ChatRoom() {
         peer.destroy();
       }
     };
-  }, [peer, localStream, roomId]);
+  }, [peer]);
 
   useEffect(() => {
     if (localVideoRef.current) {
