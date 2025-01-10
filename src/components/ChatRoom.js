@@ -105,29 +105,37 @@ function ChatRoom() {
       config: {
         iceServers: [
           { urls: 'stun:stun.l.google.com:19302' },
-          { urls: 'stun:stun1.l.google.com:19302' }
+          { urls: 'stun:stun1.l.google.com:19302' },
+          { urls: 'stun:stun2.l.google.com:19302' },
+          { urls: 'stun:stun3.l.google.com:19302' },
+          { urls: 'stun:stun4.l.google.com:19302' },
+          {
+            urls: 'turn:numb.viagenie.ca',
+            username: 'webrtc@live.com',
+            credential: 'muazkh'
+          }
         ]
       },
+      stream: stream,
       offerToReceiveAudio: true,
-      offerToReceiveVideo: mode === 'video',
-      sdpTransform: (sdp) => {
-        // Убедимся, что используется unified-plan
-        return sdp.replace('a=msid-semantic: WMS\r\n', 'a=msid-semantic: WMS *\r\n');
-      }
+      offerToReceiveVideo: mode === 'video'
     });
-
-    if (stream) {
-      stream.getTracks().forEach(track => {
-        if (mode === 'audio' && track.kind === 'video') {
-          return; // Пропускаем видеотреки в аудиорежиме
-        }
-        console.log('Adding track:', track.kind);
-        peer.addTrack(track, stream);
-      });
-    }
 
     peer.on('connect', () => {
       console.log('Peer connection established');
+    });
+
+    peer.on('stream', (remoteStream) => {
+      console.log('Got remote stream:', remoteStream);
+      console.log('Audio tracks:', remoteStream.getAudioTracks().length);
+      console.log('Video tracks:', remoteStream.getVideoTracks().length);
+    });
+
+    peer.on('track', (track, stream) => {
+      console.log('Received track:', track.kind);
+      track.onunmute = () => {
+        console.log('Track unmuted:', track.kind);
+      };
     });
 
     peer.on('iceStateChange', (state) => {
@@ -165,9 +173,6 @@ function ChatRoom() {
   useEffect(() => {
     async function setupMediaStream() {
       try {
-        // Запрашиваем разрешения явно
-        await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
-        
         const constraints = {
           audio: {
             echoCancellation: true,
@@ -182,20 +187,26 @@ function ChatRoom() {
         };
 
         const stream = await navigator.mediaDevices.getUserMedia(constraints);
-        console.log('Got media stream:', stream);
-        
-        // Проверяем треки
-        const videoTracks = stream.getVideoTracks();
-        const audioTracks = stream.getAudioTracks();
-        
-        console.log('Video tracks:', videoTracks.length, videoTracks[0]?.enabled);
-        console.log('Audio tracks:', audioTracks.length, audioTracks[0]?.enabled);
+        console.log('Local stream:', stream);
+        console.log('Audio tracks:', stream.getAudioTracks().map(t => ({ enabled: t.enabled, muted: t.muted })));
+        console.log('Video tracks:', stream.getVideoTracks().map(t => ({ enabled: t.enabled, muted: t.muted })));
+
+        // Проверяем и включаем треки
+        stream.getTracks().forEach(track => {
+          track.enabled = true;
+          console.log(`${track.kind} track enabled:`, track.enabled);
+        });
 
         setLocalStream(stream);
-        
+
         if (localVideoRef.current) {
           localVideoRef.current.srcObject = stream;
-          await localVideoRef.current.play();
+          try {
+            await localVideoRef.current.play();
+            console.log('Local video playing');
+          } catch (err) {
+            console.error('Error playing local video:', err);
+          }
         }
       } catch (err) {
         console.error('Error accessing media devices:', err);
@@ -405,7 +416,6 @@ function ChatRoom() {
       }
 
       try {
-        console.log('Creating peer as initiator');
         const newPeer = createPeer(true, localStream, chatMode);
         
         newPeer.on('signal', data => {
@@ -414,15 +424,21 @@ function ChatRoom() {
         });
 
         newPeer.on('stream', stream => {
-          console.log('Received remote stream:', stream);
-          console.log('Remote video tracks:', stream.getVideoTracks().length);
-          console.log('Remote audio tracks:', stream.getAudioTracks().length);
-
+          console.log('Received remote stream');
           if (remoteVideoRef.current) {
             remoteVideoRef.current.srcObject = stream;
+            remoteVideoRef.current.volume = 1;
+            remoteVideoRef.current.muted = false;
+            
             remoteVideoRef.current.play()
               .then(() => console.log('Remote video playing'))
-              .catch(err => console.error('Error playing remote video:', err));
+              .catch(err => {
+                console.error('Error playing remote video:', err);
+                // Пробуем воспроизвести по клику
+                remoteVideoRef.current.addEventListener('click', () => {
+                  remoteVideoRef.current.play();
+                });
+              });
           }
         });
 
