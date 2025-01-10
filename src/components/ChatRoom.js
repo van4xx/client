@@ -642,69 +642,139 @@ function ChatRoom() {
       try {
         const device = new Device();
         
-        socket.emit('createRoom');
-        
-        socket.on('roomCreated', async ({ rtpCapabilities }) => {
-          await device.load({ routerRtpCapabilities: rtpCapabilities });
-          setDevice(device);
-          
-          // Создаем транспорты
-          await createSendTransport();
-          await createReceiveTransport();
+        // Ждем создания комнаты и получения возможностей
+        const { rtpCapabilities } = await new Promise((resolve) => {
+          socket.emit('createRoom', null, resolve);
         });
+
+        if (!rtpCapabilities) {
+          throw new Error('Failed to get RTP capabilities');
+        }
+
+        // Загружаем устройство с полученными возможностями
+        await device.load({ routerRtpCapabilities: rtpCapabilities });
+        console.log('Device loaded successfully');
+        setDevice(device);
+
       } catch (error) {
-        console.error('Error initializing device', error);
+        console.error('Error initializing device:', error);
       }
     };
 
     initializeDevice();
+
+    return () => {
+      if (device) {
+        // Очищаем устройство при размонтировании
+        device.dispose();
+      }
+    };
   }, []);
 
   const createSendTransport = async () => {
-    socket.emit('createTransport', { sender: true }, async ({ params }) => {
+    if (!device) {
+      console.error('Device not initialized');
+      return;
+    }
+
+    try {
+      const { params } = await new Promise((resolve) => {
+        socket.emit('createTransport', { sender: true }, resolve);
+      });
+
+      if (params.error) {
+        throw new Error(params.error);
+      }
+
       const transport = device.createSendTransport(params);
       
       transport.on('connect', async ({ dtlsParameters }, callback, errback) => {
-        socket.emit('connectTransport', { dtlsParameters, sender: true }, callback);
+        try {
+          await new Promise((resolve, reject) => {
+            socket.emit('connectTransport', {
+              transportId: transport.id,
+              dtlsParameters,
+              sender: true
+            }, (response) => {
+              if (response.error) {
+                reject(response.error);
+              } else {
+                resolve();
+              }
+            });
+          });
+          
+          callback();
+        } catch (error) {
+          errback(error);
+        }
       });
 
       transport.on('produce', async ({ kind, rtpParameters }, callback, errback) => {
-        socket.emit('produce', { kind, rtpParameters }, ({ id }) => {
+        try {
+          const { id } = await new Promise((resolve) => {
+            socket.emit('produce', { kind, rtpParameters }, resolve);
+          });
+          
           callback({ id });
-        });
+        } catch (error) {
+          errback(error);
+        }
       });
 
       setProducerTransport(transport);
-    });
+      console.log('Send transport created successfully');
+
+    } catch (error) {
+      console.error('Error creating send transport:', error);
+    }
   };
 
   const createReceiveTransport = async () => {
-    socket.emit('createTransport', { sender: false }, async ({ params }) => {
+    if (!device) {
+      console.error('Device not initialized');
+      return;
+    }
+
+    try {
+      const { params } = await new Promise((resolve) => {
+        socket.emit('createTransport', { sender: false }, resolve);
+      });
+
       if (params.error) {
-        console.error('Error creating receive transport:', params.error);
-        return;
+        throw new Error(params.error);
       }
 
-      try {
-        const transport = device.createRecvTransport(params);
+      const transport = device.createRecvTransport(params);
 
-        transport.on('connect', ({ dtlsParameters }, callback, errback) => {
-          socket.emit('connectTransport', {
-            transportId: transport.id,
-            dtlsParameters,
-            sender: false
-          }, callback);
-        });
+      transport.on('connect', async ({ dtlsParameters }, callback, errback) => {
+        try {
+          await new Promise((resolve, reject) => {
+            socket.emit('connectTransport', {
+              transportId: transport.id,
+              dtlsParameters,
+              sender: false
+            }, (response) => {
+              if (response.error) {
+                reject(response.error);
+              } else {
+                resolve();
+              }
+            });
+          });
+          
+          callback();
+        } catch (error) {
+          errback(error);
+        }
+      });
 
-        transport.on('connectionstatechange', (state) => {
-          console.log('Receive transport connection state:', state);
-        });
+      setConsumerTransport(transport);
+      console.log('Receive transport created successfully');
 
-        setConsumerTransport(transport);
-      } catch (error) {
-        console.error('Error creating receive transport:', error);
-      }
-    });
+    } catch (error) {
+      console.error('Error creating receive transport:', error);
+    }
   };
 
   const consumeStream = async (producerId, kind) => {
@@ -775,6 +845,15 @@ function ChatRoom() {
       console.error('Error starting stream', error);
     }
   };
+
+  useEffect(() => {
+    if (device && !producerTransport) {
+      createSendTransport();
+    }
+    if (device && !consumerTransport) {
+      createReceiveTransport();
+    }
+  }, [device]);
 
   return (
     <div className={`chat-room ${theme}`}>
