@@ -138,7 +138,10 @@ function ChatRoom() {
     function onMouseMove(e) {
       const currentY = e.clientY;
       const diff = currentY - startY;
-      const newHeight = Math.max(600, startHeight + diff);
+      
+      const maxHeight = window.innerHeight - 100;
+      const minHeight = 400;
+      const newHeight = Math.min(maxHeight, Math.max(minHeight, startHeight + diff));
 
       setLeftVideoHeight(newHeight);
       setRightVideoHeight(newHeight);
@@ -235,40 +238,6 @@ function ChatRoom() {
 
   return (
     <div className={`chat-room ${theme}`}>
-      {isSearching && (
-        <div className="modal-overlay searching-overlay">
-          <div className="searching-modal">
-            <div className="searching-content">
-              <div className="searching-text">Ищем собеседника...</div>
-              <div className="online-counter">
-                <div className="pulse-dot"></div>
-                Онлайн: 1,234
-              </div>
-              <div className="searching-spinner"></div>
-              <div className="searching-ripple">
-                <div className="ripple-circle"></div>
-                <div className="ripple-circle"></div>
-              </div>
-              <button 
-                className="cancel-search-btn"
-                onClick={() => {
-                  setIsSearching(false);
-                  socket.emit('cancelSearch');
-                }}
-              >
-                Отменить поиск
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <div className="theme-toggle">
-        <button onClick={toggleTheme} className="theme-toggle-btn">
-          {theme === 'light' ? <FaMoon /> : <FaSun />}
-        </button>
-      </div>
-
       <div className="video-grid">
         <div 
           className="video-box"
@@ -276,6 +245,36 @@ function ChatRoom() {
         >
           <video ref={remoteVideoRef} autoPlay playsInline />
           <div className="video-label">Собеседник</div>
+          {isSearching && (
+            <div className="video-searching-overlay">
+              <div className="searching-content">
+                <div className="searching-text">Ищем собеседника...</div>
+                <div className="online-counter">
+                  <div className="pulse-dot"></div>
+                  Онлайн: 1,234
+                </div>
+                <div className="searching-spinner">
+                  <div className="ufo">
+                    <div className="ufo-lights">
+                      <div className="ufo-light"></div>
+                      <div className="ufo-light"></div>
+                      <div className="ufo-light"></div>
+                      <div className="ufo-light"></div>
+                    </div>
+                  </div>
+                </div>
+                <button 
+                  className="cancel-search-btn"
+                  onClick={() => {
+                    setIsSearching(false);
+                    socket.emit('cancelSearch');
+                  }}
+                >
+                  Отменить поиск
+                </button>
+              </div>
+            </div>
+          )}
           <div className="resize-handle" onMouseDown={(e) => handleResize('left', e)} />
         </div>
         <div 

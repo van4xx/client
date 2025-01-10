@@ -85,8 +85,6 @@ html, body, #root {
 }
 
 button {
-  background-color: #0084ff;
-  color: white;
   border: none;
   border-radius: 5px;
   cursor: pointer;

@@ -34,7 +34,8 @@
   border-radius: 15px;
   overflow: hidden;
   height: 745px;
-  min-height: 600px;
+  min-height: 400px;
+  max-height: calc(100vh - 250px);
   transition: height 0.1s ease;
   box-shadow: var(--neon-primary);
   border: 1px solid var(--border);
@@ -56,6 +57,33 @@
   height: 25px;
   cursor: ns-resize;
   z-index: 1000;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.video-box:hover .resize-handle {
+  opacity: 1;
+}
+
+/* Индикатор ограничения */
+.resize-handle::after {
+  content: '';
+  position: absolute;
+  right: 5px;
+  bottom: 5px;
+  width: 15px;
+  height: 15px;
+  background: rgba(255, 215, 0, 0.5);
+  border-radius: 50%;
+  transition: background-color 0.2s ease;
+}
+
+.video-box[style*="max-height"] .resize-handle::after {
+  background: rgba(255, 0, 0, 0.5); /* Красный индикатор при достижении максимума */
+}
+
+.video-box[style*="min-height"] .resize-handle::after {
+  background: rgba(255, 0, 0, 0.5); /* Красный индикатор при достижении минимума */
 }
 
 /* Треугольник для изменения размера */
@@ -103,19 +131,23 @@
 
 .controls-buttons {
   display: flex;
-  gap: 15px;
-  padding: 20px;
+  align-items: center;
+  justify-content: center;
+  min-height: 100px;
   background: rgba(255, 215, 0, 0.05);
   backdrop-filter: blur(10px);
   border-radius: 20px;
   border: 1px solid rgba(255, 215, 0, 0.1);
   transition: all 0.3s ease;
+  perspective: 1000px;
 }
 
 .controls-buttons:hover {
   background: rgba(255, 215, 0, 0.08);
   border-color: rgba(255, 215, 0, 0.2);
-  box-shadow: 0 0 20px rgba(255, 215, 0, 0.1);
+  box-shadow: 
+    0 0 30px rgba(255, 215, 0, 0.1),
+    inset 0 0 20px rgba(255, 215, 0, 0.05);
 }
 
 .controls-menu {
@@ -301,7 +333,6 @@
   display: flex;
   gap: 10px;
   padding: 12px;
-  background: rgba(0, 0, 0, 0.8);
   border-radius: 50px;
   backdrop-filter: blur(10px);
   z-index: 100;
@@ -315,9 +346,6 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--surface-light);
-  backdrop-filter: blur(10px);
-  color: var(--text);
   cursor: pointer;
   transition: all 0.3s ease;
 }
@@ -545,7 +573,8 @@
 
 .start-chat {
   position: relative;
-  padding: 15px 40px;
+  padding: 0 40px;
+  height: 50px;
   font-size: 20px;
   font-weight: 700;
   letter-spacing: 1px;
@@ -557,35 +586,100 @@
   cursor: pointer;
   overflow: hidden;
   transition: all 0.3s ease;
-  box-shadow: var(--neon-primary);
+  transform-style: preserve-3d;
+  transform: translateZ(0);
 }
 
+/* Эффект свечения */
 .start-chat::before {
   content: '';
   position: absolute;
-  top: -2px;
-  left: -2px;
-  right: -2px;
-  bottom: -2px;
-  background: var(--gradient-primary);
-  z-index: -1;
-  border-radius: 16px;
-  filter: blur(10px);
-  opacity: 0;
-  transition: opacity 0.3s ease;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(
+    circle,
+    rgba(255, 215, 0, 0.3),
+    transparent 50%
+  );
+  transform: translateZ(-1px);
+  animation: rotate 10s linear infinite;
+  pointer-events: none;
 }
 
+/* Блик на кнопке */
+.start-chat::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.3),
+    transparent
+  );
+  transform: skewX(-25deg);
+  animation: shine 3s infinite;
+}
+
+/* Анимация параллакса при наведении */
 .start-chat:hover {
-  transform: translateY(-3px) scale(1.02);
-  box-shadow: var(--neon-accent);
-}
-
-.start-chat:hover::before {
-  opacity: 0.7;
+  transform: translateY(-2px) translateZ(20px) rotateX(5deg);
+  box-shadow: 
+    0 5px 20px rgba(255, 215, 0, 0.3),
+    0 15px 35px rgba(255, 215, 0, 0.2);
 }
 
 .start-chat:active {
-  transform: translateY(1px) scale(0.98);
+  transform: translateY(1px) translateZ(0);
+}
+
+/* Анимации */
+@keyframes rotate {
+  0% {
+    transform: translateZ(-1px) rotate(0deg);
+  }
+  100% {
+    transform: translateZ(-1px) rotate(360deg);
+  }
+}
+
+@keyframes shine {
+  0% {
+    left: -100%;
+  }
+  20% {
+    left: 100%;
+  }
+  100% {
+    left: 100%;
+  }
+}
+
+/* Добавляем эффект при наведении на контейнер */
+.controls-buttons:hover {
+  background: rgba(255, 215, 0, 0.08);
+  border-color: rgba(255, 215, 0, 0.2);
+  box-shadow: 
+    0 0 30px rgba(255, 215, 0, 0.1),
+    inset 0 0 20px rgba(255, 215, 0, 0.05);
+}
+
+/* Темная тема */
+.dark .start-chat {
+  background: var(--gradient-primary);
+  color: var(--graphite-dark);
+}
+
+.dark .start-chat:hover {
+  box-shadow: 
+    0 5px 20px rgba(255, 215, 0, 0.3),
+    0 15px 35px rgba(255, 215, 0, 0.2),
+    0 0 0 1px rgba(255, 215, 0, 0.1);
 }
 
 .next-partner {
@@ -737,13 +831,97 @@
 }
 
 .searching-spinner {
+  position: relative;
+  width: 120px;
+  height: 120px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* НЛО */
+.ufo {
+  position: absolute;
   width: 100px;
-  height: 100px;
-  border: 5px solid rgba(255, 215, 0, 0.1);
-  border-top: 5px solid var(--yellow);
+  height: 40px;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 215, 0, 0.8),
+    rgba(255, 215, 0, 0.4)
+  );
+  border-radius: 50px 50px 10px 10px;
+  animation: hover 2s ease-in-out infinite;
+  box-shadow: 
+    0 0 30px rgba(255, 215, 0, 0.3),
+    inset 0 5px 15px rgba(255, 255, 255, 0.5);
+}
+
+/* Кабина НЛО */
+.ufo::before {
+  content: '';
+  position: absolute;
+  top: -20px;
+  left: 25px;
+  width: 50px;
+  height: 30px;
+  background: rgba(0, 255, 255, 0.8);
+  border-radius: 50% 50% 0 0;
+  box-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
+}
+
+/* Луч телепортации */
+.ufo::after {
+  content: '';
+  position: absolute;
+  bottom: -40px;
+  left: 35px;
+  width: 30px;
+  height: 40px;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 215, 0, 0.6),
+    transparent
+  );
+  clip-path: polygon(0 0, 100% 0, 70% 100%, 30% 100%);
+  animation: beam 2s ease-in-out infinite;
+}
+
+/* Огни НЛО */
+.ufo-lights {
+  position: absolute;
+  bottom: 5px;
+  left: 10px;
+  right: 10px;
+  display: flex;
+  justify-content: space-around;
+}
+
+.ufo-light {
+  width: 8px;
+  height: 8px;
+  background: #00ffff;
   border-radius: 50%;
-  animation: spin 1s linear infinite;
-  box-shadow: 0 0 30px rgba(255, 215, 0, 0.2);
+  animation: blink 1s ease-in-out infinite alternate;
+}
+
+.ufo-light:nth-child(2) { animation-delay: 0.2s; }
+.ufo-light:nth-child(3) { animation-delay: 0.4s; }
+.ufo-light:nth-child(4) { animation-delay: 0.6s; }
+
+/* Анимации */
+@keyframes hover {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+@keyframes beam {
+  0%, 100% { opacity: 0.3; height: 40px; }
+  50% { opacity: 0.7; height: 60px; }
+}
+
+@keyframes blink {
+  from { opacity: 0.2; }
+  to { opacity: 1; box-shadow: 0 0 10px #00ffff; }
 }
 
 .searching-ripple {
@@ -930,5 +1108,63 @@
   100% {
     transform: scale(1);
     box-shadow: 0 0 0 0 rgba(0, 204, 102, 0);
+  }
+}
+
+/* Стили для поиска в окне видео */
+.video-searching-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(20px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  border-radius: 15px;
+}
+
+.video-searching-overlay .searching-content {
+  padding: 40px;
+  max-width: 90%;
+  width: auto;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 215, 0, 0.2);
+  border-radius: 20px;
+  box-shadow: 0 0 40px rgba(255, 215, 0, 0.15);
+  backdrop-filter: blur(10px);
+  animation: contentScale 0.3s ease;
+}
+
+.video-searching-overlay .searching-text {
+  font-size: 28px;
+  margin-bottom: 20px;
+}
+
+.video-searching-overlay .online-counter {
+  font-size: 16px;
+  padding: 8px 16px;
+}
+
+.video-searching-overlay .searching-spinner {
+  margin: 30px 0;
+}
+
+.video-searching-overlay .cancel-search-btn {
+  margin-top: 10px;
+}
+
+/* Анимация появления */
+@keyframes contentScale {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
   }
 }
