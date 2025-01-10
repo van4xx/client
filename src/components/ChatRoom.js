@@ -98,7 +98,7 @@ function ChatRoom() {
   );
 
   const createPeer = (initiator = false, stream, mode) => {
-    console.log('Creating peer with stream:', stream, 'mode:', mode);
+    console.log('Creating peer:', { initiator, mode });
     const peer = new Peer({
       initiator,
       trickle: true,
@@ -109,12 +109,19 @@ function ChatRoom() {
         ]
       },
       offerToReceiveAudio: true,
-      offerToReceiveVideo: mode === 'video'
+      offerToReceiveVideo: mode === 'video',
+      sdpTransform: (sdp) => {
+        // Убедимся, что используется unified-plan
+        return sdp.replace('a=msid-semantic: WMS\r\n', 'a=msid-semantic: WMS *\r\n');
+      }
     });
 
     if (stream) {
       stream.getTracks().forEach(track => {
-        console.log('Adding track to peer:', track.kind);
+        if (mode === 'audio' && track.kind === 'video') {
+          return; // Пропускаем видеотреки в аудиорежиме
+        }
+        console.log('Adding track:', track.kind);
         peer.addTrack(track, stream);
       });
     }
@@ -405,70 +412,54 @@ function ChatRoom() {
 
     socket.on('signal', ({ signal }) => {
       console.log('Received signal:', signal.type);
-      if (peer) {
-        try {
-          peer.signal(signal);
-        } catch (err) {
-          console.error('Error signaling to peer:', err);
-        }
-      } else if (localStream) {
-        try {
-          console.log('Creating peer as receiver');
-          const newPeer = createPeer(false, localStream, chatMode);
+      
+      if (!peer && localStream) {
+        // Если нет peer, создаем новый
+        console.log('Creating new peer as receiver');
+        const newPeer = createPeer(false, localStream, chatMode);
 
-          newPeer.on('signal', data => {
-            console.log('Sending signal:', data.type);
-            socket.emit('signal', { signal: data, room: roomId });
-          });
+        newPeer.on('signal', data => {
+          console.log('New peer sending signal:', data.type);
+          socket.emit('signal', { signal: data, room: roomId });
+        });
 
-          newPeer.on('connect', () => {
-            console.log('Peer connection established');
-          });
+        newPeer.on('stream', stream => {
+          console.log('New peer received stream');
+          handleStream(stream, remoteVideoRef);
+        });
 
-          newPeer.on('stream', async (stream) => {
-            console.log('Received remote stream:', stream.id);
-            console.log('Remote video tracks:', stream.getVideoTracks());
-            console.log('Remote audio tracks:', stream.getAudioTracks());
+        newPeer.on('connect', () => {
+          console.log('New peer connection established');
+        });
 
-            if (remoteVideoRef.current) {
-              try {
-                stream.getVideoTracks().forEach(track => {
-                  track.enabled = true;
-                  console.log('Video track enabled:', track.enabled);
-                });
-                
-                stream.getAudioTracks().forEach(track => {
-                  track.enabled = true;
-                  console.log('Audio track enabled:', track.enabled);
-                });
-
-                remoteVideoRef.current.srcObject = stream;
-                remoteVideoRef.current.volume = 1;
-                
-                await remoteVideoRef.current.play();
-                console.log('Remote video playing');
-              } catch (err) {
-                console.error('Error playing remote stream:', err);
-                remoteVideoRef.current.addEventListener('click', async () => {
-                  try {
-                    await remoteVideoRef.current.play();
-                    console.log('Remote video playing after click');
-                  } catch (playErr) {
-                    console.error('Error playing after click:', playErr);
-                  }
-                });
-              }
-            }
-          });
-
-          newPeer.on('track', (track, stream) => {
-            console.log('Received track:', track.kind, 'from stream:', stream.id);
-          });
-
+        // Важно: сначала устанавливаем peer, потом обрабатываем сигнал
+        setPeer(newPeer);
+        setTimeout(() => {
           newPeer.signal(signal);
-          setPeer(newPeer);
+        }, 100);
+
+      } else if (peer) {
+        // Если peer существует, проверяем состояние перед обработкой сигнала
+        try {
+          if (signal.type === 'answer' && peer._pc.signalingState !== 'stable') {
+            console.log('Processing answer signal');
+            peer.signal(signal);
+          } else if (signal.type === 'offer') {
+            console.log('Processing offer signal');
+            peer.signal(signal);
+          } else if (signal.candidate) {
+            console.log('Processing ICE candidate');
+            peer.signal(signal);
+          }
         } catch (err) {
-          console.error('Error creating new peer:', err);
+          console.error('Error processing signal:', err);
+          // Если произошла ошибка, пересоздаем peer
+          peer.destroy();
+          const newPeer = createPeer(false, localStream, chatMode);
+          setPeer(newPeer);
+          setTimeout(() => {
+            newPeer.signal(signal);
+          }, 100);
         }
       }
     });
