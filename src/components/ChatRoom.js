@@ -23,7 +23,7 @@ import './ChatRoom.css';
 import EmojiPicker from 'emoji-picker-react';
 
 const SOCKET_URL = process.env.NODE_ENV === 'production' 
-  ? 'https://your-production-url.com' 
+  ? 'https://ruletka.top' 
   : 'http://localhost:5001';
 
 const socket = io(SOCKET_URL);
@@ -238,6 +238,22 @@ function ChatRoom() {
     return message.text;
   };
 
+  const switchMode = (mode) => {
+    if (!isSearching) {
+      setChatMode(mode);
+      socket.emit('setChatMode', mode);
+      
+      // Обновляем состояние видеотрека
+      if (localStream) {
+        const videoTrack = localStream.getVideoTracks()[0];
+        if (videoTrack) {
+          videoTrack.enabled = mode === 'video';
+          setIsVideoOff(mode === 'audio');
+        }
+      }
+    }
+  };
+
   return (
     <div className={`chat-room ${theme}`}>
       {activeModal === 'settings' && (
@@ -431,9 +447,13 @@ function ChatRoom() {
           className="video-box"
           style={{ height: `${rightVideoHeight}px` }}
         >
-          {chatMode === 'video' && (
-            <video ref={localVideoRef} autoPlay muted playsInline />
-          )}
+          <video 
+            ref={localVideoRef} 
+            autoPlay 
+            muted 
+            playsInline 
+            style={{ display: chatMode === 'audio' ? 'none' : 'block' }}
+          />
           {chatMode === 'audio' && (
             <div className="audio-mode-overlay">
               <div className="audio-mode-content">
@@ -499,35 +519,39 @@ function ChatRoom() {
 
       <div className="controls-section">
         <div className="controls-buttons">
-          {!isConnected && !isSearching && (
-            <div className="chat-controls">
+          <div className="chat-controls">
+            {!isConnected && !isSearching && (
               <button onClick={startChat} className="start-chat">
                 Рулетим
               </button>
-              <div className="mode-switcher">
-                <button 
-                  className={`mode-btn ${chatMode === 'audio' ? 'active' : ''}`}
-                  onClick={() => {
-                    setChatMode('audio');
-                    socket.emit('setChatMode', 'audio');
-                  }}
-                >
-                  <BsMicFill size={20} />
-                  <span>Аудио</span>
-                </button>
-                <button 
-                  className={`mode-btn ${chatMode === 'video' ? 'active' : ''}`}
-                  onClick={() => {
-                    setChatMode('video');
-                    socket.emit('setChatMode', 'video');
-                  }}
-                >
-                  <BsCameraVideoFill size={20} />
-                  <span>Видео</span>
-                </button>
-              </div>
+            )}
+            {isSearching && (
+              <button onClick={() => {
+                setIsSearching(false);
+                socket.emit('cancelSearch');
+              }} className="cancel-search">
+                Отменить поиск
+              </button>
+            )}
+            <div className="mode-switcher">
+              <button 
+                className={`mode-btn ${chatMode === 'audio' ? 'active' : ''}`}
+                onClick={() => switchMode('audio')}
+                disabled={isSearching}
+              >
+                <BsMicFill size={20} />
+                <span>Аудио</span>
+              </button>
+              <button 
+                className={`mode-btn ${chatMode === 'video' ? 'active' : ''}`}
+                onClick={() => switchMode('video')}
+                disabled={isSearching}
+              >
+                <BsCameraVideoFill size={20} />
+                <span>Видео</span>
+              </button>
             </div>
-          )}
+          </div>
           {isConnected && (
             <button onClick={nextPartner} className="next-partner">
               Следующий собеседник

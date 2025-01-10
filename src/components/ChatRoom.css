@@ -1590,3 +1590,124 @@
     filter: drop-shadow(0 0 20px rgba(255, 215, 0, 0.7));
   }
 }
+
+.cancel-search {
+  position: relative;
+  padding: 12px 35px;
+  background: linear-gradient(45deg, #FF3B30, #FF4F44);
+  color: white;
+  border: none;
+  border-radius: 50px;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 
+    0 0 20px rgba(255, 59, 48, 0.3),
+    inset 0 0 20px rgba(255, 255, 255, 0.2);
+  text-transform: uppercase;
+  overflow: hidden;
+  z-index: 1;
+}
+
+/* Эффект свечения */
+.cancel-search::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  background: linear-gradient(45deg, #FF3B30, #FF8E87, #FF3B30);
+  border-radius: 50px;
+  z-index: -1;
+  animation: borderGlow 3s linear infinite;
+}
+
+/* Блик на кнопке */
+.cancel-search::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.3),
+    transparent
+  );
+  transform: skewX(-25deg);
+  animation: shine 3s infinite;
+}
+
+.cancel-search:hover {
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 
+    0 10px 30px rgba(255, 59, 48, 0.4),
+    inset 0 0 30px rgba(255, 255, 255, 0.3);
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+}
+
+.cancel-search:active {
+  transform: translateY(1px) scale(0.98);
+  box-shadow: 
+    0 5px 15px rgba(255, 59, 48, 0.4),
+    inset 0 0 10px rgba(255, 255, 255, 0.2);
+}
+
+@keyframes borderGlow {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
+@keyframes shine {
+  0% {
+    left: -100%;
+  }
+  20% {
+    left: 100%;
+  }
+  100% {
+    left: 100%;
+  }
+}
+
+/* Добавляем пульсацию при наведении */
+.cancel-search:hover::before {
+  animation: borderGlow 1.5s linear infinite;
+}
+
+/* Эффект нажатия */
+.cancel-search:active::before {
+  opacity: 0.8;
+}
+
+.mode-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* Добавим визуальную индикацию блокировки при поиске */
+.mode-switcher.searching {
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+.mode-switcher.searching::after {
+  content: 'Недоступно во время поиска';
+  position: absolute;
+  bottom: -25px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 12px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
