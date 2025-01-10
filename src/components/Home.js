@@ -46,21 +46,142 @@ const Subtitle = styled.p`
 
 const StartButton = styled(Link)`
   display: inline-block;
-  padding: 1rem 2rem;
+  padding: 1.2rem 2.5rem;
   font-size: 1.5rem;
-  background: linear-gradient(45deg, #FF4500, #FF8C00);
+  background: linear-gradient(45deg, #2ecc71, #1abc9c, #16a085);
+  background-size: 200% 200%;
   color: white;
   text-decoration: none;
   border-radius: 50px;
-  transition: all 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   margin: 2rem 0;
-  border: 2px solid transparent;
-  box-shadow: 0 0 20px rgba(255, 69, 0, 0.4);
+  border: 3px solid transparent;
+  box-shadow: 
+    0 0 20px rgba(46, 213, 115, 0.4),
+    0 0 30px rgba(26, 188, 156, 0.2),
+    0 0 40px rgba(22, 160, 133, 0.1);
+  position: relative;
+  overflow: hidden;
+  z-index: 1;
+  animation: 
+    float 6s ease-in-out infinite,
+    gradientBG 8s ease infinite,
+    pulse 2s ease-in-out infinite;
 
+  /* Основная градиентная анимация */
+  @keyframes gradientBG {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+
+  /* Анимация парения */
+  @keyframes float {
+    0% { transform: translateY(0) rotate(0deg); }
+    25% { transform: translateY(-8px) rotate(2deg); }
+    50% { transform: translateY(0) rotate(0deg); }
+    75% { transform: translateY(8px) rotate(-2deg); }
+    100% { transform: translateY(0) rotate(0deg); }
+  }
+
+  /* Пульсация свечения */
+  @keyframes pulse {
+    0% { box-shadow: 0 0 20px rgba(46, 213, 115, 0.4), 0 0 30px rgba(26, 188, 156, 0.2); }
+    50% { box-shadow: 0 0 25px rgba(46, 213, 115, 0.6), 0 0 40px rgba(26, 188, 156, 0.3); }
+    100% { box-shadow: 0 0 20px rgba(46, 213, 115, 0.4), 0 0 30px rgba(26, 188, 156, 0.2); }
+  }
+
+  /* Космические частицы */
+  &:after {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: linear-gradient(
+      45deg,
+      transparent 30%,
+      rgba(46, 213, 115, 0.8) 40%,
+      rgba(26, 188, 156, 0.9) 50%,
+      rgba(46, 213, 115, 0.8) 60%,
+      transparent 70%
+    );
+    transform: rotate(45deg);
+    animation: shine 6s ease-in-out infinite;
+    pointer-events: none;
+  }
+
+  @keyframes shine {
+    0% { transform: translateX(-200%) rotate(45deg); }
+    50% { transform: translateX(100%) rotate(45deg); }
+    100% { transform: translateX(-200%) rotate(45deg); }
+  }
+
+  /* Эффект при наведении */
   &:hover {
-    transform: scale(1.05);
-    box-shadow: 0 0 30px rgba(255, 69, 0, 0.6);
-    border-color: rgba(255, 255, 255, 0.2);
+    transform: translateY(-5px) scale(1.05);
+    background-size: 150% 150%;
+    box-shadow: 
+      0 0 30px rgba(46, 213, 115, 0.6),
+      0 0 50px rgba(26, 188, 156, 0.3),
+      0 0 70px rgba(22, 160, 133, 0.2);
+    border-color: rgba(46, 213, 115, 0.3);
+
+    &:before {
+      opacity: 1;
+      transform: scale(1.2);
+    }
+
+    svg {
+      transform: translate(3px, -3px) rotate(15deg) scale(1.2);
+      filter: drop-shadow(0 0 10px rgba(46, 213, 115, 0.5));
+    }
+  }
+
+  /* Анимация иконки ракеты */
+  svg {
+    transition: all 0.3s ease;
+    margin-right: 10px;
+    animation: rocketShake 2s ease-in-out infinite;
+    color: white;
+  }
+
+  @keyframes rocketShake {
+    0%, 100% { transform: translate(0, 0) rotate(0deg); }
+    25% { transform: translate(2px, -2px) rotate(5deg); }
+    50% { transform: translate(0, 0) rotate(0deg); }
+    75% { transform: translate(-2px, 2px) rotate(-5deg); }
+  }
+
+  /* Эффект при клике */
+  &:active {
+    transform: scale(0.95);
+    box-shadow: 
+      0 0 50px rgba(46, 213, 115, 0.8),
+      0 0 100px rgba(26, 188, 156, 0.4);
+    
+    svg {
+      transform: translate(-2px, 2px) rotate(-10deg);
+    }
+  }
+
+  /* Космический след */
+  &:before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(
+      circle at center,
+      rgba(46, 213, 115, 0.8) 0%,
+      rgba(255, 255, 255, 0) 70%
+    );
+    opacity: 0;
+    transition: all 0.5s ease;
+    z-index: -1;
   }
 `;
 
@@ -285,14 +406,14 @@ const Home = ({ currentTheme, onlineUsers }) => {
       <Content theme={currentTheme}>
         <Title theme={currentTheme}>Ruletka</Title>
         <Subtitle theme={currentTheme}>
-          Исследуйте космические просторы общения в нашем уникальном видеочате. 
-          Встречайте новых людей со всей галактики в захватывающем космическом приключении!
+          Привет, искатели приключений!
+          Готовы отправиться в увлекательное путешествие по вселенной знакомств? Пусть звезды укажут путь к вашим новым друзьям!
         </Subtitle>
 
         <StatsGrid>
           <StatBox theme={currentTheme} iconColor="#64ffda">
             <FaUsers />
-            <StatNumber theme={currentTheme}>789</StatNumber>
+            <StatNumber theme={currentTheme}>{onlineUsers}</StatNumber>
             <StatLabel theme={currentTheme}>Онлайн пользователей</StatLabel>
           </StatBox>
           <StatBox theme={currentTheme} iconColor="#64ffda">
@@ -318,7 +439,7 @@ const Home = ({ currentTheme, onlineUsers }) => {
         </StartButton>
 
         <InfoSection>
-          <InfoTitle>Почему выбирают Ruletka?</InfoTitle>
+          <InfoTitle>Да пребудет с вами сила!</InfoTitle>
           <InfoGrid>
             <InfoCard>
             <FaUserAstronaut />
@@ -386,7 +507,7 @@ const Home = ({ currentTheme, onlineUsers }) => {
               <InfoCardTitle>Блокировка нарушителей</InfoCardTitle>
               <InfoCardText>
                 Система автоматически блокирует пользователей, нарушающих
-                правила сообщества, сохраняя дружелюбную атмосферу.
+                правила, сохраняя дружелюбную атмосферу.
               </InfoCardText>
             </InfoCard>
           </InfoGrid>

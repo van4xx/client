@@ -18,7 +18,7 @@ import styled from 'styled-components';
 
 // Socket configuration
 const SOCKET_URL = process.env.NODE_ENV === 'production' 
-  ? 'wss://ruletka.top' 
+  ? 'https://ruletka.top' 
   : 'http://localhost:5001';
 
 const socket = io(SOCKET_URL, {
@@ -42,9 +42,17 @@ socket.on('connect', () => {
 });
 
 socket.on('connect_error', (error) => {
-  console.error('Connection error:', error);
+  console.error('Connection error details:', {
+    error: error.message,
+    description: error.description,
+    type: error.type,
+    url: SOCKET_URL,
+    transport: socket.io.engine.transport.name
+  });
+  
   // Пробуем переподключиться с небольшой задержкой
   setTimeout(() => {
+    console.log('Attempting to reconnect...');
     socket.connect();
   }, 1000);
 });
@@ -65,7 +73,7 @@ const ChatContainer = styled.div`
 
 const ChatContent = styled.div`
   flex: 1;
-  padding: 20px;
+  // padding: 20px;
 `;
 
 const ChatRoom = ({ currentTheme }) => {
@@ -345,8 +353,8 @@ const ChatRoom = ({ currentTheme }) => {
     }
   };
 
-  const onEmojiClick = (emojiData, event) => {
-    setInputMessage(prevInput => prevInput + emojiData.emoji);
+  const onEmojiClick = (emoji) => {
+    setInputMessage(prevInput => prevInput + emoji.emoji);
     setShowEmoji(false);
   };
 
@@ -355,7 +363,9 @@ const ChatRoom = ({ currentTheme }) => {
   };
 
   useEffect(() => {
-    scrollToBottom();
+    if (messages.length > 0) {
+      scrollToBottom();
+    }
   }, [messages]);
 
   useEffect(() => {
@@ -1134,14 +1144,14 @@ const ChatRoom = ({ currentTheme }) => {
               </>
             )}
             {isConnected && (
-              <>
-                <button onClick={nextPartner} className="btn-next">
-                  Следующий
-                </button>
-                <button onClick={endChat} className="btn-end">
-                  Завершить
-                </button>
-              </>
+              <button onClick={nextPartner} className="btn-next">
+                Следующий
+              </button>
+            )}
+            {(isSearching || isConnected) && (
+              <button onClick={endChat} className="btn-end">
+                Завершить
+              </button>
             )}
           </div>
 
@@ -1175,6 +1185,14 @@ const ChatRoom = ({ currentTheme }) => {
               >
                 <FaSmile size={24} />
               </button>
+              {showEmoji && (
+                <div className="emoji-picker-container">
+                  <EmojiPicker
+                    onEmojiClick={onEmojiClick}
+                    theme={currentTheme === 'dark' ? 'dark' : 'light'}
+                  />
+                </div>
+              )}
               <button
                 type="button"
                 className="image-upload-button"
@@ -1215,7 +1233,10 @@ const ChatRoom = ({ currentTheme }) => {
             
             {showEmoji && (
               <div className="emoji-picker-container">
-                <EmojiPicker onEmojiClick={onEmojiClick} />
+                <EmojiPicker
+                  onEmojiClick={onEmojiClick}
+                  theme={currentTheme === 'dark' ? 'dark' : 'light'}
+                />
               </div>
             )}
           </form>

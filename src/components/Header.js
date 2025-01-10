@@ -22,6 +22,20 @@ const glowText = keyframes`
   100% { text-shadow: 0 0 10px rgba(255, 215, 0, 0.5); }
 `;
 
+const logoSpin = keyframes`
+  0% { transform: rotate(0deg) scale(1); }
+  25% { transform: rotate(90deg) scale(1.2); }
+  50% { transform: rotate(180deg) scale(1); }
+  75% { transform: rotate(270deg) scale(1.2); }
+  100% { transform: rotate(360deg) scale(1); }
+`;
+
+const logoGlow = keyframes`
+  0% { text-shadow: 0 0 10px rgba(46, 213, 115, 0.5); }
+  50% { text-shadow: 0 0 20px rgba(46, 213, 115, 0.8), 0 0 30px rgba(0, 184, 148, 0.4); }
+  100% { text-shadow: 0 0 10px rgba(46, 213, 115, 0.5); }
+`;
+
 const HeaderContainer = styled.header`
   position: fixed;
   top: 0;
@@ -73,10 +87,24 @@ const Logo = styled(Link)`
   transition: all 0.3s ease;
 
   span {
-    background: linear-gradient(to right, #FFD700, #FFA500, #FF4500);
+    background: linear-gradient(to right, #2ecc71, #1abc9c, #16a085);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
-    animation: ${glowText} 3s ease-in-out infinite;
+    animation: ${logoGlow} 3s ease-in-out infinite;
+    position: relative;
+    
+    &::after {
+      content: attr(data-text);
+      position: absolute;
+      left: 0;
+      top: 0;
+      z-index: -1;
+      filter: blur(8px);
+      opacity: 0.7;
+      background: inherit;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
   }
 
   &::before {
@@ -88,8 +116,8 @@ const Logo = styled(Link)`
     bottom: 0;
     border-radius: 20px;
     background: linear-gradient(45deg, 
-      rgba(255, 215, 0, 0.1),
-      rgba(255, 69, 0, 0.1));
+      rgba(46, 213, 115, 0.1),
+      rgba(0, 184, 148, 0.1));
     opacity: 0;
     transition: all 0.3s ease;
   }
@@ -100,12 +128,26 @@ const Logo = styled(Link)`
     &::before {
       opacity: 1;
     }
+
+    svg {
+      animation: ${logoSpin} 1.5s ease-in-out;
+      color: #2ecc71;
+    }
+
+    span {
+      animation: ${logoGlow} 1s ease-in-out infinite;
+    }
   }
 
   svg {
     font-size: 24px;
-    color: #FFD700;
-    animation: ${starFloat} 3s ease-in-out infinite;
+    color: #2ecc71;
+    filter: drop-shadow(0 0 8px rgba(46, 213, 115, 0.5));
+    transition: all 0.3s ease;
+    
+    &:hover {
+      transform: rotate(180deg) scale(1.2);
+    }
   }
 `;
 
@@ -232,14 +274,10 @@ const Header = ({ currentTheme, onThemeChange, onlineUsers }) => {
     <HeaderContainer>
       <Logo to="/">
         <FaStar />
-        <span>Ruletka</span>
+        <span data-text="Ruletka">Ruletka</span>
       </Logo>
 
       <Navigation>
-        <OnlineCount>
-          <FaUsers />
-          {onlineUsers} онлайн
-        </OnlineCount>
         <NavLink to="/chat">
           <FaRocket />
           Начать чат

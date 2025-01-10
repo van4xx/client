@@ -480,14 +480,17 @@
   background: none;
   border: none;
   color: #00ff00;
-  font-size: 24px;
   cursor: pointer;
   padding: 5px;
   transition: transform 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .emoji-button:hover {
   transform: scale(1.1);
+  color: #00cc00;
 }
 
 .emoji-picker-container {
@@ -495,6 +498,17 @@
   bottom: 100%;
   left: 0;
   margin-bottom: 10px;
+  z-index: 1000;
+}
+
+.em-emoji-picker {
+  --background-rgb: var(--background-color);
+  --border-radius: 10px;
+  --category-icon-size: 20px;
+  --font-family: var(--font-family);
+  --shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+  height: 350px !important;
+  width: 320px !important;
 }
 
 .btn-send {
