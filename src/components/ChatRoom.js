@@ -62,6 +62,8 @@ function ChatRoom() {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const fileInputRef = useRef(null);
 
+  const [chatMode, setChatMode] = useState('video');
+
   const Modal = ({ title, onClose, children }) => (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content" onClick={e => e.stopPropagation()}>
@@ -385,6 +387,14 @@ function ChatRoom() {
         >
           <video ref={remoteVideoRef} autoPlay playsInline />
           <div className="video-label">Собеседник</div>
+          {chatMode === 'audio' && !isSearching && (
+            <div className="audio-mode-overlay">
+              <div className="audio-mode-content">
+                <BsMicFill size={50} />
+                <span>Аудио чат</span>
+              </div>
+            </div>
+          )}
           {isSearching && (
             <div className="video-searching-overlay">
               <div className="searching-content">
@@ -421,7 +431,17 @@ function ChatRoom() {
           className="video-box"
           style={{ height: `${rightVideoHeight}px` }}
         >
-          <video ref={localVideoRef} autoPlay muted playsInline />
+          {chatMode === 'video' && (
+            <video ref={localVideoRef} autoPlay muted playsInline />
+          )}
+          {chatMode === 'audio' && (
+            <div className="audio-mode-overlay">
+              <div className="audio-mode-content">
+                <BsMicFill size={50} />
+                <span>Аудио чат</span>
+              </div>
+            </div>
+          )}
           <div className="video-label">Вы</div>
           <div className="video-controls">
             <button 
@@ -431,27 +451,31 @@ function ChatRoom() {
             >
               {isMuted ? <BsMicMuteFill size={24} /> : <BsMicFill size={24} />}
             </button>
-            <button 
-              onClick={toggleVideo} 
-              className={isVideoOff ? 'active' : ''} 
-              data-tooltip={isVideoOff ? 'Включить камеру' : 'Выключить камеру'}
-            >
-              {isVideoOff ? <BsCameraVideoOffFill size={24} /> : <BsCameraVideoFill size={24} />}
-            </button>
-            <button 
-              onClick={toggleScreenShare} 
-              className={isScreenSharing ? 'active' : ''} 
-              data-tooltip={isScreenSharing ? 'Остановить демонстрацию' : 'Демонстрация экрана'}
-            >
-              {isScreenSharing ? <MdStopScreenShare size={24} /> : <MdScreenShare size={24} />}
-            </button>
-            <button 
-              onClick={toggleMask} 
-              className={isMaskOn ? 'active' : ''} 
-              data-tooltip={isMaskOn ? 'Убрать маску' : 'Надеть маску'}
-            >
-              <BsEmojiSunglasses size={24} />
-            </button>
+            {chatMode === 'video' && (
+              <>
+                <button 
+                  onClick={toggleVideo} 
+                  className={isVideoOff ? 'active' : ''} 
+                  data-tooltip={isVideoOff ? 'Включить камеру' : 'Выключить камеру'}
+                >
+                  {isVideoOff ? <BsCameraVideoOffFill size={24} /> : <BsCameraVideoFill size={24} />}
+                </button>
+                <button 
+                  onClick={toggleScreenShare} 
+                  className={isScreenSharing ? 'active' : ''} 
+                  data-tooltip={isScreenSharing ? 'Остановить демонстрацию' : 'Демонстрация экрана'}
+                >
+                  {isScreenSharing ? <MdStopScreenShare size={24} /> : <MdScreenShare size={24} />}
+                </button>
+                <button 
+                  onClick={toggleMask} 
+                  className={isMaskOn ? 'active' : ''} 
+                  data-tooltip={isMaskOn ? 'Убрать маску' : 'Надеть маску'}
+                >
+                  <BsEmojiSunglasses size={24} />
+                </button>
+              </>
+            )}
             <button 
               onClick={sendNotification} 
               className={notificationSent ? 'active' : ''} 
@@ -459,13 +483,15 @@ function ChatRoom() {
             >
               <MdNotifications size={24} />
             </button>
-            <button 
-              onClick={toggleHand} 
-              className={handRaised ? 'active' : ''} 
-              data-tooltip={handRaised ? 'Опустить руку' : 'Поднять руку'}
-            >
-              <MdPanTool size={24} />
-            </button>
+            {chatMode === 'video' && (
+              <button 
+                onClick={toggleHand} 
+                className={handRaised ? 'active' : ''} 
+                data-tooltip={handRaised ? 'Опустить руку' : 'Поднять руку'}
+              >
+                <MdPanTool size={24} />
+              </button>
+            )}
           </div>
           <div className="resize-handle" onMouseDown={(e) => handleResize('right', e)} />
         </div>
@@ -474,9 +500,33 @@ function ChatRoom() {
       <div className="controls-section">
         <div className="controls-buttons">
           {!isConnected && !isSearching && (
-            <button onClick={startChat} className="start-chat">
-              Рулетим
-            </button>
+            <div className="chat-controls">
+              <button onClick={startChat} className="start-chat">
+                Рулетим
+              </button>
+              <div className="mode-switcher">
+                <button 
+                  className={`mode-btn ${chatMode === 'audio' ? 'active' : ''}`}
+                  onClick={() => {
+                    setChatMode('audio');
+                    socket.emit('setChatMode', 'audio');
+                  }}
+                >
+                  <BsMicFill size={20} />
+                  <span>Аудио</span>
+                </button>
+                <button 
+                  className={`mode-btn ${chatMode === 'video' ? 'active' : ''}`}
+                  onClick={() => {
+                    setChatMode('video');
+                    socket.emit('setChatMode', 'video');
+                  }}
+                >
+                  <BsCameraVideoFill size={20} />
+                  <span>Видео</span>
+                </button>
+              </div>
+            </div>
           )}
           {isConnected && (
             <button onClick={nextPartner} className="next-partner">
