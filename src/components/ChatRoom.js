@@ -22,15 +22,18 @@ import { useTheme } from '../context/ThemeContext';
 import './ChatRoom.css';
 import EmojiPicker from 'emoji-picker-react';
 
-const SOCKET_URL = 'http://localhost:5001';
+const SOCKET_URL = window.location.hostname === 'ruletka.top' 
+  ? 'wss://ruletka.top' 
+  : 'http://localhost:5001';
 
 const socket = io(SOCKET_URL, {
-  transports: ['websocket', 'polling'],
+  transports: ['websocket'],
   reconnection: true,
   reconnectionAttempts: 5,
   reconnectionDelay: 1000,
   autoConnect: true,
-  withCredentials: false
+  withCredentials: false,
+  path: '/socket.io'
 });
 
 socket.on('connect', () => {
