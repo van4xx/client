@@ -1,0 +1,52 @@
+:root {
+  /* Основные цвета */
+  --primary: #00ff80;
+  --primary-dark: #00cc66;
+  --secondary: #0084ff;
+  --accent: #ff3e3e;
+  
+  /* Нейтральные цвета */
+  --background-light: #f0f2f5;
+  --background-dark: #0f0f0f;
+  --surface-light: #ffffff;
+  --surface-dark: #1a1a1a;
+  
+  /* Градиенты */
+  --gradient-primary: linear-gradient(135deg, var(--primary), #00ffcc);
+  --gradient-dark: linear-gradient(135deg, #1a1a1a, #2a2a2a);
+  
+  /* Тени */
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.1);
+  --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.15);
+  --shadow-lg: 0 8px 30px rgba(0, 0, 0, 0.2);
+  
+  /* Шрифты */
+  --font-primary: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  
+  /* Размеры шрифтов */
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-md: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.25rem;
+  
+  /* Анимации */
+  --transition-fast: 0.2s ease;
+  --transition-normal: 0.3s ease;
+  --transition-slow: 0.5s ease;
+}
+
+/* Базовые стили */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: var(--font-primary);
+}
+
+body {
+  font-size: var(--text-md);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+} 

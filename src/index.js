@@ -1,19 +1,16 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { ThemeProvider, StyleSheetManager } from 'styled-components';
-import { theme } from './styles/theme';
-import GlobalStyles from './styles/GlobalStyles';
 import App from './App';
-import './index.css';
+import './styles/globals.css';
+
+// Проверяем сохраненную тему или системные настройки
+const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+const savedTheme = localStorage.getItem('theme');
+document.documentElement.setAttribute('data-theme', savedTheme || (prefersDark ? 'dark' : 'light'));
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <React.StrictMode>
-    <StyleSheetManager shouldComponentUpdate={true}>
-      <ThemeProvider theme={theme}>
-        <GlobalStyles />
-        <App />
-      </ThemeProvider>
-    </StyleSheetManager>
+    <App />
   </React.StrictMode>
 );
