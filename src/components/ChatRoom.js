@@ -26,7 +26,14 @@ const SOCKET_URL = process.env.NODE_ENV === 'production'
   ? 'https://ruletka.top' 
   : 'http://localhost:5001';
 
-const socket = io(SOCKET_URL);
+const socket = io(SOCKET_URL, {
+  transports: ['websocket', 'polling'],
+  reconnection: true,
+  reconnectionAttempts: 5,
+  reconnectionDelay: 1000,
+  autoConnect: true,
+  withCredentials: true
+});
 
 function ChatRoom() {
   const [isConnected, setIsConnected] = useState(false);
@@ -253,6 +260,26 @@ function ChatRoom() {
       }
     }
   };
+
+  useEffect(() => {
+    socket.on('connect', () => {
+      console.log('Connected to server');
+    });
+
+    socket.on('connect_error', (error) => {
+      console.error('Connection error:', error);
+    });
+
+    socket.on('disconnect', (reason) => {
+      console.log('Disconnected:', reason);
+    });
+
+    return () => {
+      socket.off('connect');
+      socket.off('connect_error');
+      socket.off('disconnect');
+    };
+  }, []);
 
   return (
     <div className={`chat-room ${theme}`}>
