@@ -51,22 +51,41 @@ socket.on('disconnect', (reason) => {
 
 const createPeer = (initiator = false, stream) => {
   console.log('Creating peer with stream:', stream);
-  return new Peer({
+  const peer = new Peer({
     initiator,
     trickle: false,
     config: {
       iceServers: [
         { urls: 'stun:stun.l.google.com:19302' },
-        { urls: 'stun:stun1.l.google.com:19302' }
+        { urls: 'stun:stun1.l.google.com:19302' },
+        { 
+          urls: 'turn:stun.l.google.com:19302',
+          username: 'webrtc',
+          credential: 'turnserver'
+        }
       ]
     },
     stream: stream,
-    streams: [stream],
     offerOptions: {
       offerToReceiveAudio: true,
       offerToReceiveVideo: true
     }
   });
+
+  peer.on('iceStateChange', (state) => {
+    console.log('ICE state:', state);
+  });
+
+  peer.on('connect', () => {
+    console.log('Peer connection established');
+    if (stream) {
+      stream.getTracks().forEach(track => {
+        peer.addTrack(track, stream);
+      });
+    }
+  });
+
+  return peer;
 };
 
 function ChatRoom() {
@@ -120,13 +139,29 @@ function ChatRoom() {
   useEffect(() => {
     async function setupMediaStream() {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ 
-          video: true, 
-          audio: true 
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            width: { ideal: 1280 },
+            height: { ideal: 720 },
+            frameRate: { ideal: 30 }
+          },
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true
+          }
         });
+
+        console.log('Got media stream:', stream);
+        console.log('Video tracks:', stream.getVideoTracks());
+        console.log('Audio tracks:', stream.getAudioTracks());
+
         setLocalStream(stream);
         if (localVideoRef.current) {
           localVideoRef.current.srcObject = stream;
+          await localVideoRef.current.play().catch(err => {
+            console.error('Error playing local video:', err);
+          });
         }
       } catch (err) {
         console.error('Error accessing media devices:', err);
@@ -332,13 +367,23 @@ function ChatRoom() {
           console.log('Peer connection established');
         });
 
-        newPeer.on('stream', stream => {
+        newPeer.on('stream', async (stream) => {
           console.log('Received remote stream:', stream.id);
+          console.log('Remote video tracks:', stream.getVideoTracks());
+          console.log('Remote audio tracks:', stream.getAudioTracks());
+
           if (remoteVideoRef.current) {
             remoteVideoRef.current.srcObject = stream;
-            remoteVideoRef.current.play().catch(err => {
-              console.error('Error playing remote stream:', err);
-            });
+            try {
+              await remoteVideoRef.current.play();
+              console.log('Remote video playing');
+            } catch (err) {
+              console.error('Error playing remote video:', err);
+              // Пробуем воспроизвести видео по клику пользователя
+              remoteVideoRef.current.addEventListener('click', () => {
+                remoteVideoRef.current.play();
+              });
+            }
           }
         });
 
@@ -378,13 +423,23 @@ function ChatRoom() {
             console.log('Peer connection established');
           });
 
-          newPeer.on('stream', stream => {
+          newPeer.on('stream', async (stream) => {
             console.log('Received remote stream:', stream.id);
+            console.log('Remote video tracks:', stream.getVideoTracks());
+            console.log('Remote audio tracks:', stream.getAudioTracks());
+
             if (remoteVideoRef.current) {
               remoteVideoRef.current.srcObject = stream;
-              remoteVideoRef.current.play().catch(err => {
-                console.error('Error playing remote stream:', err);
-              });
+              try {
+                await remoteVideoRef.current.play();
+                console.log('Remote video playing');
+              } catch (err) {
+                console.error('Error playing remote video:', err);
+                // Пробуем воспроизвести видео по клику пользователя
+                remoteVideoRef.current.addEventListener('click', () => {
+                  remoteVideoRef.current.play();
+                });
+              }
             }
           });
 
@@ -432,6 +487,19 @@ function ChatRoom() {
       }
     };
   }, [peer, localStream, roomId]);
+
+  useEffect(() => {
+    if (localVideoRef.current) {
+      localVideoRef.current.onerror = (err) => {
+        console.error('Local video error:', err);
+      };
+    }
+    if (remoteVideoRef.current) {
+      remoteVideoRef.current.onerror = (err) => {
+        console.error('Remote video error:', err);
+      };
+    }
+  }, []);
 
   return (
     <div className={`chat-room ${theme}`}>
@@ -631,7 +699,13 @@ function ChatRoom() {
             autoPlay 
             muted 
             playsInline 
-            style={{ display: chatMode === 'audio' ? 'none' : 'block' }}
+            style={{ 
+              transform: 'scaleX(-1)',
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+              display: chatMode === 'audio' ? 'none' : 'block'
+            }}
           />
           {chatMode === 'audio' && (
             <div className="audio-mode-overlay">
