@@ -48,6 +48,16 @@ socket.on('disconnect', (reason) => {
   console.log('Disconnected:', reason);
 });
 
+const configuration = {
+  iceServers: [
+    { urls: 'stun:stun.l.google.com:19302' },
+    { urls: 'stun:stun1.l.google.com:19302' },
+    { urls: 'stun:stun2.l.google.com:19302' },
+    { urls: 'stun:stun3.l.google.com:19302' },
+    { urls: 'stun:stun4.l.google.com:19302' },
+  ]
+};
+
 function ChatRoom() {
   const [isConnected, setIsConnected] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
@@ -279,11 +289,57 @@ function ChatRoom() {
       console.log('Connected to server with ID:', socket.id);
     });
 
-    socket.on('chatStart', ({ room }) => {
+    socket.on('chatStart', async ({ room }) => {
       console.log('Chat started in room:', room);
       setIsSearching(false);
       setIsConnected(true);
       setRoomId(room);
+
+      // Создаем новое peer-соединение
+      const newPeer = new Peer({
+        initiator: true,
+        trickle: false,
+        config: configuration,
+        stream: localStream
+      });
+
+      newPeer.on('signal', data => {
+        socket.emit('signal', { signal: data, room });
+      });
+
+      newPeer.on('stream', stream => {
+        if (remoteVideoRef.current) {
+          remoteVideoRef.current.srcObject = stream;
+        }
+      });
+
+      setPeer(newPeer);
+    });
+
+    socket.on('signal', ({ signal }) => {
+      if (peer) {
+        peer.signal(signal);
+      } else {
+        const newPeer = new Peer({
+          initiator: false,
+          trickle: false,
+          config: configuration,
+          stream: localStream
+        });
+
+        newPeer.on('signal', data => {
+          socket.emit('signal', { signal: data, room: roomId });
+        });
+
+        newPeer.on('stream', stream => {
+          if (remoteVideoRef.current) {
+            remoteVideoRef.current.srcObject = stream;
+          }
+        });
+
+        newPeer.signal(signal);
+        setPeer(newPeer);
+      }
     });
 
     socket.on('partnerLeft', () => {
@@ -312,8 +368,12 @@ function ChatRoom() {
       socket.off('partnerLeft');
       socket.off('message');
       socket.off('disconnect');
+      socket.off('signal');
+      if (peer) {
+        peer.destroy();
+      }
     };
-  }, []);
+  }, [peer, localStream, roomId]);
 
   return (
     <div className={`chat-room ${theme}`}>
