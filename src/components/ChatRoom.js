@@ -102,7 +102,13 @@ function ChatRoom() {
 
   const createPeer = (initiator = false, stream, mode) => {
     console.log('Creating peer:', { initiator, mode });
-    const peer = new window.Peer({
+    
+    if (!window.createPeer) {
+      console.error('PeerJS not loaded');
+      return null;
+    }
+
+    const peerConfig = {
       initiator,
       trickle: true,
       config: {
@@ -113,24 +119,13 @@ function ChatRoom() {
             urls: 'turn:numb.viagenie.ca:3478',
             username: 'webrtc@live.com',
             credential: 'muazkh'
-          },
-          {
-            urls: 'turn:turn.anyfirewall.com:443?transport=tcp',
-            username: 'webrtc',
-            credential: 'webrtc'
           }
-        ],
-        iceCandidatePoolSize: 10,
-        iceTransportPolicy: 'all'
+        ]
       },
-      stream: stream,
-      offerToReceiveAudio: true,
-      offerToReceiveVideo: mode === 'video',
-      sdpSemantics: 'unified-plan',
-      reconnectTimer: 3000,
-      iceCompleteTimeout: 5000,
-      retries: 2
-    });
+      stream: stream
+    };
+
+    const peer = window.createPeer(peerConfig);
 
     peer.on('connect', () => {
       console.log('Peer connection established');
@@ -605,69 +600,35 @@ function ChatRoom() {
   }, []);
 
   useEffect(() => {
-    const peerConfig = {
-      host: window.location.hostname === 'ruletka.top' ? 'ruletka.top' : 'localhost',
-      port: window.location.hostname === 'ruletka.top' ? 443 : 9000,
-      path: '/peerjs',
-      secure: window.location.hostname === 'ruletka.top',
-      debug: 3,
-      config: {
-        iceServers: [
-          { urls: 'stun:stun.l.google.com:19302' },
-          { urls: 'stun:stun1.l.google.com:19302' },
-          {
-            urls: 'turn:numb.viagenie.ca',
-            username: 'webrtc@live.com',
-            credential: 'muazkh'
-          }
-        ]
-      }
-    };
-
-    const peer = new window.Peer(peerConfig);
-
-    peer.on('open', (id) => {
-      console.log('My peer ID is:', id);
-      setPeerId(id);
-    });
-
-    peer.on('error', (err) => {
-      console.error('Peer error:', err);
-    });
-
-    peer.on('call', async (incomingCall) => {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: chatMode === 'video',
-          audio: true
-        });
+    const loadPeerJS = async () => {
+      if (!window.Peer) {
+        const script = document.createElement('script');
+        script.src = 'https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js';
+        script.async = true;
         
-        setLocalStream(stream);
-        if (localVideoRef.current) {
-          localVideoRef.current.srcObject = stream;
-          await localVideoRef.current.play().catch(console.error);
-        }
-
-        incomingCall.answer(stream);
-        setCall(incomingCall);
-
-        incomingCall.on('stream', (remoteStream) => {
-          if (remoteVideoRef.current) {
-            remoteVideoRef.current.srcObject = remoteStream;
-            remoteVideoRef.current.play().catch(console.error);
-          }
-        });
-      } catch (err) {
-        console.error('Failed to get local stream:', err);
+        script.onload = () => {
+          initializePeer();
+        };
+        
+        document.head.appendChild(script);
+      } else {
+        initializePeer();
       }
-    });
-
-    setMyPeer(peer);
-
-    return () => {
-      if (call) call.close();
-      peer.destroy();
     };
+
+    const initializePeer = () => {
+      const peerConfig = {
+        host: window.location.hostname === 'ruletka.top' ? 'ruletka.top' : 'localhost',
+        port: window.location.hostname === 'ruletka.top' ? 443 : 9000,
+        path: '/peerjs',
+        secure: window.location.hostname === 'ruletka.top'
+      };
+
+      const peer = new window.Peer(peerConfig);
+      // ... остальной код инициализации
+    };
+
+    loadPeerJS();
   }, []);
 
   useEffect(() => {
