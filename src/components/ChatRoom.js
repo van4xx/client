@@ -1,7 +1,6 @@
 import 'webrtc-adapter';
 import React, { useState, useRef, useEffect } from 'react';
 import { io } from 'socket.io-client';
-import Peer from 'peerjs';
 import { IoMdSend } from 'react-icons/io';
 import { 
   BsMicFill, 
@@ -20,8 +19,10 @@ import {
 } from 'react-icons/md';
 import { FaMoon, FaSun, FaUser, FaCog, FaChartBar, FaQuestionCircle } from 'react-icons/fa';
 import { useTheme } from '../context/ThemeContext';
-import './ChatRoom.css';
 import EmojiPicker from 'emoji-picker-react';
+import './ChatRoom.css';
+
+const Peer = require('peerjs');
 
 const SOCKET_URL = window.location.hostname === 'ruletka.top' 
   ? 'wss://ruletka.top' 
