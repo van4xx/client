@@ -123,12 +123,44 @@ function ChatRoom() {
 
     peer.on('connect', () => {
       console.log('Peer connection established');
+      if (peer.streams[0]) {
+        peer.streams[0].getTracks().forEach(track => {
+          console.log(`Remote ${track.kind} track:`, {
+            enabled: track.enabled,
+            muted: track.muted,
+            readyState: track.readyState
+          });
+        });
+      }
     });
 
     peer.on('stream', (remoteStream) => {
       console.log('Got remote stream:', remoteStream);
       console.log('Audio tracks:', remoteStream.getAudioTracks().length);
       console.log('Video tracks:', remoteStream.getVideoTracks().length);
+
+      if (remoteVideoRef.current) {
+        remoteVideoRef.current.srcObject = remoteStream;
+        remoteVideoRef.current.volume = 1;
+        remoteVideoRef.current.muted = false;
+        
+        remoteStream.getTracks().forEach(track => {
+          track.enabled = true;
+        });
+
+        remoteVideoRef.current.play()
+          .then(() => {
+            console.log('Remote stream playing successfully');
+          })
+          .catch(err => {
+            console.error('Error playing remote stream:', err);
+            remoteVideoRef.current.addEventListener('click', () => {
+              remoteVideoRef.current.play()
+                .then(() => console.log('Remote stream playing after click'))
+                .catch(e => console.error('Error playing after click:', e));
+            });
+          });
+      }
     });
 
     peer.on('track', (track, stream) => {
@@ -140,6 +172,14 @@ function ChatRoom() {
 
     peer.on('iceStateChange', (state) => {
       console.log('ICE state:', state);
+      if (state === 'connected') {
+        console.log('ICE connection established');
+        if (peer.streams[0]) {
+          peer.streams[0].getTracks().forEach(track => {
+            track.enabled = true;
+          });
+        }
+      }
     });
 
     peer.on('error', (err) => {
@@ -546,6 +586,26 @@ function ChatRoom() {
         console.error('Remote video error:', err);
       };
     }
+  }, []);
+
+  useEffect(() => {
+    // Проверяем доступность устройств при загрузке
+    async function checkDevices() {
+      try {
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const hasAudio = devices.some(device => device.kind === 'audioinput');
+        const hasVideo = devices.some(device => device.kind === 'videoinput');
+        
+        console.log('Available devices:', {
+          audio: hasAudio,
+          video: hasVideo
+        });
+      } catch (err) {
+        console.error('Error checking devices:', err);
+      }
+    }
+    
+    checkDevices();
   }, []);
 
   return (
