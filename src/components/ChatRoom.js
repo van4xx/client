@@ -1,7 +1,7 @@
 import 'webrtc-adapter';
 import React, { useState, useRef, useEffect } from 'react';
 import { io } from 'socket.io-client';
-import { Peer } from 'peerjs';
+import Peer from 'peerjs';
 import { IoMdSend } from 'react-icons/io';
 import { 
   BsMicFill, 
@@ -606,27 +606,34 @@ function ChatRoom() {
   }, []);
 
   useEffect(() => {
-    const peer = new Peer(undefined, {
-      host: 'ruletka.top',
-      port: 443,
+    const peerConfig = {
+      host: window.location.hostname === 'ruletka.top' ? 'ruletka.top' : 'localhost',
+      port: window.location.hostname === 'ruletka.top' ? 443 : 9000,
       path: '/peerjs',
-      secure: true,
+      secure: window.location.hostname === 'ruletka.top',
+      debug: 3,
       config: {
         iceServers: [
           { urls: 'stun:stun.l.google.com:19302' },
+          { urls: 'stun:stun1.l.google.com:19302' },
           {
-            urls: 'turn:numb.viagenie.ca:3478',
+            urls: 'turn:numb.viagenie.ca',
             username: 'webrtc@live.com',
             credential: 'muazkh'
           }
         ]
       }
-    });
+    };
+
+    const peer = new Peer(peerConfig);
 
     peer.on('open', (id) => {
       console.log('My peer ID is:', id);
       setPeerId(id);
-      socket.emit('peerReady', { peerId: id });
+    });
+
+    peer.on('error', (err) => {
+      console.error('Peer error:', err);
     });
 
     peer.on('call', async (incomingCall) => {
@@ -639,6 +646,7 @@ function ChatRoom() {
         setLocalStream(stream);
         if (localVideoRef.current) {
           localVideoRef.current.srcObject = stream;
+          await localVideoRef.current.play().catch(console.error);
         }
 
         incomingCall.answer(stream);
@@ -647,6 +655,7 @@ function ChatRoom() {
         incomingCall.on('stream', (remoteStream) => {
           if (remoteVideoRef.current) {
             remoteVideoRef.current.srcObject = remoteStream;
+            remoteVideoRef.current.play().catch(console.error);
           }
         });
       } catch (err) {
@@ -660,10 +669,12 @@ function ChatRoom() {
       if (call) call.close();
       peer.destroy();
     };
-  }, [chatMode]);
+  }, []);
 
   useEffect(() => {
     socket.on('chatStart', async ({ partnerId }) => {
+      if (!myPeer || !partnerId) return;
+      
       setIsSearching(false);
       setIsConnected(true);
 
@@ -676,15 +687,27 @@ function ChatRoom() {
         setLocalStream(stream);
         if (localVideoRef.current) {
           localVideoRef.current.srcObject = stream;
+          await localVideoRef.current.play().catch(console.error);
         }
 
+        console.log('Calling peer:', partnerId);
         const newCall = myPeer.call(partnerId, stream);
         setCall(newCall);
 
         newCall.on('stream', (remoteStream) => {
+          console.log('Received remote stream');
           if (remoteVideoRef.current) {
             remoteVideoRef.current.srcObject = remoteStream;
+            remoteVideoRef.current.play().catch(console.error);
           }
+        });
+
+        newCall.on('error', (err) => {
+          console.error('Call error:', err);
+        });
+
+        newCall.on('close', () => {
+          console.log('Call closed');
         });
 
       } catch (err) {
