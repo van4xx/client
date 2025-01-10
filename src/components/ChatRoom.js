@@ -34,7 +34,7 @@ const socket = io(SOCKET_URL, {
   reconnectionDelay: 1000,
   autoConnect: true,
   withCredentials: false,
-  path: '/socket.io'
+  path: '/socket.io/'
 });
 
 socket.on('connect', () => {
@@ -48,57 +48,6 @@ socket.on('connect_error', (error) => {
 socket.on('disconnect', (reason) => {
   console.log('Disconnected:', reason);
 });
-
-const createPeer = (initiator = false, stream) => {
-  console.log('Creating peer with stream:', stream);
-  const peer = new Peer({
-    initiator,
-    trickle: true,
-    config: {
-      iceServers: [
-        { urls: 'stun:stun.l.google.com:19302' },
-        { urls: 'stun:stun1.l.google.com:19302' },
-        {
-          urls: 'turn:stun.l.google.com:19302',
-          username: 'webrtc',
-          credential: 'turnserver'
-        }
-      ]
-    },
-    stream: stream,
-    offerToReceiveAudio: true,
-    offerToReceiveVideo: chatMode === 'video'
-  });
-
-  peer.on('connect', () => {
-    console.log('Peer connection established');
-    if (stream) {
-      if (chatMode === 'video') {
-        const videoTrack = stream.getVideoTracks()[0];
-        if (videoTrack) {
-          console.log('Adding video track');
-          peer.addTrack(videoTrack, stream);
-        }
-      }
-      
-      const audioTrack = stream.getAudioTracks()[0];
-      if (audioTrack) {
-        console.log('Adding audio track');
-        peer.addTrack(audioTrack, stream);
-      }
-    }
-  });
-
-  peer.on('iceStateChange', (state) => {
-    console.log('ICE state:', state);
-  });
-
-  peer.on('error', (err) => {
-    console.error('Peer error:', err);
-  });
-
-  return peer;
-};
 
 function ChatRoom() {
   const [isConnected, setIsConnected] = useState(false);
@@ -147,6 +96,57 @@ function ChatRoom() {
       </div>
     </div>
   );
+
+  const createPeer = (initiator = false, stream, mode) => {
+    console.log('Creating peer with stream:', stream, 'mode:', mode);
+    const peer = new Peer({
+      initiator,
+      trickle: true,
+      config: {
+        iceServers: [
+          { urls: 'stun:stun.l.google.com:19302' },
+          { urls: 'stun:stun1.l.google.com:19302' },
+          {
+            urls: 'turn:stun.l.google.com:19302',
+            username: 'webrtc',
+            credential: 'turnserver'
+          }
+        ]
+      },
+      stream: stream,
+      offerToReceiveAudio: true,
+      offerToReceiveVideo: mode === 'video'
+    });
+
+    peer.on('connect', () => {
+      console.log('Peer connection established');
+      if (stream) {
+        if (mode === 'video') {
+          const videoTrack = stream.getVideoTracks()[0];
+          if (videoTrack) {
+            console.log('Adding video track');
+            peer.addTrack(videoTrack, stream);
+          }
+        }
+        
+        const audioTrack = stream.getAudioTracks()[0];
+        if (audioTrack) {
+          console.log('Adding audio track');
+          peer.addTrack(audioTrack, stream);
+        }
+      }
+    });
+
+    peer.on('iceStateChange', (state) => {
+      console.log('ICE state:', state);
+    });
+
+    peer.on('error', (err) => {
+      console.error('Peer error:', err);
+    });
+
+    return peer;
+  };
 
   useEffect(() => {
     async function setupMediaStream() {
@@ -373,7 +373,7 @@ function ChatRoom() {
       // Если есть peer соединение, пересоздаем его с новыми настройками
       if (peer && localStream) {
         peer.destroy();
-        const newPeer = createPeer(true, localStream);
+        const newPeer = createPeer(true, localStream, mode);
         setPeer(newPeer);
       }
     }
@@ -397,7 +397,7 @@ function ChatRoom() {
 
       try {
         console.log('Creating peer as initiator');
-        const newPeer = createPeer(true, localStream);
+        const newPeer = createPeer(true, localStream, chatMode);
         
         newPeer.on('signal', data => {
           console.log('Sending signal:', data.type);
@@ -469,7 +469,7 @@ function ChatRoom() {
       } else if (localStream) {
         try {
           console.log('Creating peer as receiver');
-          const newPeer = createPeer(false, localStream);
+          const newPeer = createPeer(false, localStream, chatMode);
 
           newPeer.on('signal', data => {
             console.log('Sending signal:', data.type);
