@@ -57,19 +57,14 @@ const createPeer = (initiator = false, stream) => {
     config: {
       iceServers: [
         { urls: 'stun:stun.l.google.com:19302' },
-        { urls: 'stun:stun1.l.google.com:19302' },
-        {
-          urls: 'turn:turn.ruletka.top:3478',
-          username: 'webrtc',
-          credential: 'turnserver'
-        }
+        { urls: 'stun:stun1.l.google.com:19302' }
       ]
     },
     stream: stream,
-    objectMode: true,
-    sdpTransform: (sdp) => {
-      // Принудительно включаем план-б для лучшей совместимости
-      return sdp.replace('a=group:BUNDLE 0', 'a=group:BUNDLE audio video');
+    streams: [stream],
+    offerOptions: {
+      offerToReceiveAudio: true,
+      offerToReceiveVideo: true
     }
   });
 };
@@ -329,12 +324,16 @@ function ChatRoom() {
         const newPeer = createPeer(true, localStream);
         
         newPeer.on('signal', data => {
-          console.log('Sending signal');
+          console.log('Sending signal:', data.type);
           socket.emit('signal', { signal: data, room });
         });
 
+        newPeer.on('connect', () => {
+          console.log('Peer connection established');
+        });
+
         newPeer.on('stream', stream => {
-          console.log('Received remote stream');
+          console.log('Received remote stream:', stream.id);
           if (remoteVideoRef.current) {
             remoteVideoRef.current.srcObject = stream;
             remoteVideoRef.current.play().catch(err => {
@@ -343,12 +342,12 @@ function ChatRoom() {
           }
         });
 
-        newPeer.on('error', err => {
-          console.error('Peer error:', err);
+        newPeer.on('track', (track, stream) => {
+          console.log('Received track:', track.kind, 'from stream:', stream.id);
         });
 
-        newPeer.on('connect', () => {
-          console.log('Peer connection established');
+        newPeer.on('error', err => {
+          console.error('Peer error:', err);
         });
 
         setPeer(newPeer);
@@ -358,7 +357,7 @@ function ChatRoom() {
     });
 
     socket.on('signal', ({ signal }) => {
-      console.log('Received signal');
+      console.log('Received signal:', signal.type);
       if (peer) {
         try {
           peer.signal(signal);
@@ -371,11 +370,16 @@ function ChatRoom() {
           const newPeer = createPeer(false, localStream);
 
           newPeer.on('signal', data => {
+            console.log('Sending signal:', data.type);
             socket.emit('signal', { signal: data, room: roomId });
           });
 
+          newPeer.on('connect', () => {
+            console.log('Peer connection established');
+          });
+
           newPeer.on('stream', stream => {
-            console.log('Received remote stream from new peer');
+            console.log('Received remote stream:', stream.id);
             if (remoteVideoRef.current) {
               remoteVideoRef.current.srcObject = stream;
               remoteVideoRef.current.play().catch(err => {
@@ -384,12 +388,8 @@ function ChatRoom() {
             }
           });
 
-          newPeer.on('connect', () => {
-            console.log('Peer connection established');
-          });
-
-          newPeer.on('error', err => {
-            console.error('New peer error:', err);
+          newPeer.on('track', (track, stream) => {
+            console.log('Received track:', track.kind, 'from stream:', stream.id);
           });
 
           newPeer.signal(signal);
