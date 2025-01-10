@@ -24,7 +24,7 @@ import './ChatRoom.css';
 import EmojiPicker from 'emoji-picker-react';
 
 const SOCKET_URL = window.location.hostname === 'ruletka.top' 
-  ? 'wss://ruletka.top' 
+  ? 'wss://ruletka.top:5001' 
   : 'http://localhost:5001';
 
 const socket = io(SOCKET_URL, {
