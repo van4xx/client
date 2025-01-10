@@ -678,6 +678,79 @@ function ChatRoom() {
     });
   };
 
+  const createReceiveTransport = async () => {
+    socket.emit('createTransport', { sender: false }, async ({ params }) => {
+      if (params.error) {
+        console.error('Error creating receive transport:', params.error);
+        return;
+      }
+
+      try {
+        const transport = device.createRecvTransport(params);
+
+        transport.on('connect', ({ dtlsParameters }, callback, errback) => {
+          socket.emit('connectTransport', {
+            transportId: transport.id,
+            dtlsParameters,
+            sender: false
+          }, callback);
+        });
+
+        transport.on('connectionstatechange', (state) => {
+          console.log('Receive transport connection state:', state);
+        });
+
+        setConsumerTransport(transport);
+      } catch (error) {
+        console.error('Error creating receive transport:', error);
+      }
+    });
+  };
+
+  const consumeStream = async (producerId, kind) => {
+    try {
+      const { rtpCapabilities } = device;
+      const data = await new Promise((resolve) => {
+        socket.emit('consume', {
+          rtpCapabilities,
+          producerId,
+          transportId: consumerTransport.id
+        }, resolve);
+      });
+
+      const consumer = await consumerTransport.consume({
+        id: data.id,
+        producerId: data.producerId,
+        kind,
+        rtpParameters: data.rtpParameters
+      });
+
+      const stream = new MediaStream([consumer.track]);
+
+      if (kind === 'video' && remoteVideoRef.current) {
+        remoteVideoRef.current.srcObject = stream;
+      } else if (kind === 'audio' && remoteVideoRef.current) {
+        const currentStream = remoteVideoRef.current.srcObject || new MediaStream();
+        currentStream.addTrack(consumer.track);
+        remoteVideoRef.current.srcObject = currentStream;
+      }
+
+      socket.emit('resume');
+    } catch (error) {
+      console.error('Error consuming stream:', error);
+    }
+  };
+
+  useEffect(() => {
+    socket.on('newProducer', ({ producerId, kind }) => {
+      consumeStream(producerId, kind);
+    });
+
+    return () => {
+      socket.off('newProducer');
+    };
+  }, [consumerTransport, device]);
+
   const startStreaming = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
