@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { io } from 'socket.io-client';
-import Peer from 'simple-peer';
+import Peer from 'simple-peer-light';
 import { IoMdSend } from 'react-icons/io';
 import { 
   BsMicFill, 
@@ -48,14 +48,25 @@ socket.on('disconnect', (reason) => {
   console.log('Disconnected:', reason);
 });
 
-const configuration = {
-  iceServers: [
-    { urls: 'stun:stun.l.google.com:19302' },
-    { urls: 'stun:stun1.l.google.com:19302' },
-    { urls: 'stun:stun2.l.google.com:19302' },
-    { urls: 'stun:stun3.l.google.com:19302' },
-    { urls: 'stun:stun4.l.google.com:19302' },
-  ]
+const createPeer = (initiator = false, stream) => {
+  console.log('Creating peer with stream:', stream);
+  return new Peer({
+    initiator,
+    trickle: false,
+    config: {
+      iceServers: [
+        { urls: 'stun:stun.l.google.com:19302' },
+        { urls: 'stun:stun1.l.google.com:19302' },
+        {
+          urls: 'turn:turn.ruletka.top:3478',
+          username: 'webrtc',
+          credential: 'turnserver'
+        }
+      ]
+    },
+    stream: stream,
+    objectMode: true
+  });
 };
 
 function ChatRoom() {
@@ -107,14 +118,22 @@ function ChatRoom() {
   );
 
   useEffect(() => {
-    navigator.mediaDevices.getUserMedia({ video: true, audio: true })
-      .then(stream => {
+    async function setupMediaStream() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ 
+          video: true, 
+          audio: true 
+        });
         setLocalStream(stream);
         if (localVideoRef.current) {
           localVideoRef.current.srcObject = stream;
         }
-      })
-      .catch(err => console.error('Error accessing media devices:', err));
+      } catch (err) {
+        console.error('Error accessing media devices:', err);
+      }
+    }
+    
+    setupMediaStream();
 
     return () => {
       if (localStream) {
@@ -295,50 +314,84 @@ function ChatRoom() {
       setIsConnected(true);
       setRoomId(room);
 
-      // Создаем новое peer-соединение
-      const newPeer = new Peer({
-        initiator: true,
-        trickle: false,
-        config: configuration,
-        stream: localStream
-      });
+      if (!localStream) {
+        console.error('No local stream available');
+        return;
+      }
 
-      newPeer.on('signal', data => {
-        socket.emit('signal', { signal: data, room });
-      });
-
-      newPeer.on('stream', stream => {
-        if (remoteVideoRef.current) {
-          remoteVideoRef.current.srcObject = stream;
-        }
-      });
-
-      setPeer(newPeer);
-    });
-
-    socket.on('signal', ({ signal }) => {
-      if (peer) {
-        peer.signal(signal);
-      } else {
-        const newPeer = new Peer({
-          initiator: false,
-          trickle: false,
-          config: configuration,
-          stream: localStream
-        });
-
+      try {
+        console.log('Creating peer as initiator');
+        const newPeer = createPeer(true, localStream);
+        
         newPeer.on('signal', data => {
-          socket.emit('signal', { signal: data, room: roomId });
+          console.log('Sending signal');
+          socket.emit('signal', { signal: data, room });
         });
 
         newPeer.on('stream', stream => {
+          console.log('Received remote stream');
           if (remoteVideoRef.current) {
             remoteVideoRef.current.srcObject = stream;
+            remoteVideoRef.current.play().catch(err => {
+              console.error('Error playing remote stream:', err);
+            });
           }
         });
 
-        newPeer.signal(signal);
+        newPeer.on('error', err => {
+          console.error('Peer error:', err);
+        });
+
+        newPeer.on('connect', () => {
+          console.log('Peer connection established');
+        });
+
         setPeer(newPeer);
+      } catch (err) {
+        console.error('Error creating peer:', err);
+      }
+    });
+
+    socket.on('signal', ({ signal }) => {
+      console.log('Received signal');
+      if (peer) {
+        try {
+          peer.signal(signal);
+        } catch (err) {
+          console.error('Error signaling to peer:', err);
+        }
+      } else if (localStream) {
+        try {
+          console.log('Creating peer as receiver');
+          const newPeer = createPeer(false, localStream);
+
+          newPeer.on('signal', data => {
+            socket.emit('signal', { signal: data, room: roomId });
+          });
+
+          newPeer.on('stream', stream => {
+            console.log('Received remote stream from new peer');
+            if (remoteVideoRef.current) {
+              remoteVideoRef.current.srcObject = stream;
+              remoteVideoRef.current.play().catch(err => {
+                console.error('Error playing remote stream:', err);
+              });
+            }
+          });
+
+          newPeer.on('connect', () => {
+            console.log('Peer connection established');
+          });
+
+          newPeer.on('error', err => {
+            console.error('New peer error:', err);
+          });
+
+          newPeer.signal(signal);
+          setPeer(newPeer);
+        } catch (err) {
+          console.error('Error creating new peer:', err);
+        }
       }
     });
 
