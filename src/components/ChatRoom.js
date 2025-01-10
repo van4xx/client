@@ -106,17 +106,27 @@ function ChatRoom() {
         iceServers: [
           { urls: 'stun:stun.l.google.com:19302' },
           { urls: 'stun:stun1.l.google.com:19302' },
-          { urls: 'stun:stun2.l.google.com:19302' },
-          { 
-            urls: 'turn:numb.viagenie.ca',
+          {
+            urls: 'turn:numb.viagenie.ca:3478',
             username: 'webrtc@live.com',
             credential: 'muazkh'
+          },
+          {
+            urls: 'turn:turn.anyfirewall.com:443?transport=tcp',
+            username: 'webrtc',
+            credential: 'webrtc'
           }
-        ]
+        ],
+        iceCandidatePoolSize: 10,
+        iceTransportPolicy: 'all'
       },
       stream: stream,
       offerToReceiveAudio: true,
-      offerToReceiveVideo: mode === 'video'
+      offerToReceiveVideo: mode === 'video',
+      sdpSemantics: 'unified-plan',
+      reconnectTimer: 3000,
+      iceCompleteTimeout: 5000,
+      retries: 2
     });
 
     peer.on('connect', () => {
@@ -129,28 +139,40 @@ function ChatRoom() {
       }
     });
 
+    peer.on('iceStateChange', (state) => {
+      console.log('ICE state:', state);
+      if (state === 'disconnected' || state === 'failed') {
+        console.log('Attempting to restart ICE');
+        peer._pc.restartIce();
+      }
+    });
+
+    peer.on('error', (err) => {
+      console.error('Peer error:', err);
+      if (!peer.destroyed) {
+        peer.destroy();
+        const newPeer = createPeer(initiator, stream, mode);
+        setPeer(newPeer);
+      }
+    });
+
     peer.on('stream', (remoteStream) => {
       console.log('Got remote stream:', remoteStream);
-      console.log('Remote audio tracks:', remoteStream.getAudioTracks().map(t => ({
-        enabled: t.enabled,
-        muted: t.muted,
-        readyState: t.readyState
-      })));
-      console.log('Remote video tracks:', remoteStream.getVideoTracks().map(t => ({
-        enabled: t.enabled,
-        muted: t.muted,
-        readyState: t.readyState
-      })));
-
-      remoteStream.getTracks().forEach(track => {
-        track.enabled = true;
-        console.log(`Remote ${track.kind} track enabled:`, track.enabled);
-      });
-
+      
       if (remoteVideoRef.current) {
+        const oldStream = remoteVideoRef.current.srcObject;
+        const oldTracks = oldStream ? [...oldStream.getTracks()] : [];
+        
         remoteVideoRef.current.srcObject = remoteStream;
         remoteVideoRef.current.muted = false;
         remoteVideoRef.current.volume = 1;
+
+        remoteStream.getTracks().forEach(track => {
+          track.enabled = true;
+          console.log(`Remote ${track.kind} track enabled:`, track.enabled);
+        });
+
+        oldTracks.forEach(track => track.stop());
 
         const playVideo = async () => {
           try {
@@ -158,14 +180,16 @@ function ChatRoom() {
             console.log('Remote stream playing successfully');
           } catch (err) {
             console.error('Error playing remote stream:', err);
-            document.addEventListener('click', async () => {
+            const playOnClick = async () => {
               try {
                 await remoteVideoRef.current.play();
-                console.log('Remote stream playing after user interaction');
+                document.removeEventListener('click', playOnClick);
+                console.log('Remote stream playing after click');
               } catch (e) {
-                console.error('Error playing after interaction:', e);
+                console.error('Error playing after click:', e);
               }
-            }, { once: true });
+            };
+            document.addEventListener('click', playOnClick);
           }
         };
 
@@ -202,10 +226,6 @@ function ChatRoom() {
           });
         }
       }
-    });
-
-    peer.on('error', (err) => {
-      console.error('Peer error:', err);
     });
 
     return peer;
@@ -502,59 +522,53 @@ function ChatRoom() {
   };
 
   useEffect(() => {
-    socket.on('connect', () => {
-      console.log('Connected to server with ID:', socket.id);
-    });
-
-    socket.on('chatStart', ({ room }) => {
+    socket.on('chatStart', async ({ room }) => {
       console.log('Chat started in room:', room);
       setRoomId(room);
       setIsConnected(true);
       setIsSearching(false);
 
-      // Получаем медиапоток
-      setupMediaStream();
+      try {
+        await setupMediaStream();
+      } catch (err) {
+        console.error('Error setting up media stream:', err);
+      }
     });
 
-    socket.on('signal', (data) => {
-      console.log('Received signal:', data.type);
-      if (peer) {
-        peer.signal(data);
+    socket.on('signal', async ({ signal }) => {
+      console.log('Received signal:', signal.type);
+      if (peer && !peer.destroyed) {
+        try {
+          await peer.signal(signal);
+        } catch (err) {
+          console.error('Error processing signal:', err);
+          // Пересоздаем peer при ошибке сигналинга
+          peer.destroy();
+          const newPeer = createPeer(false, localStream, chatMode);
+          setPeer(newPeer);
+        }
       }
     });
 
     socket.on('partnerLeft', () => {
       console.log('Partner left');
+      if (peer) {
+        peer.destroy();
+        setPeer(null);
+      }
       setIsConnected(false);
       setRoomId(null);
-      setPeer(null);
-    });
-
-    socket.on('message', (message) => {
-      console.log('Received message:', message);
-      setMessages(prev => [...prev, { ...message, sender: message.sender === socket.id ? 'me' : 'partner' }]);
-    });
-
-    socket.on('disconnect', () => {
-      console.log('Disconnected from server');
-      setIsConnected(false);
-      setIsSearching(false);
-      setRoomId(null);
-      setPeer(null);
     });
 
     return () => {
-      socket.off('connect');
       socket.off('chatStart');
-      socket.off('partnerLeft');
-      socket.off('message');
-      socket.off('disconnect');
       socket.off('signal');
+      socket.off('partnerLeft');
       if (peer) {
         peer.destroy();
       }
     };
-  }, [peer]);
+  }, [peer, localStream, chatMode]);
 
   useEffect(() => {
     if (localVideoRef.current) {
