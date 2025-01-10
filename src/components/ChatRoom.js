@@ -107,9 +107,7 @@ function ChatRoom() {
           { urls: 'stun:stun.l.google.com:19302' },
           { urls: 'stun:stun1.l.google.com:19302' },
           { urls: 'stun:stun2.l.google.com:19302' },
-          { urls: 'stun:stun3.l.google.com:19302' },
-          { urls: 'stun:stun4.l.google.com:19302' },
-          {
+          { 
             urls: 'turn:numb.viagenie.ca',
             username: 'webrtc@live.com',
             credential: 'muazkh'
@@ -123,50 +121,69 @@ function ChatRoom() {
 
     peer.on('connect', () => {
       console.log('Peer connection established');
-      if (peer.streams[0]) {
-        peer.streams[0].getTracks().forEach(track => {
-          console.log(`Remote ${track.kind} track:`, {
-            enabled: track.enabled,
-            muted: track.muted,
-            readyState: track.readyState
-          });
+      if (stream) {
+        stream.getTracks().forEach(track => {
+          track.enabled = true;
+          console.log(`Local ${track.kind} track enabled:`, track.enabled);
         });
       }
     });
 
     peer.on('stream', (remoteStream) => {
       console.log('Got remote stream:', remoteStream);
-      console.log('Audio tracks:', remoteStream.getAudioTracks().length);
-      console.log('Video tracks:', remoteStream.getVideoTracks().length);
+      console.log('Remote audio tracks:', remoteStream.getAudioTracks().map(t => ({
+        enabled: t.enabled,
+        muted: t.muted,
+        readyState: t.readyState
+      })));
+      console.log('Remote video tracks:', remoteStream.getVideoTracks().map(t => ({
+        enabled: t.enabled,
+        muted: t.muted,
+        readyState: t.readyState
+      })));
+
+      remoteStream.getTracks().forEach(track => {
+        track.enabled = true;
+        console.log(`Remote ${track.kind} track enabled:`, track.enabled);
+      });
 
       if (remoteVideoRef.current) {
         remoteVideoRef.current.srcObject = remoteStream;
-        remoteVideoRef.current.volume = 1;
         remoteVideoRef.current.muted = false;
-        
-        remoteStream.getTracks().forEach(track => {
-          track.enabled = true;
-        });
+        remoteVideoRef.current.volume = 1;
 
-        remoteVideoRef.current.play()
-          .then(() => {
+        const playVideo = async () => {
+          try {
+            await remoteVideoRef.current.play();
             console.log('Remote stream playing successfully');
-          })
-          .catch(err => {
+          } catch (err) {
             console.error('Error playing remote stream:', err);
-            remoteVideoRef.current.addEventListener('click', () => {
-              remoteVideoRef.current.play()
-                .then(() => console.log('Remote stream playing after click'))
-                .catch(e => console.error('Error playing after click:', e));
-            });
-          });
+            document.addEventListener('click', async () => {
+              try {
+                await remoteVideoRef.current.play();
+                console.log('Remote stream playing after user interaction');
+              } catch (e) {
+                console.error('Error playing after interaction:', e);
+              }
+            }, { once: true });
+          }
+        };
+
+        playVideo();
       }
     });
 
     peer.on('track', (track, stream) => {
-      console.log('Received track:', track.kind);
+      console.log('Received track:', track.kind, 'enabled:', track.enabled);
+      track.enabled = true;
+      
       track.onunmute = () => {
         console.log('Track unmuted:', track.kind);
+        track.enabled = true;
+      };
+
+      track.onended = () => {
+        console.log('Track ended:', track.kind);
       };
     });
 
@@ -177,6 +194,11 @@ function ChatRoom() {
         if (peer.streams[0]) {
           peer.streams[0].getTracks().forEach(track => {
             track.enabled = true;
+            console.log(`Remote ${track.kind} track after ICE:`, {
+              enabled: track.enabled,
+              muted: track.muted,
+              readyState: track.readyState
+            });
           });
         }
       }
