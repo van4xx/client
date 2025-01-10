@@ -22,6 +22,7 @@ import { FaMoon, FaSun, FaUser, FaCog, FaChartBar, FaQuestionCircle } from 'reac
 import { useTheme } from '../context/ThemeContext';
 import './ChatRoom.css';
 import EmojiPicker from 'emoji-picker-react';
+import { Device } from 'mediasoup-client';
 
 const SOCKET_URL = window.location.hostname === 'ruletka.top' 
   ? 'wss://ruletka.top' 
@@ -84,6 +85,12 @@ function ChatRoom() {
   const fileInputRef = useRef(null);
 
   const [chatMode, setChatMode] = useState('video');
+
+  const [device, setDevice] = useState(null);
+  const [producerTransport, setProducerTransport] = useState(null);
+  const [consumerTransport, setConsumerTransport] = useState(null);
+  const [audioProducer, setAudioProducer] = useState(null);
+  const [videoProducer, setVideoProducer] = useState(null);
 
   const Modal = ({ title, onClose, children }) => (
     <div className="modal-overlay" onClick={onClose}>
@@ -629,6 +636,72 @@ function ChatRoom() {
     
     checkDevices();
   }, []);
+
+  useEffect(() => {
+    const initializeDevice = async () => {
+      try {
+        const device = new Device();
+        
+        socket.emit('createRoom');
+        
+        socket.on('roomCreated', async ({ rtpCapabilities }) => {
+          await device.load({ routerRtpCapabilities: rtpCapabilities });
+          setDevice(device);
+          
+          // Создаем транспорты
+          await createSendTransport();
+          await createReceiveTransport();
+        });
+      } catch (error) {
+        console.error('Error initializing device', error);
+      }
+    };
+
+    initializeDevice();
+  }, []);
+
+  const createSendTransport = async () => {
+    socket.emit('createTransport', { sender: true }, async ({ params }) => {
+      const transport = device.createSendTransport(params);
+      
+      transport.on('connect', async ({ dtlsParameters }, callback, errback) => {
+        socket.emit('connectTransport', { dtlsParameters, sender: true }, callback);
+      });
+
+      transport.on('produce', async ({ kind, rtpParameters }, callback, errback) => {
+        socket.emit('produce', { kind, rtpParameters }, ({ id }) => {
+          callback({ id });
+        });
+      });
+
+      setProducerTransport(transport);
+    });
+  };
+
+  const startStreaming = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: true,
+        video: chatMode === 'video'
+      });
+
+      if (stream.getAudioTracks().length > 0) {
+        const track = stream.getAudioTracks()[0];
+        const producer = await producerTransport.produce({ track });
+        setAudioProducer(producer);
+      }
+
+      if (stream.getVideoTracks().length > 0) {
+        const track = stream.getVideoTracks()[0];
+        const producer = await producerTransport.produce({ track });
+        setVideoProducer(producer);
+      }
+
+      setLocalStream(stream);
+    } catch (error) {
+      console.error('Error starting stream', error);
+    }
+  };
 
   return (
     <div className={`chat-room ${theme}`}>
