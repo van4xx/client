@@ -1,6 +1,7 @@
+import 'webrtc-adapter';
 import React, { useState, useRef, useEffect } from 'react';
 import { io } from 'socket.io-client';
-import Peer from 'simple-peer-light';
+import Peer from 'simple-peer';
 import { IoMdSend } from 'react-icons/io';
 import { 
   BsMicFill, 
@@ -65,7 +66,11 @@ const createPeer = (initiator = false, stream) => {
       ]
     },
     stream: stream,
-    objectMode: true
+    objectMode: true,
+    sdpTransform: (sdp) => {
+      // Принудительно включаем план-б для лучшей совместимости
+      return sdp.replace('a=group:BUNDLE 0', 'a=group:BUNDLE audio video');
+    }
   });
 };
 
