@@ -53,12 +53,12 @@ const createPeer = (initiator = false, stream) => {
   console.log('Creating peer with stream:', stream);
   const peer = new Peer({
     initiator,
-    trickle: false,
+    trickle: true,
     config: {
       iceServers: [
         { urls: 'stun:stun.l.google.com:19302' },
         { urls: 'stun:stun1.l.google.com:19302' },
-        { 
+        {
           urls: 'turn:stun.l.google.com:19302',
           username: 'webrtc',
           credential: 'turnserver'
@@ -66,9 +66,26 @@ const createPeer = (initiator = false, stream) => {
       ]
     },
     stream: stream,
-    offerOptions: {
-      offerToReceiveAudio: true,
-      offerToReceiveVideo: true
+    offerToReceiveAudio: true,
+    offerToReceiveVideo: chatMode === 'video'
+  });
+
+  peer.on('connect', () => {
+    console.log('Peer connection established');
+    if (stream) {
+      if (chatMode === 'video') {
+        const videoTrack = stream.getVideoTracks()[0];
+        if (videoTrack) {
+          console.log('Adding video track');
+          peer.addTrack(videoTrack, stream);
+        }
+      }
+      
+      const audioTrack = stream.getAudioTracks()[0];
+      if (audioTrack) {
+        console.log('Adding audio track');
+        peer.addTrack(audioTrack, stream);
+      }
     }
   });
 
@@ -76,13 +93,8 @@ const createPeer = (initiator = false, stream) => {
     console.log('ICE state:', state);
   });
 
-  peer.on('connect', () => {
-    console.log('Peer connection established');
-    if (stream) {
-      stream.getTracks().forEach(track => {
-        peer.addTrack(track, stream);
-      });
-    }
+  peer.on('error', (err) => {
+    console.error('Peer error:', err);
   });
 
   return peer;
@@ -139,22 +151,35 @@ function ChatRoom() {
   useEffect(() => {
     async function setupMediaStream() {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: {
-            width: { ideal: 1280 },
-            height: { ideal: 720 },
-            frameRate: { ideal: 30 }
-          },
-          audio: {
-            echoCancellation: true,
-            noiseSuppression: true,
-            autoGainControl: true
-          }
-        });
+        const constraints = chatMode === 'video' 
+          ? {
+              video: {
+                width: { ideal: 1280 },
+                height: { ideal: 720 },
+                frameRate: { ideal: 30 }
+              },
+              audio: {
+                echoCancellation: true,
+                noiseSuppression: true,
+                autoGainControl: true
+              }
+            }
+          : {
+              video: false,
+              audio: {
+                echoCancellation: true,
+                noiseSuppression: true,
+                autoGainControl: true
+              }
+            };
 
-        console.log('Got media stream:', stream);
-        console.log('Video tracks:', stream.getVideoTracks());
-        console.log('Audio tracks:', stream.getAudioTracks());
+        const stream = await navigator.mediaDevices.getUserMedia(constraints);
+        console.log(`Got media stream for ${chatMode} mode:`, stream);
+        
+        if (chatMode === 'audio') {
+          console.log('Audio-only mode, video tracks:', stream.getVideoTracks().length);
+        }
+        console.log('Audio tracks:', stream.getAudioTracks().length);
 
         setLocalStream(stream);
         if (localVideoRef.current) {
@@ -327,13 +352,29 @@ function ChatRoom() {
       setChatMode(mode);
       socket.emit('setChatMode', mode);
       
-      // Обновляем состояние видеотрека
+      // Обновляем состояние видео и аудио треков
       if (localStream) {
-        const videoTrack = localStream.getVideoTracks()[0];
-        if (videoTrack) {
-          videoTrack.enabled = mode === 'video';
-          setIsVideoOff(mode === 'audio');
-        }
+        // Управляем видеотреками
+        localStream.getVideoTracks().forEach(track => {
+          track.enabled = mode === 'video';
+          if (mode === 'audio') {
+            track.stop(); // Полностью останавливаем видеотрек в аудио режиме
+          }
+        });
+
+        // Убеждаемся, что аудио включено в аудио режиме
+        localStream.getAudioTracks().forEach(track => {
+          track.enabled = true;
+        });
+
+        setIsVideoOff(mode === 'audio');
+      }
+
+      // Если есть peer соединение, пересоздаем его с новыми настройками
+      if (peer && localStream) {
+        peer.destroy();
+        const newPeer = createPeer(true, localStream);
+        setPeer(newPeer);
       }
     }
   };
@@ -373,15 +414,31 @@ function ChatRoom() {
           console.log('Remote audio tracks:', stream.getAudioTracks());
 
           if (remoteVideoRef.current) {
-            remoteVideoRef.current.srcObject = stream;
             try {
+              stream.getVideoTracks().forEach(track => {
+                track.enabled = true;
+                console.log('Video track enabled:', track.enabled);
+              });
+              
+              stream.getAudioTracks().forEach(track => {
+                track.enabled = true;
+                console.log('Audio track enabled:', track.enabled);
+              });
+
+              remoteVideoRef.current.srcObject = stream;
+              remoteVideoRef.current.volume = 1;
+              
               await remoteVideoRef.current.play();
               console.log('Remote video playing');
             } catch (err) {
-              console.error('Error playing remote video:', err);
-              // Пробуем воспроизвести видео по клику пользователя
-              remoteVideoRef.current.addEventListener('click', () => {
-                remoteVideoRef.current.play();
+              console.error('Error playing remote stream:', err);
+              remoteVideoRef.current.addEventListener('click', async () => {
+                try {
+                  await remoteVideoRef.current.play();
+                  console.log('Remote video playing after click');
+                } catch (playErr) {
+                  console.error('Error playing after click:', playErr);
+                }
               });
             }
           }
@@ -429,15 +486,31 @@ function ChatRoom() {
             console.log('Remote audio tracks:', stream.getAudioTracks());
 
             if (remoteVideoRef.current) {
-              remoteVideoRef.current.srcObject = stream;
               try {
+                stream.getVideoTracks().forEach(track => {
+                  track.enabled = true;
+                  console.log('Video track enabled:', track.enabled);
+                });
+                
+                stream.getAudioTracks().forEach(track => {
+                  track.enabled = true;
+                  console.log('Audio track enabled:', track.enabled);
+                });
+
+                remoteVideoRef.current.srcObject = stream;
+                remoteVideoRef.current.volume = 1;
+                
                 await remoteVideoRef.current.play();
                 console.log('Remote video playing');
               } catch (err) {
-                console.error('Error playing remote video:', err);
-                // Пробуем воспроизвести видео по клику пользователя
-                remoteVideoRef.current.addEventListener('click', () => {
-                  remoteVideoRef.current.play();
+                console.error('Error playing remote stream:', err);
+                remoteVideoRef.current.addEventListener('click', async () => {
+                  try {
+                    await remoteVideoRef.current.play();
+                    console.log('Remote video playing after click');
+                  } catch (playErr) {
+                    console.error('Error playing after click:', playErr);
+                  }
                 });
               }
             }
