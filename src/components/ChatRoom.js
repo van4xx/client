@@ -1,7 +1,7 @@
 import 'webrtc-adapter';
 import React, { useState, useRef, useEffect } from 'react';
 import { io } from 'socket.io-client';
-import Peer from 'simple-peer';
+import { Peer } from 'peerjs';
 import { IoMdSend } from 'react-icons/io';
 import { 
   BsMicFill, 
@@ -84,6 +84,10 @@ function ChatRoom() {
   const fileInputRef = useRef(null);
 
   const [chatMode, setChatMode] = useState('video');
+
+  const [myPeer, setMyPeer] = useState(null);
+  const [peerId, setPeerId] = useState(null);
+  const [call, setCall] = useState(null);
 
   const Modal = ({ title, onClose, children }) => (
     <div className="modal-overlay" onClick={onClose}>
@@ -336,26 +340,24 @@ function ChatRoom() {
     }
   };
 
-  const startChat = () => {
+  const startChat = async () => {
     setIsSearching(true);
-    socket.emit('startSearch');
+    socket.emit('startSearch', { peerId });
   };
 
   const nextPartner = () => {
-    if (peer) {
-      peer.destroy();
-      setPeer(null);
+    if (call) {
+      call.close();
+      setCall(null);
     }
     
     if (localStream) {
       localStream.getTracks().forEach(track => track.stop());
       setLocalStream(null);
     }
-    
+
     setIsConnected(false);
-    setRoomId(null);
-    
-    socket.emit('startSearch');
+    startChat();
   };
 
   const toggleMic = () => {
@@ -602,6 +604,98 @@ function ChatRoom() {
     
     checkDevices();
   }, []);
+
+  useEffect(() => {
+    const peer = new Peer(undefined, {
+      host: 'ruletka.top',
+      port: 443,
+      path: '/peerjs',
+      secure: true,
+      config: {
+        iceServers: [
+          { urls: 'stun:stun.l.google.com:19302' },
+          {
+            urls: 'turn:numb.viagenie.ca:3478',
+            username: 'webrtc@live.com',
+            credential: 'muazkh'
+          }
+        ]
+      }
+    });
+
+    peer.on('open', (id) => {
+      console.log('My peer ID is:', id);
+      setPeerId(id);
+      socket.emit('peerReady', { peerId: id });
+    });
+
+    peer.on('call', async (incomingCall) => {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: chatMode === 'video',
+          audio: true
+        });
+        
+        setLocalStream(stream);
+        if (localVideoRef.current) {
+          localVideoRef.current.srcObject = stream;
+        }
+
+        incomingCall.answer(stream);
+        setCall(incomingCall);
+
+        incomingCall.on('stream', (remoteStream) => {
+          if (remoteVideoRef.current) {
+            remoteVideoRef.current.srcObject = remoteStream;
+          }
+        });
+      } catch (err) {
+        console.error('Failed to get local stream:', err);
+      }
+    });
+
+    setMyPeer(peer);
+
+    return () => {
+      if (call) call.close();
+      peer.destroy();
+    };
+  }, [chatMode]);
+
+  useEffect(() => {
+    socket.on('chatStart', async ({ partnerId }) => {
+      setIsSearching(false);
+      setIsConnected(true);
+
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: chatMode === 'video',
+          audio: true
+        });
+
+        setLocalStream(stream);
+        if (localVideoRef.current) {
+          localVideoRef.current.srcObject = stream;
+        }
+
+        const newCall = myPeer.call(partnerId, stream);
+        setCall(newCall);
+
+        newCall.on('stream', (remoteStream) => {
+          if (remoteVideoRef.current) {
+            remoteVideoRef.current.srcObject = remoteStream;
+          }
+        });
+
+      } catch (err) {
+        console.error('Failed to get local stream:', err);
+      }
+    });
+
+    return () => {
+      socket.off('chatStart');
+    };
+  }, [myPeer, chatMode]);
 
   return (
     <div className={`chat-room ${theme}`}>
