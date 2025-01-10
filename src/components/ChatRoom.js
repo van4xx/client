@@ -67,7 +67,7 @@ function ChatRoom() {
       <div className="modal-content" onClick={e => e.stopPropagation()}>
         <div className="modal-header">
           <h3>{title}</h3>
-          <button className="modal-close" onClick={onClose}>×</button>
+          <button className="modal-close" onClick={onClose} aria-label="Закрыть"></button>
         </div>
         {children}
       </div>
@@ -238,6 +238,146 @@ function ChatRoom() {
 
   return (
     <div className={`chat-room ${theme}`}>
+      {activeModal === 'settings' && (
+        <Modal title="Настройки" onClose={() => setActiveModal(null)}>
+          <div className="settings-content">
+            <div className="settings-group">
+              <h4>Устройства</h4>
+              <select className="settings-select">
+                <option>Выберите камеру</option>
+              </select>
+              <select className="settings-select">
+                <option>Выберите микрофон</option>
+              </select>
+              <select className="settings-select">
+                <option>Выберите динамики</option>
+              </select>
+            </div>
+
+            <div className="settings-group">
+              <h4>Качество видео</h4>
+              <select className="settings-select">
+                <option value="720">HD (720p)</option>
+                <option value="1080">Full HD (1080p)</option>
+                <option value="480">SD (480p)</option>
+              </select>
+            </div>
+
+            <div className="settings-group">
+              <h4>Внешний вид</h4>
+              <label className="theme-switch">
+                <input 
+                  type="checkbox" 
+                  checked={theme === 'dark'}
+                  onChange={toggleTheme}
+                />
+                <span className="switch-slider"></span>
+                <span className="switch-label">Темная тема</span>
+              </label>
+              <label className="settings-checkbox">
+                <input type="checkbox" />
+                <span>Компактный вид</span>
+              </label>
+              <label className="settings-checkbox">
+                <input type="checkbox" />
+                <span>Показывать время в чате</span>
+              </label>
+            </div>
+
+            <div className="settings-group">
+              <h4>Приватность</h4>
+              <label className="settings-checkbox">
+                <input type="checkbox" />
+                <span>Размытый фон</span>
+              </label>
+              <label className="settings-checkbox">
+                <input type="checkbox" />
+                <span>Шумоподавление</span>
+              </label>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {activeModal === 'stats' && (
+        <Modal title="Статистика" onClose={() => setActiveModal(null)}>
+          <div className="stats-content">
+            <div className="stats-section">
+              <h4>Общая статистика</h4>
+              <div className="stats-grid">
+                <div className="stat-card">
+                  <div className="stat-value">127</div>
+                  <div className="stat-label">Всего чатов</div>
+                </div>
+                <div className="stat-card">
+                  <div className="stat-value">45ч</div>
+                  <div className="stat-label">Общее время</div>
+                </div>
+                <div className="stat-card">
+                  <div className="stat-value">4.8</div>
+                  <div className="stat-label">Рейтинг</div>
+                </div>
+              </div>
+            </div>
+
+            <div className="stats-section">
+              <h4>За последние 7 дней</h4>
+              <div className="stats-chart">
+                <div className="chart-bar" style={{height: '60%'}}>
+                  <div className="chart-tooltip">
+                    <div className="tooltip-value">12 чатов</div>
+                    <div className="tooltip-stats">
+                      <div>Общее время: 2ч 15м</div>
+                      <div>Средняя длина: 11м</div>
+                    </div>
+                  </div>
+                  <span>Пн</span>
+                </div>
+                <div className="chart-bar" style={{height: '80%'}}>
+                  <div className="chart-tooltip">
+                    <div className="tooltip-value">18 чатов</div>
+                    <div className="tooltip-stats">
+                      <div>Общее время: 3ч 40м</div>
+                      <div>Средняя длина: 12м</div>
+                    </div>
+                  </div>
+                  <span>Вт</span>
+                </div>
+                <div className="chart-bar" style={{height: '40%'}}><span>Ср</span></div>
+                <div className="chart-bar" style={{height: '90%'}}><span>Чт</span></div>
+                <div className="chart-bar" style={{height: '70%'}}><span>Пт</span></div>
+                <div className="chart-bar" style={{height: '30%'}}><span>Сб</span></div>
+                <div className="chart-bar" style={{height: '50%'}}><span>Вс</span></div>
+              </div>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {activeModal === 'help' && (
+        <Modal title="Помощь" onClose={() => setActiveModal(null)}>
+          <div className="help-content">
+            <div className="help-section">
+              <h4>Горячие клавиши</h4>
+              <div className="shortcut-list">
+                <div className="shortcut-item">
+                  <span className="key">M</span>
+                  <span>Выключить микрофон</span>
+                </div>
+                <div className="shortcut-item">
+                  <span className="key">V</span>
+                  <span>Выключить видео</span>
+                </div>
+                <div className="shortcut-item">
+                  <span className="key">Esc</span>
+                  <span>Следующий собеседник</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </Modal>
+      )}
+
       <div className="video-grid">
         <div 
           className="video-box"
@@ -376,146 +516,6 @@ function ChatRoom() {
             </div>
           </button>
         </div>
-
-        {activeModal === 'settings' && (
-          <Modal title="Настройки" onClose={() => setActiveModal(null)}>
-            <div className="settings-content">
-              <div className="settings-group">
-                <h4>Устройства</h4>
-                <select className="settings-select">
-                  <option>Выберите камеру</option>
-                </select>
-                <select className="settings-select">
-                  <option>Выберите микрофон</option>
-                </select>
-                <select className="settings-select">
-                  <option>Выберите динамики</option>
-                </select>
-              </div>
-
-              <div className="settings-group">
-                <h4>Качество видео</h4>
-                <select className="settings-select">
-                  <option value="720">HD (720p)</option>
-                  <option value="1080">Full HD (1080p)</option>
-                  <option value="480">SD (480p)</option>
-                </select>
-              </div>
-
-              <div className="settings-group">
-                <h4>Внешний вид</h4>
-                <label className="theme-switch">
-                  <input 
-                    type="checkbox" 
-                    checked={theme === 'dark'}
-                    onChange={toggleTheme}
-                  />
-                  <span className="switch-slider"></span>
-                  <span className="switch-label">Темная тема</span>
-                </label>
-                <label className="settings-checkbox">
-                  <input type="checkbox" />
-                  <span>Компактный вид</span>
-                </label>
-                <label className="settings-checkbox">
-                  <input type="checkbox" />
-                  <span>Показывать время в чате</span>
-                </label>
-              </div>
-
-              <div className="settings-group">
-                <h4>Приватность</h4>
-                <label className="settings-checkbox">
-                  <input type="checkbox" />
-                  <span>Размытый фон</span>
-                </label>
-                <label className="settings-checkbox">
-                  <input type="checkbox" />
-                  <span>Шумоподавление</span>
-                </label>
-              </div>
-            </div>
-          </Modal>
-        )}
-
-        {activeModal === 'stats' && (
-          <Modal title="Статистика" onClose={() => setActiveModal(null)}>
-            <div className="stats-content">
-              <div className="stats-section">
-                <h4>Общая статистика</h4>
-                <div className="stats-grid">
-                  <div className="stat-card">
-                    <div className="stat-value">127</div>
-                    <div className="stat-label">Всего чатов</div>
-                  </div>
-                  <div className="stat-card">
-                    <div className="stat-value">45ч</div>
-                    <div className="stat-label">Общее время</div>
-                  </div>
-                  <div className="stat-card">
-                    <div className="stat-value">4.8</div>
-                    <div className="stat-label">Рейтинг</div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="stats-section">
-                <h4>За последние 7 дней</h4>
-                <div className="stats-chart">
-                  <div className="chart-bar" style={{height: '60%'}}>
-                    <div className="chart-tooltip">
-                      <div className="tooltip-value">12 чатов</div>
-                      <div className="tooltip-stats">
-                        <div>Общее время: 2ч 15м</div>
-                        <div>Средняя длина: 11м</div>
-                      </div>
-                    </div>
-                    <span>Пн</span>
-                  </div>
-                  <div className="chart-bar" style={{height: '80%'}}>
-                    <div className="chart-tooltip">
-                      <div className="tooltip-value">18 чатов</div>
-                      <div className="tooltip-stats">
-                        <div>Общее время: 3ч 40м</div>
-                        <div>Средняя длина: 12м</div>
-                      </div>
-                    </div>
-                    <span>Вт</span>
-                  </div>
-                  <div className="chart-bar" style={{height: '40%'}}><span>Ср</span></div>
-                  <div className="chart-bar" style={{height: '90%'}}><span>Чт</span></div>
-                  <div className="chart-bar" style={{height: '70%'}}><span>Пт</span></div>
-                  <div className="chart-bar" style={{height: '30%'}}><span>Сб</span></div>
-                  <div className="chart-bar" style={{height: '50%'}}><span>Вс</span></div>
-                </div>
-              </div>
-            </div>
-          </Modal>
-        )}
-
-        {activeModal === 'help' && (
-          <Modal title="Помощь" onClose={() => setActiveModal(null)}>
-            <div className="help-content">
-              <div className="help-section">
-                <h4>Горячие клавиши</h4>
-                <div className="shortcut-list">
-                  <div className="shortcut-item">
-                    <span className="key">M</span>
-                    <span>Выключить микрофон</span>
-                  </div>
-                  <div className="shortcut-item">
-                    <span className="key">V</span>
-                    <span>Выключить видео</span>
-                  </div>
-                  <div className="shortcut-item">
-                    <span className="key">Esc</span>
-                    <span>Следующий собеседник</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </Modal>
-        )}
       </div>
 
       <div className="chat-section">
