@@ -22,8 +22,6 @@ import { useTheme } from '../context/ThemeContext';
 import EmojiPicker from 'emoji-picker-react';
 import './ChatRoom.css';
 
-const Peer = require('peerjs');
-
 const SOCKET_URL = window.location.hostname === 'ruletka.top' 
   ? 'wss://ruletka.top' 
   : 'http://localhost:5001';
@@ -104,7 +102,7 @@ function ChatRoom() {
 
   const createPeer = (initiator = false, stream, mode) => {
     console.log('Creating peer:', { initiator, mode });
-    const peer = new Peer({
+    const peer = new window.Peer({
       initiator,
       trickle: true,
       config: {
@@ -626,7 +624,7 @@ function ChatRoom() {
       }
     };
 
-    const peer = new Peer(peerConfig);
+    const peer = new window.Peer(peerConfig);
 
     peer.on('open', (id) => {
       console.log('My peer ID is:', id);
