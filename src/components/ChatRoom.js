@@ -235,6 +235,34 @@ function ChatRoom() {
 
   return (
     <div className={`chat-room ${theme}`}>
+      {isSearching && (
+        <div className="modal-overlay searching-overlay">
+          <div className="searching-modal">
+            <div className="searching-content">
+              <div className="searching-text">Ищем собеседника...</div>
+              <div className="online-counter">
+                <div className="pulse-dot"></div>
+                Онлайн: 1,234
+              </div>
+              <div className="searching-spinner"></div>
+              <div className="searching-ripple">
+                <div className="ripple-circle"></div>
+                <div className="ripple-circle"></div>
+              </div>
+              <button 
+                className="cancel-search-btn"
+                onClick={() => {
+                  setIsSearching(false);
+                  socket.emit('cancelSearch');
+                }}
+              >
+                Отменить поиск
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="theme-toggle">
         <button onClick={toggleTheme} className="theme-toggle-btn">
           {theme === 'light' ? <FaMoon /> : <FaSun />}
@@ -310,16 +338,6 @@ function ChatRoom() {
             <button onClick={startChat} className="start-chat">
               Рулетим
             </button>
-          )}
-          {isSearching && (
-            <div className="searching-animation">
-              <div className="searching-text">Ищем собеседника...</div>
-              <div className="searching-spinner"></div>
-              <div className="searching-ripple">
-                <div className="ripple-circle"></div>
-                <div className="ripple-circle"></div>
-              </div>
-            </div>
           )}
           {isConnected && (
             <button onClick={nextPartner} className="next-partner">
