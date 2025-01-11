@@ -45,6 +45,11 @@ socket.on('connect_error', (error) => {
 
 socket.on('disconnect', (reason) => {
   console.log('Disconnected:', reason);
+  setIsConnected(false);
+  if (peerConnection) {
+    peerConnection.close();
+    setPeerConnection(null);
+  }
 });
 
 function ChatRoom() {
@@ -75,6 +80,11 @@ function ChatRoom() {
   const fileInputRef = useRef(null);
 
   const [chatMode, setChatMode] = useState('video');
+
+  const [isMuted, setIsMuted] = useState(false);
+  const [isVideoOff, setIsVideoOff] = useState(false);
+  const [inputMessage, setInputMessage] = useState('');
+  const [messages, setMessages] = useState([]);
 
   const Modal = ({ title, onClose, children }) => (
     <div className="modal-overlay" onClick={onClose}>
@@ -232,22 +242,26 @@ function ChatRoom() {
   const toggleMic = () => {
     if (localStream) {
       const audioTrack = localStream.getAudioTracks()[0];
-      audioTrack.enabled = !audioTrack.enabled;
-      setIsMuted(!isMuted);
+      if (audioTrack) {
+        audioTrack.enabled = !audioTrack.enabled;
+        setIsMuted(!audioTrack.enabled);
+      }
     }
   };
 
   const toggleVideo = () => {
     if (localStream) {
       const videoTrack = localStream.getVideoTracks()[0];
-      videoTrack.enabled = !videoTrack.enabled;
-      setIsVideoOff(!isVideoOff);
+      if (videoTrack) {
+        videoTrack.enabled = !videoTrack.enabled;
+        setIsVideoOff(!videoTrack.enabled);
+      }
     }
   };
 
   const sendMessage = (e) => {
     e.preventDefault();
-    if (inputMessage.trim() && isConnected) {
+    if (inputMessage.trim() && isConnected && peerConnection) {
       socket.emit('message', { text: inputMessage });
       setMessages(prev => [...prev, { text: inputMessage, sender: 'me' }]);
       setInputMessage('');
@@ -308,15 +322,15 @@ function ChatRoom() {
 
   const toggleHand = () => {
     setHandRaised(!handRaised);
-    if (peer && roomId) {
-      socket.emit('handRaised', { roomId, raised: !handRaised });
+    if (peerConnection && isConnected) {
+      socket.emit('handRaised', { raised: !handRaised });
     }
   };
 
   const sendNotification = () => {
     setNotificationSent(true);
-    if (peer && roomId) {
-      socket.emit('notification', { roomId });
+    if (peerConnection && isConnected) {
+      socket.emit('notification');
     }
     setTimeout(() => setNotificationSent(false), 3000);
   };
@@ -365,13 +379,12 @@ function ChatRoom() {
       setChatMode(mode);
       socket.emit('setChatMode', mode);
       
-      // Обновляем состояние видео и аудио треков
       if (localStream) {
         // Управляем видеотреками
         localStream.getVideoTracks().forEach(track => {
           track.enabled = mode === 'video';
           if (mode === 'audio') {
-            track.stop(); // Полностью останавливаем видеотрек в аудио режиме
+            track.stop();
           }
         });
 
@@ -383,11 +396,11 @@ function ChatRoom() {
         setIsVideoOff(mode === 'audio');
       }
 
-      // Если есть peer соединение, пересоздаем его с новыми настройками
-      if (peer && localStream) {
-        peer.destroy();
-        const newPeer = createPeer(true, localStream, mode);
-        setPeer(newPeer);
+      // Если есть peer соединение, пересоздаем его
+      if (peerConnection && localStream) {
+        peerConnection.close();
+        setPeerConnection(null);
+        startChat(); // Начинаем новый поиск с новыми настройками
       }
     }
   };
