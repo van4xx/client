@@ -600,45 +600,9 @@ function ChatRoom() {
   }, []);
 
   useEffect(() => {
-    const loadPeerJS = async () => {
-      if (!window.Peer) {
-        const script = document.createElement('script');
-        script.src = 'https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js';
-        script.async = true;
-        
-        script.onload = () => {
-          initializePeer();
-        };
-        
-        document.head.appendChild(script);
-      } else {
-        initializePeer();
-      }
-    };
-
-    const initializePeer = () => {
-      const peerConfig = {
-        host: window.location.hostname === 'ruletka.top' ? 'ruletka.top' : 'localhost',
-        port: window.location.hostname === 'ruletka.top' ? 443 : 9000,
-        path: '/peerjs',
-        secure: window.location.hostname === 'ruletka.top'
-      };
-
-      const peer = new window.Peer(peerConfig);
-      // ... остальной код инициализации
-    };
-
-    loadPeerJS();
-  }, []);
-
-  useEffect(() => {
-    socket.on('chatStart', async ({ partnerId }) => {
-      if (!myPeer || !partnerId) return;
-      
-      setIsSearching(false);
-      setIsConnected(true);
-
+    const initializePeer = async () => {
       try {
+        // Сначала получаем медиапоток
         const stream = await navigator.mediaDevices.getUserMedia({
           video: chatMode === 'video',
           audio: true
@@ -650,35 +614,78 @@ function ChatRoom() {
           await localVideoRef.current.play().catch(console.error);
         }
 
-        console.log('Calling peer:', partnerId);
-        const newCall = myPeer.call(partnerId, stream);
-        setCall(newCall);
-
-        newCall.on('stream', (remoteStream) => {
-          console.log('Received remote stream');
-          if (remoteVideoRef.current) {
-            remoteVideoRef.current.srcObject = remoteStream;
-            remoteVideoRef.current.play().catch(console.error);
+        // Создаем peer с потоком
+        const peerConfig = {
+          host: window.location.hostname === 'ruletka.top' ? 'ruletka.top' : 'localhost',
+          port: window.location.hostname === 'ruletka.top' ? 443 : 9000,
+          path: '/peerjs',
+          secure: window.location.hostname === 'ruletka.top',
+          config: {
+            iceServers: [
+              { urls: 'stun:stun.l.google.com:19302' },
+              { urls: 'stun:stun1.l.google.com:19302' },
+              {
+                urls: 'turn:numb.viagenie.ca',
+                username: 'webrtc@live.com',
+                credential: 'muazkh'
+              }
+            ]
           }
+        };
+
+        const peer = new window.Peer(peerConfig);
+
+        peer.on('open', (id) => {
+          console.log('My peer ID is:', id);
+          setPeerId(id);
         });
 
-        newCall.on('error', (err) => {
-          console.error('Call error:', err);
+        // Обработка входящих звонков
+        peer.on('call', (incomingCall) => {
+          console.log('Incoming call');
+          incomingCall.answer(stream);
+          setCall(incomingCall);
+
+          incomingCall.on('stream', (remoteStream) => {
+            console.log('Got remote stream from incoming call');
+            if (remoteVideoRef.current) {
+              remoteVideoRef.current.srcObject = remoteStream;
+              remoteVideoRef.current.play().catch(console.error);
+            }
+          });
         });
 
-        newCall.on('close', () => {
-          console.log('Call closed');
-        });
+        setMyPeer(peer);
 
       } catch (err) {
-        console.error('Failed to get local stream:', err);
+        console.error('Failed to initialize peer:', err);
       }
+    };
+
+    initializePeer();
+  }, [chatMode]);
+
+  // При получении partnerId от сервера
+  useEffect(() => {
+    socket.on('chatStart', async ({ partnerId }) => {
+      console.log('Chat started with partner:', partnerId);
+      if (!myPeer || !localStream) return;
+
+      // Звоним партнеру
+      const newCall = myPeer.call(partnerId, localStream);
+      setCall(newCall);
+
+      newCall.on('stream', (remoteStream) => {
+        console.log('Got remote stream from outgoing call');
+        if (remoteVideoRef.current) {
+          remoteVideoRef.current.srcObject = remoteStream;
+          remoteVideoRef.current.play().catch(console.error);
+        }
+      });
     });
 
-    return () => {
-      socket.off('chatStart');
-    };
-  }, [myPeer, chatMode]);
+    return () => socket.off('chatStart');
+  }, [myPeer, localStream]);
 
   return (
     <div className={`chat-room ${theme}`}>
