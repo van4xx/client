@@ -71,81 +71,13 @@
   overflow: hidden;
   height: 100%;
   border: 1px solid var(--border);
-  box-shadow: var(--neon-primary);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
 }
 
 .video-box video {
   width: 100%;
   height: 100%;
   object-fit: cover;
-}
-
-/* Стили для ручки изменения размера */
-.resize-handle {
-  position: absolute;
-  right: 0;
-  bottom: 0;
-  width: 25px;
-  height: 25px;
-  cursor: ns-resize;
-  z-index: 1000;
-  opacity: 0;
-  transition: opacity 0.2s ease;
-}
-
-.video-box:hover .resize-handle {
-  opacity: 1;
-}
-
-/* Индикатор ограничения */
-.resize-handle::after {
-  content: '';
-  position: absolute;
-  right: 5px;
-  bottom: 5px;
-  width: 15px;
-  height: 15px;
-  background: rgba(255, 215, 0, 0.5);
-  border-radius: 50%;
-  transition: background-color 0.2s ease;
-}
-
-.video-box[style*="max-height"] .resize-handle::after {
-  background: rgba(255, 0, 0, 0.5); /* Красный индикатор при достижении максимума */
-}
-
-.video-box[style*="min-height"] .resize-handle::after {
-  background: rgba(255, 0, 0, 0.5); /* Красный индикатор при достижении минимума */
-}
-
-/* Треугольник для изменения размера */
-.resize-handle::before {
-  content: '';
-  position: absolute;
-  right: 0;
-  bottom: 0;
-  width: 0;
-  height: 0;
-  border-style: solid;
-  border-width: 0 0 25px 25px;
-  border-color: transparent transparent rgba(255, 255, 255, 0.5) transparent;
-  transition: border-color 0.2s ease;
-}
-
-.resize-handle:hover::before {
-  border-color: transparent transparent rgba(255, 255, 255, 0.8) transparent;
-}
-
-.dark .resize-handle::before {
-  border-color: transparent transparent rgba(0, 255, 128, 0.5) transparent;
-}
-
-.dark .resize-handle:hover::before {
-  border-color: transparent transparent rgba(0, 255, 128, 0.8) transparent;
-}
-
-.resize-handle:active::before {
-  border-color: transparent transparent #00ff80 transparent;
 }
 
 /* Секция с кнопками управления */

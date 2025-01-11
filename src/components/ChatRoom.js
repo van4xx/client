@@ -58,8 +58,8 @@ function ChatRoom() {
   const [handRaised, setHandRaised] = useState(false);
   const [notificationSent, setNotificationSent] = useState(false);
 
-  const [leftVideoHeight, setLeftVideoHeight] = useState(745);
-  const [rightVideoHeight, setRightVideoHeight] = useState(745);
+  const [leftVideoHeight, setLeftVideoHeight] = useState(847);
+  const [rightVideoHeight, setRightVideoHeight] = useState(847);
 
   const [showSettings, setShowSettings] = useState(false);
 
@@ -1208,7 +1208,6 @@ function ChatRoom() {
               </div>
             </div>
           )}
-          <div className="resize-handle" onMouseDown={(e) => handleResize('left', e)} />
         </div>
         <div 
           className="video-box"
@@ -1286,7 +1285,6 @@ function ChatRoom() {
               </button>
             )}
           </div>
-          <div className="resize-handle" onMouseDown={(e) => handleResize('right', e)} />
         </div>
       </div>
 
