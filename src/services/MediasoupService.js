@@ -200,22 +200,59 @@ class MediasoupService {
   }
 
   async consume(producerId) {
-    const { rtpCapabilities } = this.device;
-    const { id, kind, rtpParameters } = await new Promise((resolve) => {
-      this.socket.emit('consume', { producerId, rtpCapabilities }, resolve);
-    });
+    try {
+      console.log('Consuming producer:', producerId);
+      
+      if (!this.device.loaded) {
+        throw new Error('Device not loaded');
+      }
 
-    const consumer = await this.consumerTransport.consume({
-      id,
-      producerId,
-      kind,
-      rtpParameters
-    });
+      if (!this.consumerTransport) {
+        throw new Error('Consumer transport not initialized');
+      }
 
-    this.consumers.set(consumer.id, consumer);
-    await new Promise((resolve) => this.socket.emit('resume', consumer.id, resolve));
-    
-    return consumer;
+      const { rtpCapabilities } = this.device;
+      console.log('Requesting consume with capabilities:', rtpCapabilities);
+
+      const response = await new Promise((resolve) => {
+        this.socket.emit('consume', { producerId, rtpCapabilities }, resolve);
+      });
+
+      if (response.error) {
+        throw new Error(response.error);
+      }
+
+      console.log('Got consume response:', response);
+
+      const {
+        id,
+        kind,
+        rtpParameters,
+        producerId: remoteProducerId,
+        type
+      } = response;
+
+      const consumer = await this.consumerTransport.consume({
+        id,
+        producerId: remoteProducerId,
+        kind,
+        rtpParameters
+      });
+
+      console.log('Consumer created:', consumer.id, 'kind:', kind);
+      this.consumers.set(consumer.id, consumer);
+
+      // Возобновляем получение медиапотока
+      await new Promise((resolve) => {
+        this.socket.emit('resume', consumer.id, resolve);
+      });
+      console.log('Consumer resumed');
+
+      return consumer;
+    } catch (error) {
+      console.error('Error in consume:', error);
+      throw error;
+    }
   }
 
   close() {

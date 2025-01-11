@@ -215,22 +215,21 @@ function ChatRoom() {
         audio: true
       });
 
-      console.log('Got media stream:', stream.getTracks().map(t => t.kind));
+      console.log('Got local media stream:', stream.getTracks().map(t => ({ kind: t.kind, enabled: t.enabled })));
       setLocalStream(stream);
-      
+
+      // Отображаем локальное видео
       if (localVideoRef.current) {
         console.log('Setting local video stream');
         localVideoRef.current.srcObject = stream;
         await localVideoRef.current.play().catch(console.error);
       }
 
-      if (producerTransport) {
-        console.log('Publishing tracks to producer transport');
-        for (const track of stream.getTracks()) {
-          console.log('Publishing track:', track.kind);
-          const producer = await mediasoupService.publish(track);
-          console.log('Track published with producer ID:', producer.id);
-        }
+      // Публикуем треки
+      for (const track of stream.getTracks()) {
+        console.log('Publishing track:', track.kind);
+        const producer = await mediasoupService.publish(track);
+        console.log('Track published, producer ID:', producer.id);
       }
     } catch (error) {
       console.error('Failed to initialize media:', error);
@@ -255,15 +254,20 @@ function ChatRoom() {
       console.log('Partner found:', partnerId, 'in room:', roomId);
       setIsConnected(true);
       setIsSearching(false);
+
+      // Инициализируем медиапотоки после нахождения партнера
+      await initializeMedia();
     });
 
     socket.on('partnerLeft', () => {
+      console.log('Partner left');
       setIsConnected(false);
+      
+      // Очищаем удаленный стрим
       if (remoteVideoRef.current) {
         remoteVideoRef.current.srcObject = null;
       }
-      consumers.forEach(consumer => consumer.close());
-      setConsumers(new Map());
+      setRemoteStream(null);
     });
 
     return () => {
@@ -902,17 +906,17 @@ function ChatRoom() {
 
   useEffect(() => {
     mediasoupService.socket.on('newProducer', async ({ producerId, kind }) => {
-      console.log('New producer available:', producerId, 'kind:', kind);
       try {
+        console.log('New producer available:', producerId, 'kind:', kind);
         const consumer = await mediasoupService.consume(producerId);
-        console.log('Created consumer:', consumer.id, 'for producer:', producerId);
-        
+        console.log('Created consumer for producer:', producerId);
+
         if (consumer && consumer.track) {
           console.log('Got remote track:', consumer.track.kind);
           const stream = remoteStream || new MediaStream();
           stream.addTrack(consumer.track);
           setRemoteStream(stream);
-          
+
           if (remoteVideoRef.current) {
             console.log('Setting remote video stream');
             remoteVideoRef.current.srcObject = stream;
@@ -923,6 +927,10 @@ function ChatRoom() {
         console.error('Error consuming producer:', error);
       }
     });
+
+    return () => {
+      mediasoupService.socket.off('newProducer');
+    };
   }, [remoteStream]);
 
   useEffect(() => {
