@@ -101,10 +101,10 @@ function ChatRoom() {
 
   const createPeerConnection = async (stream) => {
     try {
-      const peer = new window.Peer({
-        host: window.location.hostname === 'ruletka.top' ? 'ruletka.top' : 'localhost',
-        port: window.location.hostname === 'ruletka.top' ? 443 : 9000,
-        path: '/peerjs',
+      const peer = new window.Peer(undefined, {
+        host: window.location.hostname,
+        port: window.location.hostname === 'ruletka.top' ? 443 : 5001,
+        path: '/peerjs/myapp',
         secure: window.location.hostname === 'ruletka.top',
         debug: 3,
         config: {
@@ -127,6 +127,11 @@ function ChatRoom() {
 
       peer.on('error', (err) => {
         console.error('Peer error:', err);
+        setTimeout(() => {
+          if (!peer.destroyed) {
+            peer.reconnect();
+          }
+        }, 5000);
       });
 
       peer.on('call', (incomingCall) => {
