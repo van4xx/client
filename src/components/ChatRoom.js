@@ -23,16 +23,16 @@ import EmojiPicker from 'emoji-picker-react';
 import './ChatRoom.css';
 
 const SOCKET_URL = window.location.hostname === 'ruletka.top' 
-  ? 'wss://ruletka.top' 
+  ? 'https://ruletka.top' 
   : 'http://localhost:5001';
 
 const socket = io(SOCKET_URL, {
   transports: ['websocket'],
+  path: '/socket.io/',
   reconnection: true,
   reconnectionAttempts: 5,
   reconnectionDelay: 1000,
-  autoConnect: true,
-  path: '/socket.io/'
+  secure: true
 });
 
 socket.on('connect', () => {
@@ -103,9 +103,9 @@ function ChatRoom() {
     try {
       const peer = new window.Peer(undefined, {
         host: window.location.hostname,
-        port: window.location.hostname === 'ruletka.top' ? 443 : 5001,
-        path: '/peerjs/myapp',
-        secure: window.location.hostname === 'ruletka.top',
+        port: 443,
+        path: '/peerjs',
+        secure: true,
         debug: 3,
         config: {
           iceServers: [
