@@ -25,48 +25,25 @@ class MediasoupService {
 
   async init() {
     if (this.initialized) {
-      console.log('MediaSoup already initialized');
       return true;
     }
 
     try {
-      console.log('Initializing MediaSoup...');
-      await this.loadDevice();
+      const routerRtpCapabilities = await new Promise((resolve) => {
+        this.socket.emit('getRouterRtpCapabilities', resolve);
+      });
+
+      this.device = new Device();
+      await this.device.load({ routerRtpCapabilities });
+
       await this.createSendTransport();
       await this.createRecvTransport();
+
       this.initialized = true;
-      console.log('MediaSoup initialization completed');
       return true;
     } catch (error) {
       console.error('Failed to initialize MediaSoup:', error);
       return false;
-    }
-  }
-
-  async loadDevice() {
-    try {
-      console.log('Requesting router capabilities...');
-      const response = await new Promise((resolve) => {
-        this.socket.emit('getRouterRtpCapabilities', resolve);
-      });
-
-      console.log('Got router capabilities response:', response);
-
-      if (response.error) {
-        throw new Error(response.error);
-      }
-
-      if (!response.rtpCapabilities) {
-        throw new Error('No RTP capabilities in response');
-      }
-
-      console.log('Loading device with capabilities:', response.rtpCapabilities);
-      this.device = new Device();
-      await this.device.load({ routerRtpCapabilities: response.rtpCapabilities });
-      console.log('Device loaded successfully');
-    } catch (error) {
-      console.error('Failed to load device:', error);
-      throw error;
     }
   }
 
@@ -190,30 +167,55 @@ class MediasoupService {
       await this.init();
     }
 
-    if (!this.producerTransport) {
-      throw new Error('Producer transport not initialized');
-    }
+    try {
+      console.log('Publishing track:', {
+        kind: track.kind,
+        enabled: track.enabled,
+        muted: track.muted,
+        readyState: track.readyState
+      });
 
-    const producer = await this.producerTransport.produce({ track });
-    this.producers.set(producer.id, producer);
-    return producer;
+      const producer = await this.producerTransport.produce({
+        track,
+        encodings: track.kind === 'video' 
+          ? [
+              { maxBitrate: 100000 },
+              { maxBitrate: 300000 },
+              { maxBitrate: 900000 }
+            ]
+          : undefined,
+        codecOptions: {
+          videoGoogleStartBitrate: 1000
+        }
+      });
+
+      console.log('Producer created:', producer.id);
+      this.producers.set(producer.id, producer);
+
+      producer.on('transportclose', () => {
+        console.log('Producer transport closed:', producer.id);
+        this.producers.delete(producer.id);
+      });
+
+      producer.on('trackended', () => {
+        console.log('Producer track ended:', producer.id);
+        this.producers.delete(producer.id);
+      });
+
+      return producer;
+    } catch (error) {
+      console.error('Failed to publish track:', error);
+      throw error;
+    }
   }
 
   async consume(producerId) {
     try {
-      console.log('Consuming producer:', producerId);
-      
-      if (!this.device.loaded) {
-        throw new Error('Device not loaded');
-      }
-
-      if (!this.consumerTransport) {
-        throw new Error('Consumer transport not initialized');
+      if (!this.device.loaded || !this.consumerTransport) {
+        throw new Error('Device or transport not ready');
       }
 
       const { rtpCapabilities } = this.device;
-      console.log('Requesting consume with capabilities:', rtpCapabilities);
-
       const response = await new Promise((resolve) => {
         this.socket.emit('consume', { producerId, rtpCapabilities }, resolve);
       });
@@ -222,35 +224,20 @@ class MediasoupService {
         throw new Error(response.error);
       }
 
-      console.log('Got consume response:', response);
-
-      const {
-        id,
-        kind,
-        rtpParameters,
-        producerId: remoteProducerId,
-        type
-      } = response;
-
       const consumer = await this.consumerTransport.consume({
-        id,
-        producerId: remoteProducerId,
-        kind,
-        rtpParameters
+        id: response.id,
+        producerId: response.producerId,
+        kind: response.kind,
+        rtpParameters: response.rtpParameters
       });
 
-      console.log('Consumer created:', consumer.id, 'kind:', kind);
-      this.consumers.set(consumer.id, consumer);
-
-      // Возобновляем получение медиапотока
       await new Promise((resolve) => {
         this.socket.emit('resume', consumer.id, resolve);
       });
-      console.log('Consumer resumed');
 
       return consumer;
     } catch (error) {
-      console.error('Error in consume:', error);
+      console.error('Failed to consume:', error);
       throw error;
     }
   }

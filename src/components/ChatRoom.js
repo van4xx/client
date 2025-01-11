@@ -1,7 +1,8 @@
 import 'webrtc-adapter';
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { io } from 'socket.io-client';
-import { IoMdSend } from 'react-icons/io';
+import { IoMdSend, IoMdClose } from 'react-icons/io';
+import { IoIosChatbubbles } from 'react-icons/io';
 import { 
   BsMicFill, 
   BsMicMuteFill, 
@@ -86,6 +87,9 @@ function ChatRoom() {
   const [connectionStats, setConnectionStats] = useState(null);
   const [isReconnecting, setIsReconnecting] = useState(false);
   const statsIntervalRef = useRef(null);
+
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [unreadMessages, setUnreadMessages] = useState(0);
 
   const Modal = ({ title, onClose, children }) => (
     <div className="modal-overlay" onClick={onClose}>
@@ -209,27 +213,22 @@ function ChatRoom() {
 
   const initializeMedia = async () => {
     try {
-      console.log('Initializing media streams...');
+      // Получаем медиапотоки
       const stream = await navigator.mediaDevices.getUserMedia({
         video: chatMode === 'video',
         audio: true
       });
 
-      console.log('Got local media stream:', stream.getTracks().map(t => ({ kind: t.kind, enabled: t.enabled })));
+      // Устанавливаем локальный стрим
       setLocalStream(stream);
-
-      // Отображаем локальное видео
       if (localVideoRef.current) {
-        console.log('Setting local video stream');
         localVideoRef.current.srcObject = stream;
-        await localVideoRef.current.play().catch(console.error);
+        await localVideoRef.current.play();
       }
 
       // Публикуем треки
       for (const track of stream.getTracks()) {
-        console.log('Publishing track:', track.kind);
-        const producer = await mediasoupService.publish(track);
-        console.log('Track published, producer ID:', producer.id);
+        await mediasoupService.publish(track);
       }
     } catch (error) {
       console.error('Failed to initialize media:', error);
@@ -254,8 +253,6 @@ function ChatRoom() {
       console.log('Partner found:', partnerId, 'in room:', roomId);
       setIsConnected(true);
       setIsSearching(false);
-
-      // Инициализируем медиапотоки после нахождения партнера
       await initializeMedia();
     });
 
@@ -284,15 +281,30 @@ function ChatRoom() {
       
       // Инициализируем MediaSoup если еще не инициализирован
       if (!isInitialized) {
-        await mediasoupService.init();
+        const success = await mediasoupService.init();
+        if (!success) {
+          throw new Error('Failed to initialize MediaSoup');
+        }
         setIsInitialized(true);
       }
 
       // Получаем медиапотоки
       const stream = await navigator.mediaDevices.getUserMedia({
         video: chatMode === 'video',
-        audio: true
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true
+        }
       });
+
+      console.log('Got media stream:', stream.getTracks().map(t => ({
+        kind: t.kind,
+        enabled: t.enabled,
+        muted: t.muted,
+        readyState: t.readyState,
+        constraints: t.getConstraints()
+      })));
 
       setLocalStream(stream);
       if (localVideoRef.current) {
@@ -302,11 +314,15 @@ function ChatRoom() {
 
       // Публикуем треки
       for (const track of stream.getTracks()) {
-        await mediasoupService.publish(track);
+        try {
+          await mediasoupService.publish(track);
+        } catch (error) {
+          console.error(`Failed to publish ${track.kind} track:`, error);
+          // Продолжаем работу даже если один из треков не удалось опубликовать
+        }
       }
 
       console.log('Sending ready signal with mode:', chatMode);
-      // Отправляем сигнал готовности с указанием режима
       mediasoupService.socket.emit('ready', chatMode);
     } catch (error) {
       console.error('Failed to start chat:', error);
@@ -907,20 +923,16 @@ function ChatRoom() {
   useEffect(() => {
     mediasoupService.socket.on('newProducer', async ({ producerId, kind }) => {
       try {
-        console.log('New producer available:', producerId, 'kind:', kind);
         const consumer = await mediasoupService.consume(producerId);
-        console.log('Created consumer for producer:', producerId);
-
+        
         if (consumer && consumer.track) {
-          console.log('Got remote track:', consumer.track.kind);
           const stream = remoteStream || new MediaStream();
           stream.addTrack(consumer.track);
           setRemoteStream(stream);
 
           if (remoteVideoRef.current) {
-            console.log('Setting remote video stream');
             remoteVideoRef.current.srcObject = stream;
-            await remoteVideoRef.current.play().catch(console.error);
+            await remoteVideoRef.current.play();
           }
         }
       } catch (error) {
@@ -952,6 +964,62 @@ function ChatRoom() {
       };
     }
   }, [peerConnection]);
+
+  useEffect(() => {
+    const checkMediaStatus = setInterval(() => {
+      if (localStream) {
+        const audioTrack = localStream.getAudioTracks()[0];
+        const videoTrack = localStream.getVideoTracks()[0];
+
+        console.log('Local media status:', {
+          audio: audioTrack ? {
+            enabled: audioTrack.enabled,
+            muted: audioTrack.muted,
+            readyState: audioTrack.readyState
+          } : 'No audio track',
+          video: videoTrack ? {
+            enabled: videoTrack.enabled,
+            muted: videoTrack.muted,
+            readyState: videoTrack.readyState
+          } : 'No video track'
+        });
+      }
+
+      if (remoteStream) {
+        const audioTrack = remoteStream.getAudioTracks()[0];
+        const videoTrack = remoteStream.getVideoTracks()[0];
+
+        console.log('Remote media status:', {
+          audio: audioTrack ? {
+            enabled: audioTrack.enabled,
+            muted: audioTrack.muted,
+            readyState: audioTrack.readyState
+          } : 'No audio track',
+          video: videoTrack ? {
+            enabled: videoTrack.enabled,
+            muted: videoTrack.muted,
+            readyState: videoTrack.readyState
+          } : 'No video track'
+        });
+      }
+    }, 2000); // Проверяем каждые 2 секунды
+
+    return () => clearInterval(checkMediaStatus);
+  }, [localStream, remoteStream]);
+
+  const toggleChat = () => {
+    setIsChatOpen(!isChatOpen);
+    if (!isChatOpen) {
+      setUnreadMessages(0); // Сбрасываем счетчик при открытии чата
+    }
+  };
+
+  const handleNewMessage = (message) => {
+    setMessages(prev => [...prev, message]);
+    if (!isChatOpen) {
+      setUnreadMessages(prev => prev + 1);
+    }
+  };
 
   return (
     <div className={`chat-room ${theme}`}>
@@ -1297,7 +1365,14 @@ function ChatRoom() {
         </div>
       </div>
 
-      <div className="chat-section">
+      <button className="chat-toggle" onClick={toggleChat}>
+        {unreadMessages > 0 && (
+          <div className="unread-badge">{unreadMessages}</div>
+        )}
+        {isChatOpen ? <IoMdClose size={24} /> : <IoIosChatbubbles size={24} />}
+      </button>
+
+      <div className={`chat-section ${isChatOpen ? 'open' : ''}`}>
         <div className="chat-messages">
           {messages.map((msg, index) => (
             <div key={index} className={`message ${msg.sender}`}>
@@ -1348,7 +1423,7 @@ function ChatRoom() {
                 onEmojiClick={onEmojiClick}
                 width={300}
                 height={400}
-                theme="dark"
+                theme={theme}
                 searchPlaceHolder="Поиск эмодзи..."
                 previewConfig={{
                   showPreview: false
