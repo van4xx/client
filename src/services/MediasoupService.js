@@ -24,13 +24,18 @@ class MediasoupService {
   }
 
   async init() {
-    if (this.initialized) return;
+    if (this.initialized) {
+      console.log('MediaSoup already initialized');
+      return true;
+    }
 
     try {
+      console.log('Initializing MediaSoup...');
       await this.loadDevice();
       await this.createSendTransport();
       await this.createRecvTransport();
       this.initialized = true;
+      console.log('MediaSoup initialization completed');
       return true;
     } catch (error) {
       console.error('Failed to initialize MediaSoup:', error);
@@ -39,73 +44,145 @@ class MediasoupService {
   }
 
   async loadDevice() {
-    const routerRtpCapabilities = await new Promise((resolve) => {
-      this.socket.emit('getRouterRtpCapabilities', resolve);
-    });
+    try {
+      console.log('Requesting router capabilities...');
+      const response = await new Promise((resolve) => {
+        this.socket.emit('getRouterRtpCapabilities', resolve);
+      });
 
-    this.device = new Device();
-    await this.device.load({ routerRtpCapabilities });
+      console.log('Got router capabilities response:', response);
+
+      if (response.error) {
+        throw new Error(response.error);
+      }
+
+      if (!response.rtpCapabilities) {
+        throw new Error('No RTP capabilities in response');
+      }
+
+      console.log('Loading device with capabilities:', response.rtpCapabilities);
+      this.device = new Device();
+      await this.device.load({ routerRtpCapabilities: response.rtpCapabilities });
+      console.log('Device loaded successfully');
+    } catch (error) {
+      console.error('Failed to load device:', error);
+      throw error;
+    }
   }
 
   async createSendTransport() {
-    const { params } = await new Promise((resolve) => {
-      this.socket.emit('createWebRtcTransport', { sender: true }, resolve);
-    });
+    try {
+      console.log('Creating send transport...');
+      const response = await new Promise((resolve) => {
+        this.socket.emit('createWebRtcTransport', { sender: true }, resolve);
+      });
 
-    this.producerTransport = this.device.createSendTransport(params);
+      console.log('Got transport response:', response);
 
-    this.producerTransport.on('connect', async ({ dtlsParameters }, callback, errback) => {
-      try {
-        await new Promise((resolve, reject) => {
-          this.socket.emit('connectWebRtcTransport', {
-            dtlsParameters,
-            sender: true
-          }, (error) => {
-            if (error) reject(error);
-            else resolve();
+      if (response.error) {
+        throw new Error(response.error);
+      }
+
+      if (!response.params) {
+        throw new Error('No transport parameters in response');
+      }
+
+      this.producerTransport = this.device.createSendTransport(response.params);
+      console.log('Send transport created:', this.producerTransport.id);
+
+      this.producerTransport.on('connect', async ({ dtlsParameters }, callback, errback) => {
+        try {
+          console.log('Connecting send transport...');
+          const response = await new Promise((resolve) => {
+            this.socket.emit('connectWebRtcTransport', {
+              dtlsParameters,
+              sender: true
+            }, resolve);
           });
-        });
-        callback();
-      } catch (error) {
-        errback(error);
-      }
-    });
 
-    this.producerTransport.on('produce', async ({ kind, rtpParameters }, callback, errback) => {
-      try {
-        const { id } = await new Promise((resolve) => {
-          this.socket.emit('produce', { kind, rtpParameters }, resolve);
-        });
-        callback({ id });
-      } catch (error) {
-        errback(error);
-      }
-    });
+          if (response.error) {
+            throw new Error(response.error);
+          }
+
+          console.log('Send transport connected');
+          callback();
+        } catch (error) {
+          console.error('Failed to connect send transport:', error);
+          errback(error);
+        }
+      });
+
+      this.producerTransport.on('produce', async ({ kind, rtpParameters }, callback, errback) => {
+        try {
+          console.log('Producing track of kind:', kind);
+          const response = await new Promise((resolve) => {
+            this.socket.emit('produce', { kind, rtpParameters }, resolve);
+          });
+
+          if (response.error) {
+            throw new Error(response.error);
+          }
+
+          console.log('Track produced with ID:', response.id);
+          callback({ id: response.id });
+        } catch (error) {
+          console.error('Failed to produce:', error);
+          errback(error);
+        }
+      });
+
+      return this.producerTransport;
+    } catch (error) {
+      console.error('Failed to create send transport:', error);
+      throw error;
+    }
   }
 
   async createRecvTransport() {
-    const { params } = await new Promise((resolve) => {
-      this.socket.emit('createWebRtcTransport', { sender: false }, resolve);
-    });
+    try {
+      console.log('Creating receive transport...');
+      const response = await new Promise((resolve) => {
+        this.socket.emit('createWebRtcTransport', { sender: false }, resolve);
+      });
 
-    this.consumerTransport = this.device.createRecvTransport(params);
-
-    this.consumerTransport.on('connect', async ({ dtlsParameters }, callback, errback) => {
-      try {
-        await new Promise((resolve, reject) => {
-          this.socket.emit('connectWebRtcTransport', {
-            dtlsParameters,
-            sender: false
-          }, (error) => {
-            if (error) reject(error);
-            else resolve();
-          });
-        });
-        callback();
-      } catch (error) {
-        errback(error);
+      if (response.error) {
+        throw new Error(response.error);
       }
-    });
+
+      if (!response.params) {
+        throw new Error('No transport parameters in response');
+      }
+
+      this.consumerTransport = this.device.createRecvTransport(response.params);
+      console.log('Receive transport created:', this.consumerTransport.id);
+
+      this.consumerTransport.on('connect', async ({ dtlsParameters }, callback, errback) => {
+        try {
+          console.log('Connecting receive transport...');
+          const response = await new Promise((resolve) => {
+            this.socket.emit('connectWebRtcTransport', {
+              dtlsParameters,
+              sender: false
+            }, resolve);
+          });
+
+          if (response.error) {
+            throw new Error(response.error);
+          }
+
+          console.log('Receive transport connected');
+          callback();
+        } catch (error) {
+          console.error('Failed to connect receive transport:', error);
+          errback(error);
+        }
+      });
+
+      return this.consumerTransport;
+    } catch (error) {
+      console.error('Failed to create receive transport:', error);
+      throw error;
+    }
   }
 
   async publish(track) {

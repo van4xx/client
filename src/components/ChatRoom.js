@@ -209,19 +209,28 @@ function ChatRoom() {
 
   const initializeMedia = async () => {
     try {
+      console.log('Initializing media streams...');
       const stream = await navigator.mediaDevices.getUserMedia({
         video: chatMode === 'video',
         audio: true
       });
 
+      console.log('Got media stream:', stream.getTracks().map(t => t.kind));
       setLocalStream(stream);
+      
       if (localVideoRef.current) {
+        console.log('Setting local video stream');
         localVideoRef.current.srcObject = stream;
-        await localVideoRef.current.play();
+        await localVideoRef.current.play().catch(console.error);
       }
 
       if (producerTransport) {
-        await publishTracks(stream);
+        console.log('Publishing tracks to producer transport');
+        for (const track of stream.getTracks()) {
+          console.log('Publishing track:', track.kind);
+          const producer = await mediasoupService.publish(track);
+          console.log('Track published with producer ID:', producer.id);
+        }
       }
     } catch (error) {
       console.error('Failed to initialize media:', error);
@@ -242,20 +251,10 @@ function ChatRoom() {
       await initializeMedia();
     });
 
-    socket.on('partnerFound', async ({ partnerId, producerId }) => {
+    socket.on('partnerFound', async ({ partnerId, roomId }) => {
+      console.log('Partner found:', partnerId, 'in room:', roomId);
       setIsConnected(true);
       setIsSearching(false);
-      
-      if (producerId) {
-        const consumer = await consumeTrack(producerId);
-        if (consumer && consumer.track) {
-          const stream = new MediaStream([consumer.track]);
-          if (remoteVideoRef.current) {
-            remoteVideoRef.current.srcObject = stream;
-            await remoteVideoRef.current.play();
-          }
-        }
-      }
     });
 
     socket.on('partnerLeft', () => {
@@ -275,9 +274,40 @@ function ChatRoom() {
     };
   }, [device, producerTransport, consumerTransport]);
 
-  const startChat = () => {
-    setIsSearching(true);
-    mediasoupService.socket.emit('findPartner');
+  const startChat = async () => {
+    try {
+      setIsSearching(true);
+      
+      // Инициализируем MediaSoup если еще не инициализирован
+      if (!isInitialized) {
+        await mediasoupService.init();
+        setIsInitialized(true);
+      }
+
+      // Получаем медиапотоки
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: chatMode === 'video',
+        audio: true
+      });
+
+      setLocalStream(stream);
+      if (localVideoRef.current) {
+        localVideoRef.current.srcObject = stream;
+        await localVideoRef.current.play().catch(console.error);
+      }
+
+      // Публикуем треки
+      for (const track of stream.getTracks()) {
+        await mediasoupService.publish(track);
+      }
+
+      console.log('Sending ready signal with mode:', chatMode);
+      // Отправляем сигнал готовности с указанием режима
+      mediasoupService.socket.emit('ready', chatMode);
+    } catch (error) {
+      console.error('Failed to start chat:', error);
+      setIsSearching(false);
+    }
   };
 
   const createPeerConnection = useCallback(() => {
@@ -675,8 +705,8 @@ function ChatRoom() {
           console.log('Connected to MediaSoup server');
         });
 
-        mediasoupService.socket.on('partnerFound', async ({ partnerId }) => {
-          console.log('Partner found:', partnerId);
+        mediasoupService.socket.on('partnerFound', async ({ partnerId, roomId }) => {
+          console.log('Partner found:', partnerId, 'in room:', roomId);
           setIsConnected(true);
           setIsSearching(false);
         });
@@ -869,6 +899,51 @@ function ChatRoom() {
       mediasoupService.socket.emit('findPartner');
     }
   };
+
+  useEffect(() => {
+    mediasoupService.socket.on('newProducer', async ({ producerId, kind }) => {
+      console.log('New producer available:', producerId, 'kind:', kind);
+      try {
+        const consumer = await mediasoupService.consume(producerId);
+        console.log('Created consumer:', consumer.id, 'for producer:', producerId);
+        
+        if (consumer && consumer.track) {
+          console.log('Got remote track:', consumer.track.kind);
+          const stream = remoteStream || new MediaStream();
+          stream.addTrack(consumer.track);
+          setRemoteStream(stream);
+          
+          if (remoteVideoRef.current) {
+            console.log('Setting remote video stream');
+            remoteVideoRef.current.srcObject = stream;
+            await remoteVideoRef.current.play().catch(console.error);
+          }
+        }
+      } catch (error) {
+        console.error('Error consuming producer:', error);
+      }
+    });
+  }, [remoteStream]);
+
+  useEffect(() => {
+    if (peerConnection) {
+      peerConnection.onconnectionstatechange = () => {
+        console.log('Connection state:', peerConnection.connectionState);
+      };
+      
+      peerConnection.oniceconnectionstatechange = () => {
+        console.log('ICE connection state:', peerConnection.iceConnectionState);
+      };
+      
+      peerConnection.onicegatheringstatechange = () => {
+        console.log('ICE gathering state:', peerConnection.iceGatheringState);
+      };
+      
+      peerConnection.onsignalingstatechange = () => {
+        console.log('Signaling state:', peerConnection.signalingState);
+      };
+    }
+  }, [peerConnection]);
 
   return (
     <div className={`chat-room ${theme}`}>
