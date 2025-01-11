@@ -21,6 +21,12 @@ import { FaMoon, FaSun, FaUser, FaCog, FaChartBar, FaQuestionCircle } from 'reac
 import { useTheme } from '../context/ThemeContext';
 import EmojiPicker from 'emoji-picker-react';
 import './ChatRoom.css';
+import { Device } from 'mediasoup-client';
+import mediasoupService from '../services/MediasoupService';
+import connectionStatsService from '../services/ConnectionStatsService';
+import connectionRecoveryService from '../services/ConnectionRecoveryService';
+import videoQualityService from '../services/VideoQualityService';
+import connectionMonitorService from '../services/ConnectionMonitorService';
 
 const SOCKET_URL = window.location.hostname === 'ruletka.top' 
   ? 'https://ruletka.top' 
@@ -28,28 +34,10 @@ const SOCKET_URL = window.location.hostname === 'ruletka.top'
 
 const socket = io(SOCKET_URL, {
   transports: ['websocket'],
-  path: '/socket.io/',
   reconnection: true,
   reconnectionAttempts: 5,
   reconnectionDelay: 1000,
   secure: true
-});
-
-socket.on('connect', () => {
-  console.log('Connected to server with ID:', socket.id);
-});
-
-socket.on('connect_error', (error) => {
-  console.error('Connection error:', error);
-});
-
-socket.on('disconnect', (reason) => {
-  console.log('Disconnected:', reason);
-  setIsConnected(false);
-  if (peerConnection) {
-    peerConnection.close();
-    setPeerConnection(null);
-  }
 });
 
 function ChatRoom() {
@@ -86,6 +74,19 @@ function ChatRoom() {
   const [inputMessage, setInputMessage] = useState('');
   const [messages, setMessages] = useState([]);
 
+  const [device, setDevice] = useState(null);
+  const [producerTransport, setProducerTransport] = useState(null);
+  const [consumerTransport, setConsumerTransport] = useState(null);
+  const [producers, setProducers] = useState(new Map());
+  const [consumers, setConsumers] = useState(new Map());
+
+  const [isInitialized, setIsInitialized] = useState(false);
+
+  const [connectionQuality, setConnectionQuality] = useState('good');
+  const [connectionStats, setConnectionStats] = useState(null);
+  const [isReconnecting, setIsReconnecting] = useState(false);
+  const statsIntervalRef = useRef(null);
+
   const Modal = ({ title, onClose, children }) => (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content" onClick={e => e.stopPropagation()}>
@@ -98,83 +99,332 @@ function ChatRoom() {
     </div>
   );
 
-  const createPeerConnection = useCallback(() => {
-    const pc = new RTCPeerConnection({
-      iceServers: [
-        { urls: 'stun:stun.l.google.com:19302' },
-        { urls: 'stun:stun1.l.google.com:19302' },
-        {
-          urls: 'turn:numb.viagenie.ca',
-          username: 'webrtc@live.com',
-          credential: 'muazkh'
-        }
-      ]
-    });
-
-    pc.onicecandidate = ({ candidate }) => {
-      if (candidate && pc.currentRemoteDescription) {
-        socket.emit('ice-candidate', {
-          to: pc.partnerId,
-          candidate
-        });
-      }
-    };
-
-    pc.ontrack = (event) => {
-      setRemoteStream(event.streams[0]);
-      if (remoteVideoRef.current) {
-        remoteVideoRef.current.srcObject = event.streams[0];
-      }
-    };
-
-    if (localStream) {
-      localStream.getTracks().forEach(track => {
-        pc.addTrack(track, localStream);
-      });
+  const initializeDevice = async (routerRtpCapabilities) => {
+    try {
+      const newDevice = new Device();
+      await newDevice.load({ routerRtpCapabilities });
+      setDevice(newDevice);
+      return newDevice;
+    } catch (error) {
+      console.error('Failed to initialize device:', error);
+      return null;
     }
+  };
 
-    return pc;
-  }, [localStream]);
+  const createSendTransport = async (transportOptions) => {
+    if (!device) return null;
 
-  const startCall = async (partnerId, isInitiator) => {
-    const pc = createPeerConnection();
-    pc.partnerId = partnerId;
-    setPeerConnection(pc);
+    try {
+      const transport = device.createSendTransport(transportOptions);
 
-    if (isInitiator) {
-      const offer = await pc.createOffer();
-      await pc.setLocalDescription(offer);
-      socket.emit('offer', { to: partnerId, offer });
+      transport.on('connect', async ({ dtlsParameters }, callback, errback) => {
+        try {
+          await socket.emit('connectProducerTransport', { dtlsParameters });
+          callback();
+        } catch (error) {
+          errback(error);
+        }
+      });
+
+      transport.on('produce', async ({ kind, rtpParameters }, callback, errback) => {
+        try {
+          socket.emit('produce', { kind, rtpParameters });
+          socket.once('produced', ({ id }) => callback({ id }));
+        } catch (error) {
+          errback(error);
+        }
+      });
+
+      setProducerTransport(transport);
+      return transport;
+    } catch (error) {
+      console.error('Failed to create send transport:', error);
+      return null;
+    }
+  };
+
+  const createRecvTransport = async (transportOptions) => {
+    if (!device) return null;
+
+    try {
+      const transport = device.createRecvTransport(transportOptions);
+
+      transport.on('connect', async ({ dtlsParameters }, callback, errback) => {
+        try {
+          await socket.emit('connectConsumerTransport', { dtlsParameters });
+          callback();
+        } catch (error) {
+          errback(error);
+        }
+      });
+
+      setConsumerTransport(transport);
+      return transport;
+    } catch (error) {
+      console.error('Failed to create receive transport:', error);
+      return null;
+    }
+  };
+
+  const publishTracks = async (stream) => {
+    if (!producerTransport) return;
+
+    try {
+      for (const track of stream.getTracks()) {
+        const producer = await producerTransport.produce({ track });
+        producers.set(producer.id, producer);
+        setProducers(new Map(producers));
+      }
+    } catch (error) {
+      console.error('Failed to publish tracks:', error);
+    }
+  };
+
+  const consumeTrack = async (producerId) => {
+    if (!consumerTransport) return;
+
+    try {
+      const { rtpCapabilities } = device;
+      const { id, kind, rtpParameters } = await new Promise((resolve) => {
+        socket.emit('consume', { producerId, rtpCapabilities });
+        socket.once('consuming', resolve);
+      });
+
+      const consumer = await consumerTransport.consume({
+        id,
+        producerId,
+        kind,
+        rtpParameters
+      });
+
+      consumers.set(consumer.id, consumer);
+      setConsumers(new Map(consumers));
+
+      return consumer;
+    } catch (error) {
+      console.error('Failed to consume track:', error);
+      return null;
+    }
+  };
+
+  const initializeMedia = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: chatMode === 'video',
+        audio: true
+      });
+
+      setLocalStream(stream);
+      if (localVideoRef.current) {
+        localVideoRef.current.srcObject = stream;
+        await localVideoRef.current.play();
+      }
+
+      if (producerTransport) {
+        await publishTracks(stream);
+      }
+    } catch (error) {
+      console.error('Failed to initialize media:', error);
     }
   };
 
   useEffect(() => {
+    socket.on('rtpCapabilities', async (routerRtpCapabilities) => {
+      const newDevice = await initializeDevice(routerRtpCapabilities);
+      if (newDevice) {
+        console.log('Device initialized');
+      }
+    });
+
+    socket.on('transportCreated', async ({ producerTransportOptions, consumerTransportOptions }) => {
+      await createSendTransport(producerTransportOptions);
+      await createRecvTransport(consumerTransportOptions);
+      await initializeMedia();
+    });
+
+    socket.on('partnerFound', async ({ partnerId, producerId }) => {
+      setIsConnected(true);
+      setIsSearching(false);
+      
+      if (producerId) {
+        const consumer = await consumeTrack(producerId);
+        if (consumer && consumer.track) {
+          const stream = new MediaStream([consumer.track]);
+          if (remoteVideoRef.current) {
+            remoteVideoRef.current.srcObject = stream;
+            await remoteVideoRef.current.play();
+          }
+        }
+      }
+    });
+
+    socket.on('partnerLeft', () => {
+      setIsConnected(false);
+      if (remoteVideoRef.current) {
+        remoteVideoRef.current.srcObject = null;
+      }
+      consumers.forEach(consumer => consumer.close());
+      setConsumers(new Map());
+    });
+
+    return () => {
+      socket.off('rtpCapabilities');
+      socket.off('transportCreated');
+      socket.off('partnerFound');
+      socket.off('partnerLeft');
+    };
+  }, [device, producerTransport, consumerTransport]);
+
+  const startChat = () => {
+    setIsSearching(true);
+    mediasoupService.socket.emit('findPartner');
+  };
+
+  const createPeerConnection = useCallback(() => {
+    try {
+      console.log('Creating peer connection');
+      const pc = new RTCPeerConnection({
+        iceServers: [
+          { urls: 'stun:stun.l.google.com:19302' },
+          { urls: 'stun:stun1.l.google.com:19302' }
+        ]
+      });
+
+      if (localStream) {
+        localStream.getTracks().forEach(track => {
+          console.log('Adding track to peer connection:', track.kind);
+          pc.addTrack(track, localStream);
+        });
+      }
+
+      pc.onicecandidate = ({ candidate }) => {
+        if (candidate && pc.remoteDescription) {
+          console.log('Sending ICE candidate');
+          socket.emit('ice-candidate', {
+            to: pc.partnerId,
+            candidate
+          });
+        }
+      };
+
+      pc.oniceconnectionstatechange = () => {
+        console.log('ICE Connection State:', pc.iceConnectionState);
+      };
+
+      pc.ontrack = (event) => {
+        console.log('Received remote track:', event.track.kind);
+        setRemoteStream(event.streams[0]);
+        if (remoteVideoRef.current) {
+          remoteVideoRef.current.srcObject = event.streams[0];
+          remoteVideoRef.current.play().catch(console.error);
+        }
+      };
+
+      return pc;
+    } catch (err) {
+      console.error('Error creating peer connection:', err);
+      return null;
+    }
+  }, [localStream]);
+
+  const startCall = async (partnerId, isInitiator) => {
+    try {
+      console.log('Starting call with partner:', partnerId, 'isInitiator:', isInitiator);
+      const pc = createPeerConnection();
+      if (!pc) return;
+
+      pc.partnerId = partnerId;
+      setPeerConnection(pc);
+
+      if (isInitiator) {
+        const offer = await pc.createOffer({
+          offerToReceiveAudio: true,
+          offerToReceiveVideo: chatMode === 'video'
+        });
+        
+        console.log('Created offer:', offer.type);
+        await pc.setLocalDescription(offer);
+        socket.emit('offer', { to: partnerId, offer });
+      }
+    } catch (err) {
+      console.error('Error starting call:', err);
+    }
+  };
+
+  useEffect(() => {
+    socket.on('connect', () => {
+      console.log('Connected to server with ID:', socket.id);
+    });
+
+    socket.on('connect_error', (error) => {
+      console.error('Connection error:', error);
+    });
+
+    socket.on('disconnect', (reason) => {
+      console.log('Disconnected:', reason);
+      setIsConnected(false);
+      if (peerConnection) {
+        peerConnection.close();
+        setPeerConnection(null);
+      }
+    });
+
+    return () => {
+      socket.off('connect');
+      socket.off('connect_error');
+      socket.off('disconnect');
+    };
+  }, [peerConnection]);
+
+  useEffect(() => {
     socket.on('partner-found', async ({ partnerId }) => {
+      console.log('Partner found:', partnerId);
       setIsConnected(true);
       setIsSearching(false);
       await startCall(partnerId, true);
     });
 
     socket.on('offer', async ({ from, offer }) => {
-      const pc = createPeerConnection();
-      pc.partnerId = from;
-      setPeerConnection(pc);
+      console.log('Received offer from:', from);
+      try {
+        const pc = createPeerConnection();
+        if (!pc) return;
 
-      await pc.setRemoteDescription(new RTCSessionDescription(offer));
-      const answer = await pc.createAnswer();
-      await pc.setLocalDescription(answer);
-      socket.emit('answer', { to: from, answer });
+        pc.partnerId = from;
+        setPeerConnection(pc);
+
+        await pc.setRemoteDescription(new RTCSessionDescription(offer));
+        const answer = await pc.createAnswer();
+        await pc.setLocalDescription(answer);
+        
+        console.log('Sending answer');
+        socket.emit('answer', { to: from, answer });
+      } catch (err) {
+        console.error('Error handling offer:', err);
+      }
     });
 
     socket.on('answer', async ({ from, answer }) => {
-      if (peerConnection) {
-        await peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
+      try {
+        if (peerConnection && peerConnection.signalingState === 'have-local-offer') {
+          await peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
+        } else {
+          console.warn('Received answer in wrong state:', peerConnection?.signalingState);
+        }
+      } catch (err) {
+        console.error('Error setting remote description:', err);
       }
     });
 
     socket.on('ice-candidate', async ({ from, candidate }) => {
-      if (peerConnection) {
-        await peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
+      try {
+        if (peerConnection && peerConnection.remoteDescription) {
+          await peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
+        } else {
+          console.warn('Received ICE candidate before remote description');
+        }
+      } catch (err) {
+        console.error('Error adding ICE candidate:', err);
       }
     });
 
@@ -194,50 +444,7 @@ function ChatRoom() {
       socket.off('ice-candidate');
       socket.off('partner-left');
     };
-  }, [peerConnection, createPeerConnection]);
-
-  const initializeMedia = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: chatMode === 'video',
-        audio: true
-      });
-
-      setLocalStream(stream);
-      if (localVideoRef.current) {
-        localVideoRef.current.srcObject = stream;
-      }
-    } catch (err) {
-      console.error('Error getting media:', err);
-    }
-  };
-
-  useEffect(() => {
-    initializeMedia();
-    return () => {
-      if (localStream) {
-        localStream.getTracks().forEach(track => track.stop());
-      }
-      if (peerConnection) {
-        peerConnection.close();
-      }
-    };
-  }, [chatMode]);
-
-  const startChat = () => {
-    setIsSearching(true);
-    socket.emit('ready', chatMode);
-  };
-
-  const nextPartner = () => {
-    if (peerConnection) {
-      peerConnection.close();
-    }
-    setPeerConnection(null);
-    setRemoteStream(null);
-    setIsConnected(false);
-    socket.emit('next');
-  };
+  }, [peerConnection, createPeerConnection, chatMode]);
 
   const toggleMic = () => {
     if (localStream) {
@@ -245,16 +452,28 @@ function ChatRoom() {
       if (audioTrack) {
         audioTrack.enabled = !audioTrack.enabled;
         setIsMuted(!audioTrack.enabled);
+        
+        const audioProducer = Array.from(producers.values())
+          .find(p => p.track.kind === 'audio');
+        if (audioProducer) {
+          audioProducer.pause();
+        }
       }
     }
   };
 
   const toggleVideo = () => {
-    if (localStream) {
+    if (localStream && chatMode === 'video') {
       const videoTrack = localStream.getVideoTracks()[0];
       if (videoTrack) {
         videoTrack.enabled = !videoTrack.enabled;
         setIsVideoOff(!videoTrack.enabled);
+        
+        const videoProducer = Array.from(producers.values())
+          .find(p => p.track.kind === 'video');
+        if (videoProducer) {
+          videoProducer.pause();
+        }
       }
     }
   };
@@ -374,85 +593,41 @@ function ChatRoom() {
     return message.text;
   };
 
-  const switchMode = (mode) => {
+  const switchMode = async (mode) => {
     if (!isSearching) {
       setChatMode(mode);
-      socket.emit('setChatMode', mode);
       
+      producers.forEach(producer => producer.close());
+      setProducers(new Map());
+
       if (localStream) {
-        // Управляем видеотреками
-        localStream.getVideoTracks().forEach(track => {
-          track.enabled = mode === 'video';
-          if (mode === 'audio') {
-            track.stop();
-          }
-        });
-
-        // Убеждаемся, что аудио включено в аудио режиме
-        localStream.getAudioTracks().forEach(track => {
-          track.enabled = true;
-        });
-
-        setIsVideoOff(mode === 'audio');
+        localStream.getTracks().forEach(track => track.stop());
       }
 
-      // Если есть peer соединение, пересоздаем его
-      if (peerConnection && localStream) {
-        peerConnection.close();
-        setPeerConnection(null);
-        startChat(); // Начинаем новый поиск с новыми настройками
+      try {
+        const newStream = await navigator.mediaDevices.getUserMedia({
+          video: mode === 'video',
+          audio: true
+        });
+
+        setLocalStream(newStream);
+        if (localVideoRef.current) {
+          localVideoRef.current.srcObject = newStream;
+          await localVideoRef.current.play().catch(console.error);
+        }
+
+        const tracks = newStream.getTracks();
+        for (const track of tracks) {
+          const producer = await mediasoupService.publish(track);
+          producers.set(producer.id, producer);
+        }
+        setProducers(new Map(producers));
+
+      } catch (error) {
+        console.error('Failed to switch mode:', error);
       }
     }
   };
-
-  useEffect(() => {
-    socket.on('chatStart', async ({ room }) => {
-      console.log('Chat started in room:', room);
-      setRoomId(room);
-      setIsConnected(true);
-      setIsSearching(false);
-
-      try {
-        await setupMediaStream();
-      } catch (err) {
-        console.error('Error setting up media stream:', err);
-      }
-    });
-
-    socket.on('signal', async ({ signal }) => {
-      console.log('Received signal:', signal.type);
-      if (peer && !peer.destroyed) {
-        try {
-          await peer.signal(signal);
-        } catch (err) {
-          console.error('Error processing signal:', err);
-          // Пересоздаем peer при ошибке сигналинга
-          peer.destroy();
-          const newPeer = createPeer(false, localStream, chatMode);
-          setPeer(newPeer);
-        }
-      }
-    });
-
-    socket.on('partnerLeft', () => {
-      console.log('Partner left');
-      if (peer) {
-        peer.destroy();
-        setPeer(null);
-      }
-      setIsConnected(false);
-      setRoomId(null);
-    });
-
-    return () => {
-      socket.off('chatStart');
-      socket.off('signal');
-      socket.off('partnerLeft');
-      if (peer) {
-        peer.destroy();
-      }
-    };
-  }, [peer, localStream, chatMode]);
 
   useEffect(() => {
     if (localVideoRef.current) {
@@ -486,6 +661,214 @@ function ChatRoom() {
     
     checkDevices();
   }, []);
+
+  // Инициализация MediaSoup и медиапотоков
+  useEffect(() => {
+    const initializeMediaSoup = async () => {
+      try {
+        await mediasoupService.init();
+        setIsInitialized(true);
+        console.log('MediaSoup initialized');
+
+        // Подписываемся на события сокета
+        mediasoupService.socket.on('connect', () => {
+          console.log('Connected to MediaSoup server');
+        });
+
+        mediasoupService.socket.on('partnerFound', async ({ partnerId }) => {
+          console.log('Partner found:', partnerId);
+          setIsConnected(true);
+          setIsSearching(false);
+        });
+
+        mediasoupService.socket.on('partnerLeft', () => {
+          setIsConnected(false);
+          if (remoteVideoRef.current) {
+            remoteVideoRef.current.srcObject = null;
+          }
+          consumers.forEach(consumer => consumer.close());
+          setConsumers(new Map());
+        });
+
+      } catch (error) {
+        console.error('Failed to initialize MediaSoup:', error);
+      }
+    };
+
+    initializeMediaSoup();
+
+    return () => {
+      mediasoupService.close();
+    };
+  }, []);
+
+  // Инициализация медиа при изменении режима
+  useEffect(() => {
+    const initializeMedia = async () => {
+      if (!isInitialized) return;
+
+      try {
+        // Получаем медиапотоки
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: chatMode === 'video',
+          audio: true
+        });
+
+        setLocalStream(stream);
+        if (localVideoRef.current) {
+          localVideoRef.current.srcObject = stream;
+          await localVideoRef.current.play().catch(console.error);
+        }
+
+        // Публикуем треки
+        const tracks = stream.getTracks();
+        for (const track of tracks) {
+          const producer = await mediasoupService.publish(track);
+          producers.set(producer.id, producer);
+        }
+        setProducers(new Map(producers));
+
+      } catch (error) {
+        console.error('Failed to initialize media:', error);
+      }
+    };
+
+    initializeMedia();
+
+    return () => {
+      if (localStream) {
+        localStream.getTracks().forEach(track => track.stop());
+      }
+      producers.forEach(producer => producer.close());
+    };
+  }, [chatMode, isInitialized]);
+
+  useEffect(() => {
+    if (isConnected) {
+      connectionMonitorService.startMonitoring(mediasoupService.socket, handleConnectionTimeout);
+      startStatsMonitoring();
+    } else {
+      connectionMonitorService.stopMonitoring();
+      stopStatsMonitoring();
+    }
+
+    return () => {
+      connectionMonitorService.stopMonitoring();
+      stopStatsMonitoring();
+    };
+  }, [isConnected]);
+
+  const startStatsMonitoring = () => {
+    statsIntervalRef.current = setInterval(async () => {
+      if (producerTransport) {
+        const stats = await connectionStatsService.getStats(producerTransport);
+        setConnectionStats(stats);
+        setConnectionQuality(connectionStatsService.getConnectionQuality());
+        
+        // Адаптивное качество видео
+        const videoProducer = Array.from(producers.values())
+          .find(p => p.track.kind === 'video');
+        if (videoProducer) {
+          await videoQualityService.adjustQuality(videoProducer, connectionStatsService);
+        }
+      }
+    }, 1000);
+  };
+
+  const stopStatsMonitoring = () => {
+    if (statsIntervalRef.current) {
+      clearInterval(statsIntervalRef.current);
+      statsIntervalRef.current = null;
+    }
+  };
+
+  const handleConnectionTimeout = async () => {
+    setIsReconnecting(true);
+    
+    const hasNetwork = await connectionMonitorService.checkNetworkQuality();
+    if (!hasNetwork) {
+      setIsConnected(false);
+      return;
+    }
+
+    try {
+      await connectionRecoveryService.handleDisconnect(
+        mediasoupService,
+        async () => {
+          setIsReconnecting(false);
+          await initializeMedia();
+          setIsConnected(true);
+        },
+        (error) => {
+          console.error('Failed to reconnect:', error);
+          setIsConnected(false);
+          setIsReconnecting(false);
+        }
+      );
+    } catch (error) {
+      console.error('Connection recovery failed:', error);
+      setIsConnected(false);
+      setIsReconnecting(false);
+    }
+  };
+
+  const StatsModal = () => (
+    <Modal title="Статистика соединения" onClose={() => setActiveModal(null)}>
+      <div className="stats-container">
+        <div className="stats-item">
+          <span>Качество соединения:</span>
+          <span className={`quality-indicator ${connectionQuality}`}>
+            {connectionQuality.toUpperCase()}
+          </span>
+        </div>
+        {connectionStats && (
+          <>
+            <div className="stats-item">
+              <span>Скорость передачи:</span>
+              <span>{Math.round(connectionStats.bitrate / 1000)} Кбит/с</span>
+            </div>
+            <div className="stats-item">
+              <span>Потеряно пакетов:</span>
+              <span>{connectionStats.packetsLost}</span>
+            </div>
+            <div className="stats-item">
+              <span>Задержка:</span>
+              <span>{Math.round(connectionStats.roundTripTime * 1000)} мс</span>
+            </div>
+            <div className="stats-item">
+              <span>Джиттер:</span>
+              <span>{Math.round(connectionStats.jitter * 1000)} мс</span>
+            </div>
+            <div className="stats-item">
+              <span>Разрешение:</span>
+              <span>{connectionStats.resolution.width}x{connectionStats.resolution.height}</span>
+            </div>
+          </>
+        )}
+      </div>
+    </Modal>
+  );
+
+  const nextPartner = () => {
+    if (isConnected) {
+      // Закрываем текущие соединения
+      producers.forEach(producer => producer.close());
+      consumers.forEach(consumer => consumer.close());
+      setProducers(new Map());
+      setConsumers(new Map());
+      
+      // Очищаем видео
+      if (remoteVideoRef.current) {
+        remoteVideoRef.current.srcObject = null;
+      }
+      
+      setIsConnected(false);
+      setIsSearching(true);
+      
+      // Запускаем поиск нового партнера
+      mediasoupService.socket.emit('findPartner');
+    }
+  };
 
   return (
     <div className={`chat-room ${theme}`}>
@@ -892,6 +1275,16 @@ function ChatRoom() {
           )}
         </form>
       </div>
+
+      {isReconnecting && (
+        <div className="reconnecting-overlay">
+          <div className="reconnecting-message">
+            <h3>Переподключение...</h3>
+            <div className="reconnecting-spinner"></div>
+            <p>Пытаемся восстановить соединение</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
