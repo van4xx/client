@@ -32,6 +32,22 @@
   
     /* Границы */
     --border: rgba(255, 215, 0, 0.2);
+  
+    /* Новая цветовая схема */
+    --neon-blue: #00f3ff;
+    --neon-purple: #9d00ff;
+    --neon-pink: #ff00f7;
+    --deep-space: #0a0a20;
+    --space-blue: #1a1a3a;
+    --star-white: #ffffff;
+  
+    /* Градиенты */
+    --space-gradient: linear-gradient(180deg, var(--deep-space), var(--space-blue));
+    --neon-gradient: linear-gradient(45deg, var(--neon-blue), var(--neon-purple));
+  
+    /* Тени */
+    --neon-glow: 0 0 20px var(--neon-blue), 0 0 40px var(--neon-purple);
+    --soft-glow: 0 0 15px rgba(0, 243, 255, 0.3);
   }
   
 
@@ -57,27 +73,80 @@
 .video-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  height: 95vh;
+  padding: 20px;
+}
+
+.video-box {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: 15px;
+  overflow: hidden;
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+
+.video-element {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  background: var(--surface);
+  border-radius: 15px;
+}
+
+/* Фиксируем высоту видео-сетки */
+.video-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 10px;
   height: 95vh;
   width: 100%;
   margin-bottom: 10px;
 }
 
-.video-box {
-  position: relative;
-  background: var(--gradient-surface);
-  backdrop-filter: blur(10px);
-  border-radius: 15px;
-  overflow: hidden;
-  height: 100%;
-  border: 1px solid var(--border);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+/* Стили для ручки изменения размера */
+.resize-handle {
+  display: none;
 }
 
-.video-box video {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+.video-box:hover .resize-handle {
+  display: none;
+}
+
+/* Индикатор ограничения */
+.resize-handle::after {
+  display: none;
+}
+
+.video-box[style*="max-height"] .resize-handle::after {
+  display: none;
+}
+
+.video-box[style*="min-height"] .resize-handle::after {
+  display: none;
+}
+
+/* Треугольник для изменения размера */
+.resize-handle::before {
+  display: none;
+}
+
+.resize-handle:hover::before {
+  display: none;
+}
+
+.dark .resize-handle::before {
+  display: none;
+}
+
+.dark .resize-handle:hover::before {
+  display: none;
+}
+
+.resize-handle:active::before {
+  display: none;
 }
 
 /* Секция с кнопками управления */
@@ -108,25 +177,31 @@
 
 /* Центральная кнопка (Рулетим) */
 .start-chat {
-  padding: 0 30px;
-  height: 40px;
-  border-radius: 20px;
-  border: 2px solid var(--yellow);
-  background: linear-gradient(145deg, var(--yellow), var(--yellow-dark));
-  color: var(--graphite-dark);
-  font-size: 15px;
-  font-weight: 600;
+  padding: 0 35px;
+  height: 45px;
+  border-radius: 25px;
+  border: 2px solid var(--neon-blue);
+  background: var(--space-blue);
+  color: var(--star-white);
+  font-size: 16px;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 1.5px;
+  letter-spacing: 2px;
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 4px 15px rgba(255, 215, 0, 0.2);
+  box-shadow: var(--soft-glow);
 }
 
 .start-chat:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(255, 215, 0, 0.3);
-  background: linear-gradient(145deg, var(--yellow-light), var(--yellow));
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: var(--neon-glow);
+  background: var(--neon-gradient);
+}
+
+.start-chat:disabled {
+  opacity: 0.7;
+  cursor: wait;
+  transform: none;
 }
 
 /* Кнопки Отмена/Следующий */
@@ -1936,4 +2011,143 @@
 @keyframes spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
+}
+
+.search-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(10, 10, 32, 0.95);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(10px);
+  border-radius: 15px;
+  overflow: hidden;
+}
+
+.search-message {
+  text-align: center;
+  color: var(--star-white);
+  margin-top: 220px;
+}
+
+.search-message h3 {
+  font-size: 28px;
+  margin-bottom: 15px;
+  color: var(--neon-blue);
+  text-shadow: 0 0 10px var(--neon-blue);
+  font-weight: 700;
+}
+
+.search-message p {
+  font-size: 18px;
+  color: var(--star-white);
+  opacity: 0.9;
+}
+
+/* Анимации */
+@keyframes hover {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-20px); }
+}
+
+@keyframes beam {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 0.7; }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0) translateX(-50%); }
+  50% { transform: translateY(-10px) translateX(-50%); }
+}
+
+/* Обновленная кнопка Рулетим */
+.start-chat {
+  padding: 0 35px;
+  height: 45px;
+  border-radius: 25px;
+  border: 2px solid var(--neon-blue);
+  background: var(--space-blue);
+  color: var(--star-white);
+  font-size: 16px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: var(--soft-glow);
+}
+
+.start-chat:hover {
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: var(--neon-glow);
+  background: var(--neon-gradient);
+}
+
+/* Анимированное НЛО */
+.ufo-container {
+  position: relative;
+  width: 200px;
+  height: 200px;
+  margin-bottom: 30px;
+}
+
+.ufo {
+  position: absolute;
+  width: 120px;
+  height: 50px;
+  background: linear-gradient(45deg, var(--neon-blue), var(--neon-purple));
+  border-radius: 50px;
+  box-shadow: var(--neon-glow);
+  animation: hover 3s ease-in-out infinite;
+}
+
+.ufo::before {
+  content: '';
+  position: absolute;
+  top: -25px;
+  left: 20px;
+  width: 80px;
+  height: 40px;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 40px 40px 0 0;
+  box-shadow: var(--soft-glow);
+}
+
+.ufo::after {
+  content: '';
+  position: absolute;
+  bottom: -20px;
+  left: 30px;
+  width: 60px;
+  height: 20px;
+  background: var(--neon-blue);
+  filter: blur(15px);
+  animation: beam 2s ease-in-out infinite;
+}
+
+.alien {
+  position: absolute;
+  bottom: 5px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 30px;
+  height: 40px;
+  background: #00ff00;
+  border-radius: 15px 15px 5px 5px;
+  animation: float 4s ease-in-out infinite;
+}
+
+.alien::before {
+  content: '';
+  position: absolute;
+  top: -10px;
+  left: 5px;
+  width: 20px;
+  height: 25px;
+  background: #00ff00;
+  border-radius: 50%;
 }

@@ -6,7 +6,7 @@ import './App.css';
 function App() {
   return (
     <ThemeProvider>
-      <div className="app">
+      <div className="App">
         <ChatRoom />
       </div>
     </ThemeProvider>
