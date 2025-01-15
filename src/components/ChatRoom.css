@@ -129,6 +129,7 @@
   transition: opacity 0.3s ease, transform 0.3s ease;
   border: 1px solid rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(10px);
+  z-index: 10;
 }
 
 .video-box:hover .local-controls {
@@ -175,16 +176,6 @@
 .control-button.danger.active {
   background: #f44336;
   border-color: #da190b;
-}
-
-.control-button svg {
-  width: 20px;
-  height: 20px;
-  transition: transform 0.3s ease;
-}
-
-.control-button:hover svg {
-  transform: scale(1.1);
 }
 
 .control-button::after {
