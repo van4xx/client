@@ -547,6 +547,8 @@ function ChatRoom() {
         </div>
       </div>
 
+      <div className="controls-trigger" />
+      <div className="controls-indicator" />
       <div className="controls-section">
         <div className="controls-buttons">
           <div className="mode-switcher">
