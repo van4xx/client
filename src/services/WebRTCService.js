@@ -10,6 +10,11 @@ class WebRTCService {
     this.ws = null;
     this.wsConnected = false;
     this.isInitiator = false;
+    this.selectedDevices = {
+      video: null,
+      audio: null,
+      audioOutput: null
+    };
   }
 
   async initialize() {
@@ -167,32 +172,40 @@ class WebRTCService {
     }
   }
 
-  async createLocalTracks() {
+  async createLocalTracks(mode = 'video') {
     try {
-      console.log('Requesting media permissions...');
-      this.localStream = await navigator.mediaDevices.getUserMedia({
-        audio: true,
-        video: true
-      });
+      console.log('Requesting media permissions for mode:', mode);
+      const constraints = {
+        video: mode === 'video' ? (this.selectedDevices.video ? { deviceId: { exact: this.selectedDevices.video } } : true) : false,
+        audio: this.selectedDevices.audio ? { deviceId: { exact: this.selectedDevices.audio } } : true
+      };
 
-      if (this.peerConnection) {
-        this.localStream.getTracks().forEach(track => {
-          this.peerConnection.addTrack(track, this.localStream);
+      this.localStream = await navigator.mediaDevices.getUserMedia(constraints);
+      
+      if (this.selectedDevices.audioOutput && typeof HTMLMediaElement.prototype.setSinkId === 'function') {
+        const videoElements = document.querySelectorAll('video');
+        videoElements.forEach(async (element) => {
+          try {
+            await element.setSinkId(this.selectedDevices.audioOutput);
+          } catch (error) {
+            console.error('Error setting audio output device:', error);
+          }
         });
       }
 
       return {
-        localStream: this.localStream
+        localStream: this.localStream,
+        mode: mode
       };
     } catch (error) {
-      console.error('Error creating local tracks:', error);
+      console.error('Error getting user media:', error);
       throw error;
     }
   }
 
-  async searchPartner() {
+  async searchPartner(mode = 'video') {
     try {
-      console.log('Searching for partner...');
+      console.log('Searching for partner in mode:', mode);
       if (!this.wsConnected || this.ws.readyState !== WebSocket.OPEN) {
         console.error('WebSocket not connected, attempting to reconnect...');
         await this.initializeWebSocket();
@@ -200,7 +213,8 @@ class WebRTCService {
 
       this.ws.send(JSON.stringify({
         type: 'search',
-        userId: this.userId
+        userId: this.userId,
+        mode: mode
       }));
 
       return new Promise((resolve) => {
@@ -381,6 +395,109 @@ class WebRTCService {
       console.log('Successfully left room');
     } catch (error) {
       console.error('Error leaving room:', error);
+      throw error;
+    }
+  }
+
+  async replaceVideoTrack(newTrack) {
+    const sender = this.peerConnection?.getSenders().find(s => s.track?.kind === 'video');
+    if (sender) {
+      await sender.replaceTrack(newTrack);
+    }
+  }
+
+  handleMessage(message) {
+    switch (message.type) {
+      case 'attention':
+        // Воспроизводим звук и показываем уведомление
+        const audio = new Audio('/attention.mp3');
+        audio.play();
+        // Можно добавить визуальное уведомление
+        break;
+      // ... existing message handling ...
+    }
+  }
+
+  async switchVideoDevice(deviceId) {
+    try {
+      this.selectedDevices.video = deviceId;
+      const newStream = await navigator.mediaDevices.getUserMedia({
+        video: { deviceId: { exact: deviceId } },
+        audio: false
+      });
+      
+      const videoTrack = newStream.getVideoTracks()[0];
+      
+      if (this.localStream) {
+        const oldTrack = this.localStream.getVideoTracks()[0];
+        if (oldTrack) {
+          this.localStream.removeTrack(oldTrack);
+          oldTrack.stop();
+        }
+        this.localStream.addTrack(videoTrack);
+      }
+      
+      if (this.peerConnection) {
+        const sender = this.peerConnection.getSenders().find(s => s.track?.kind === 'video');
+        if (sender) {
+          await sender.replaceTrack(videoTrack);
+        }
+      }
+      
+      return videoTrack;
+    } catch (error) {
+      console.error('Error switching video device:', error);
+      throw error;
+    }
+  }
+
+  async switchAudioDevice(deviceId) {
+    try {
+      this.selectedDevices.audio = deviceId;
+      const newStream = await navigator.mediaDevices.getUserMedia({
+        video: false,
+        audio: { deviceId: { exact: deviceId } }
+      });
+      
+      const audioTrack = newStream.getAudioTracks()[0];
+      
+      if (this.localStream) {
+        const oldTrack = this.localStream.getAudioTracks()[0];
+        if (oldTrack) {
+          this.localStream.removeTrack(oldTrack);
+          oldTrack.stop();
+        }
+        this.localStream.addTrack(audioTrack);
+      }
+      
+      if (this.peerConnection) {
+        const sender = this.peerConnection.getSenders().find(s => s.track?.kind === 'audio');
+        if (sender) {
+          await sender.replaceTrack(audioTrack);
+        }
+      }
+      
+      return audioTrack;
+    } catch (error) {
+      console.error('Error switching audio device:', error);
+      throw error;
+    }
+  }
+
+  async switchAudioOutput(deviceId) {
+    try {
+      this.selectedDevices.audioOutput = deviceId;
+      
+      if (typeof HTMLMediaElement.prototype.setSinkId === 'function') {
+        const videoElements = document.querySelectorAll('video');
+        for (const element of videoElements) {
+          await element.setSinkId(deviceId);
+        }
+      } else {
+        console.warn('setSinkId is not supported in this browser');
+      }
+    } catch (error) {
+      console.error('Error switching audio output device:', error);
       throw error;
     }
   }
