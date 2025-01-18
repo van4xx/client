@@ -100,7 +100,7 @@ function ChatRoom() {
         <div className="video-box remote-video">
           {!isSearching && !isConnected && (
             <div className="start-screen">
-              <div className="bouncing-logo">
+              <div className="bouncing-logo" data-text="RULETKA.TOP">
                 <span>RULETKA</span><span>.</span><span>TOP</span>
               </div>
               <div className="start-instructions">
