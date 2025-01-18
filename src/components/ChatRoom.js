@@ -172,17 +172,26 @@ function ChatRoom() {
             </button>
           )}
           <div className="menu-divider" />
-          <button 
-            className={`menu-item ${chatMode === 'video' ? 'active' : ''}`}
-            onClick={() => changeChatMode('video')}
+          <div 
+            className="mode-toggle"
+            data-mode={chatMode}
           >
-            <BsCameraVideo /> Видеочат
-          </button>
-          <button 
-            className={`menu-item ${chatMode === 'audio' ? 'active' : ''}`}
-            onClick={() => changeChatMode('audio')}
-          >
-            <BsMic /> Аудиочат
+            <button 
+              className={chatMode === 'video' ? 'active' : ''}
+              onClick={() => changeChatMode('video')}
+            >
+              <BsCameraVideo /> Видео
+            </button>
+            <button 
+              className={chatMode === 'audio' ? 'active' : ''}
+              onClick={() => changeChatMode('audio')}
+            >
+              <BsMic /> Аудио
+            </button>
+          </div>
+          <div className="menu-divider" />
+          <button className="menu-item" onClick={stopSearch}>
+            Стоп
           </button>
         </div>
 
