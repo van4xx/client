@@ -20,7 +20,7 @@ function ChatRoom() {
   const [isMuted, setIsMuted] = useState(false);
   const [isVideoOff, setIsVideoOff] = useState(false);
   const [localStream, setLocalStream] = useState(null);
-  const [chatMode, setChatMode] = useState('video'); // 'video' или 'audio'
+  const [chatMode, setChatMode] = useState('video');
   const [showModeMenu, setShowModeMenu] = useState(false);
   const [showSettingsMenu, setShowSettingsMenu] = useState(false);
   
@@ -89,7 +89,6 @@ function ChatRoom() {
 
   const changeChatMode = (mode) => {
     setChatMode(mode);
-    setShowModeMenu(false);
   };
 
   return (
@@ -153,7 +152,6 @@ function ChatRoom() {
           />
         </div>
 
-        {/* Меню выбора режима чата */}
         <div 
           className={`slide-menu mode-menu ${showModeMenu ? 'show' : ''}`}
           onMouseLeave={() => setShowModeMenu(false)}
@@ -173,7 +171,7 @@ function ChatRoom() {
               <BsArrowRepeat /> Следующий
             </button>
           )}
-          <div className="menu-divider"></div>
+          <div className="menu-divider" />
           <button 
             className={`menu-item ${chatMode === 'video' ? 'active' : ''}`}
             onClick={() => changeChatMode('video')}
@@ -186,12 +184,8 @@ function ChatRoom() {
           >
             <BsMic /> Аудиочат
           </button>
-          <button className="menu-item" onClick={stopSearch}>
-            Стоп
-          </button>
         </div>
 
-        {/* Меню настроек */}
         <div 
           className={`slide-menu settings-menu ${showSettingsMenu ? 'show' : ''}`}
           onMouseLeave={() => setShowSettingsMenu(false)}

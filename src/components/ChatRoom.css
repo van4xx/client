@@ -6,6 +6,9 @@
   --yellow-1: #ffb700;
   --yellow-2: #ffb800;
   --green: #9ed11d;
+  --menu-blur: blur(10px);
+  --glass-border: 1px solid rgba(255, 255, 255, 0.1);
+  --menu-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
 }
 
 .chat-room {
@@ -13,7 +16,7 @@
   width: 100vw;
   display: flex;
   flex-direction: column;
-  background-color: var(--dark-gray);
+  background: linear-gradient(135deg, var(--dark-gray), #2c2c2c);
   color: #ffffff;
   overflow: hidden;
   position: relative;
@@ -23,103 +26,162 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 0;
-  height: 100vh;
+  height: 95vh;
 }
 
 .video-box {
   position: relative;
   width: 100%;
   height: 100%;
-  border-radius: 0;
   overflow: hidden;
   background: var(--gray-1);
+  transition: all 0.3s ease;
+}
+
+.video-box::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(0deg, rgba(0,0,0,0.3) 0%, transparent 20%);
+  pointer-events: none;
 }
 
 .video-element {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transform: scaleX(-1);
+  transition: transform 0.3s ease;
+}
+
+.video-box:hover .video-element {
+  transform: scale(1.02);
 }
 
 .local-controls {
   position: absolute;
   bottom: 20px;
   left: 50%;
-  transform: translateX(-50%);
+  transform: translateX(-50%) translateY(20px);
   display: flex;
   gap: 15px;
   padding: 12px 20px;
-  background: var(--gray-2);
+  background: rgba(78, 78, 78, 0.7);
+  backdrop-filter: var(--menu-blur);
   border-radius: 30px;
   opacity: 0;
-  transition: all 0.3s ease;
-  border: 1px solid var(--gray-3);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: var(--glass-border);
+  box-shadow: var(--menu-shadow);
+  z-index: 10;
 }
 
 .video-box:hover .local-controls {
   opacity: 1;
+  transform: translateX(-50%) translateY(0);
 }
 
 .control-button {
   width: 45px;
   height: 45px;
   border-radius: 50%;
-  border: none;
-  background: var(--gray-3);
+  border: var(--glass-border);
+  background: rgba(82, 82, 82, 0.7);
+  backdrop-filter: var(--menu-blur);
   color: white;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   font-size: 1.2rem;
 }
 
 .control-button:hover {
   background: var(--yellow-1);
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(255, 183, 0, 0.3);
 }
 
 .control-button.danger {
-  background: var(--gray-3);
+  background: rgba(82, 82, 82, 0.7);
 }
 
 .control-button.danger:hover {
   background: #ff4444;
+  box-shadow: 0 5px 15px rgba(255, 68, 68, 0.3);
 }
 
 .control-button.danger.active {
   background: #ff4444;
+  box-shadow: 0 5px 15px rgba(255, 68, 68, 0.3);
 }
 
-.menu-divider {
-  height: 1px;
-  background: var(--gray-3);
-  margin: 5px 0;
+.main-controls {
+  height: 5vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 20px;
+  background: var(--gray-2);
 }
 
-.menu-item.start-button {
+.start-chat {
+  padding: 6px 30px;
+  font-size: 1rem;
+  border: none;
+  border-radius: 20px;
   background: var(--green);
+  color: white;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 3.5vh;
 }
 
-.menu-item.start-button:hover {
+.start-chat:hover {
   background: var(--yellow-1);
+  transform: translateY(-2px);
 }
 
-.menu-item.cancel-button {
+.cancel-search {
+  padding: 6px 30px;
+  font-size: 1rem;
+  border: none;
+  border-radius: 20px;
   background: var(--gray-3);
+  color: white;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  height: 3.5vh;
 }
 
-.menu-item.cancel-button:hover {
+.cancel-search:hover {
   background: #ff4444;
 }
 
-.menu-item.next-button {
+.next-partner {
+  padding: 6px 30px;
+  font-size: 1rem;
+  border: none;
+  border-radius: 20px;
   background: var(--yellow-1);
+  color: white;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 3.5vh;
 }
 
-.menu-item.next-button:hover {
+.next-partner:hover {
   background: var(--yellow-2);
+  transform: translateY(-2px);
 }
 
 [data-tooltip] {
@@ -131,26 +193,216 @@
   position: absolute;
   bottom: -30px;
   left: 50%;
-  transform: translateX(-50%);
-  background: var(--gray-2);
+  transform: translateX(-50%) translateY(10px);
+  background: rgba(78, 78, 78, 0.9);
+  backdrop-filter: var(--menu-blur);
   color: white;
-  padding: 5px 10px;
-  border-radius: 5px;
-  font-size: 12px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 0.8rem;
   white-space: nowrap;
   opacity: 0;
   visibility: hidden;
-  transition: all 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: var(--glass-border);
+  box-shadow: var(--menu-shadow);
 }
 
 [data-tooltip]:hover::after {
   opacity: 1;
   visibility: visible;
-  transform: translateX(-50%) translateY(-5px);
+  transform: translateX(-50%) translateY(0);
 }
 
-.remote-video {
+.bottom-menus {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 5vh;
+  z-index: 1000;
+  background: rgba(78, 78, 78, 0.7);
+  backdrop-filter: var(--menu-blur);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 30px;
+  border-top: var(--glass-border);
+}
+
+.menu-indicators {
+  display: flex;
+  gap: 30px;
+  padding: 10px;
+  background: rgba(82, 82, 82, 0.3);
+  border-radius: 20px;
+  backdrop-filter: var(--menu-blur);
+}
+
+.menu-indicator {
+  width: 35px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
+  overflow: hidden;
+}
+
+.menu-indicator::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: var(--yellow-1);
+  transition: transform 0.3s ease;
+}
+
+.menu-indicator:hover::after {
+  transform: translateX(100%);
+}
+
+.slide-menu {
+  position: absolute;
+  bottom: 0;
+  height: 5vh;
+  background: rgba(78, 78, 78, 0.8);
+  backdrop-filter: var(--menu-blur);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  opacity: 0;
+  visibility: hidden;
+  padding: 0 20px;
+  white-space: nowrap;
+  border-top: var(--glass-border);
+  box-shadow: var(--menu-shadow);
+}
+
+.mode-menu {
+  left: -100%;
+  right: 50%;
+  transform: translateX(-20px);
+  justify-content: flex-end;
+  padding-right: 30px;
+}
+
+.settings-menu {
+  left: 50%;
+  right: -100%;
+  transform: translateX(20px);
+  padding-left: 30px;
+}
+
+.mode-menu.show {
+  left: 0;
+  right: 50%;
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(0);
+}
+
+.settings-menu.show {
+  left: 50%;
+  right: 0;
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(0);
+}
+
+.mode-menu.show::after,
+.settings-menu.show::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: linear-gradient(to bottom, transparent, rgba(255, 183, 0, 0.3), transparent);
+}
+
+.mode-menu.show::after {
+  right: 0;
+}
+
+.settings-menu.show::after {
+  left: 0;
+}
+
+.menu-item {
+  padding: 5px 15px;
+  height: 3.5vh;
+  border: none;
+  border-radius: 8px;
+  background: rgba(82, 82, 82, 0.7);
+  backdrop-filter: var(--menu-blur);
+  color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  white-space: nowrap;
+  border: var(--glass-border);
+}
+
+.menu-item:hover {
+  background: var(--yellow-1);
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(255, 183, 0, 0.3);
+}
+
+.menu-item.active {
+  background: var(--yellow-1);
+  box-shadow: 0 5px 15px rgba(255, 183, 0, 0.3);
+}
+
+.menu-item svg {
+  font-size: 1.1rem;
+  transition: transform 0.3s ease;
+}
+
+.menu-item:hover svg {
+  transform: scale(1.2);
+}
+
+.menu-item.start-button {
+  background: var(--green);
+  box-shadow: 0 5px 15px rgba(158, 209, 29, 0.3);
+}
+
+.menu-item.start-button:hover {
+  background: var(--yellow-1);
+  box-shadow: 0 5px 15px rgba(255, 183, 0, 0.3);
+}
+
+.menu-item.cancel-button {
+  background: rgba(82, 82, 82, 0.7);
+}
+
+.menu-item.cancel-button:hover {
+  background: #ff4444;
+  box-shadow: 0 5px 15px rgba(255, 68, 68, 0.3);
+}
+
+.menu-item.next-button {
+  background: var(--yellow-1);
+  box-shadow: 0 5px 15px rgba(255, 183, 0, 0.3);
+}
+
+.menu-item.next-button:hover {
+  background: var(--yellow-2);
+}
+
+.menu-divider {
+  width: 1px;
+  height: 60%;
+  background: rgba(255, 255, 255, 0.1);
+  margin: 0 5px;
 }
 
 .waiting-message {
@@ -158,123 +410,25 @@
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  color: white;
-  font-size: 1.2rem;
-  z-index: 2;
-  text-align: center;
-  background: rgba(0, 0, 0, 0.5);
-  padding: 1rem 2rem;
-  border-radius: 8px;
-  pointer-events: none;
-}
-
-.bottom-menus {
-  position: fixed;
-  bottom: 1vh;
-  left: 0;
-  width: 100%;
-  z-index: 1000;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.menu-indicators {
-  display: flex;
-  gap: 15px;
-  padding: 10px;
-}
-
-.menu-indicator {
-  width: 35px;
-  height: 5px;
-  background: var(--gray-2);
-  border-radius: 3px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.menu-indicator:hover {
-  background: var(--yellow-1);
-  transform: scaleX(1.2);
-}
-
-.slide-menu {
-  position: absolute;
-  bottom: 25px;
-  background: var(--gray-2);
+  background: rgba(78, 78, 78, 0.7);
+  backdrop-filter: var(--menu-blur);
+  padding: 15px 30px;
   border-radius: 15px;
-  padding: 15px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  transition: all 0.3s ease;
-  opacity: 0;
-  visibility: hidden;
-  min-width: 200px;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+  font-size: 1.1rem;
+  border: var(--glass-border);
+  box-shadow: var(--menu-shadow);
+  z-index: 10;
+  animation: pulse 2s infinite;
 }
 
-.slide-menu.show {
-  opacity: 1;
-  visibility: visible;
-  transform: translateY(-10px);
-}
-
-.mode-menu {
-  left: calc(50% - 120px);
-}
-
-.settings-menu {
-  left: calc(50% + 20px);
-}
-
-.menu-item {
-  padding: 12px 20px;
-  border: none;
-  border-radius: 10px;
-  background: var(--gray-3);
-  color: white;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 1rem;
-  transition: all 0.3s ease;
-  white-space: nowrap;
-}
-
-.menu-item:hover {
-  background: var(--yellow-1);
-  transform: translateX(5px);
-}
-
-.menu-item.active {
-  background: var(--yellow-1);
-}
-
-.menu-item svg {
-  font-size: 1.2rem;
-}
-
-/* Добавляем стрелочку снизу меню */
-.slide-menu::after {
-  content: '';
-  position: absolute;
-  bottom: -8px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 0;
-  height: 0;
-  border-left: 8px solid transparent;
-  border-right: 8px solid transparent;
-  border-top: 8px solid var(--gray-2);
-}
-
-/* Удаляем старые стили main-controls */
-.main-controls,
-.start-chat,
-.cancel-search,
-.next-partner {
-  display: none;
+@keyframes pulse {
+  0% {
+    transform: translate(-50%, -50%) scale(1);
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.05);
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1);
+  }
 } 
