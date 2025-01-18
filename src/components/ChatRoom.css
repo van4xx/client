@@ -295,6 +295,7 @@
   transform: translateX(-20px);
   justify-content: flex-end;
   padding-right: 30px;
+  gap: 20px;
 }
 
 .settings-menu {
@@ -397,13 +398,40 @@
 }
 
 .menu-item.start-button {
-  background: var(--green);
-  box-shadow: 0 5px 15px rgba(158, 209, 29, 0.3);
+  background: linear-gradient(45deg, var(--green) 0%, #b8e83b 100%);
+  border: none;
+  box-shadow: 
+    0 5px 15px rgba(158, 209, 29, 0.3),
+    0 0 20px rgba(158, 209, 29, 0.2),
+    inset 0 0 10px rgba(158, 209, 29, 0.1);
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.menu-item.start-button::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle at center, rgba(255,255,255,0.2) 0%, transparent 50%);
+  animation: rotateGradient 3s linear infinite;
 }
 
 .menu-item.start-button:hover {
-  background: var(--yellow-1);
-  box-shadow: 0 5px 15px rgba(255, 183, 0, 0.3);
+  background: linear-gradient(45deg, var(--yellow-1) 0%, var(--yellow-2) 100%);
+  box-shadow: 
+    0 5px 15px rgba(255, 183, 0, 0.3),
+    0 0 20px rgba(255, 183, 0, 0.2),
+    inset 0 0 10px rgba(255, 183, 0, 0.1);
+  transform: translateY(-2px) scale(1.05);
+}
+
+.menu-item.start-button:hover .glow {
+  transform: scale(2);
+  opacity: 0.3;
 }
 
 .menu-item.cancel-button {
@@ -416,12 +444,40 @@
 }
 
 .menu-item.next-button {
-  background: var(--yellow-1);
-  box-shadow: 0 5px 15px rgba(255, 183, 0, 0.3);
+  background: linear-gradient(45deg, var(--yellow-1) 0%, var(--yellow-2) 100%);
+  border: none;
+  box-shadow: 
+    0 5px 15px rgba(255, 183, 0, 0.3),
+    0 0 20px rgba(255, 183, 0, 0.2),
+    inset 0 0 10px rgba(255, 183, 0, 0.1);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .menu-item.next-button:hover {
-  background: var(--yellow-2);
+  background: linear-gradient(45deg, var(--yellow-2) 0%, var(--yellow-1) 100%);
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: 
+    0 8px 20px rgba(255, 183, 0, 0.4),
+    0 0 30px rgba(255, 183, 0, 0.3),
+    inset 0 0 15px rgba(255, 183, 0, 0.2);
+}
+
+.menu-item.next-button:hover .glow {
+  transform: scale(2);
+  opacity: 0.3;
+}
+
+.menu-item.next-button svg {
+  animation: rotateIcon 2s linear infinite;
+}
+
+@keyframes rotateIcon {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 .menu-divider {
@@ -666,62 +722,62 @@
   left: 0;
   right: 0;
   overflow: hidden;
+  background: #000;
   color: #fff;
   clip: rect(0, 900px, 0, 0);
-  opacity: 0.3;
 }
 
 .bouncing-logo::before {
-  left: 2px;
-  text-shadow: -2px 0 #ff0000;
-  animation: glitch-1 2s infinite linear alternate-reverse;
+  left: 7px;
+  text-shadow: -3px 0 red;
+  animation: glitch-1 3s infinite linear alternate-reverse;
 }
 
 .bouncing-logo::after {
-  left: -2px;
-  text-shadow: 2px 0 #0099ff;
-  animation: glitch-2 3s infinite linear alternate-reverse;
+  left: 3px;
+  text-shadow: -3px 0 #0ff;
+  animation: glitch-2 2s infinite linear alternate-reverse;
 }
 
 @keyframes glitch-1 {
   0% {
-    clip: rect(0, 900px, 100px, 0);
+    clip: rect(20px, 900px, 21px, 0);
   }
   20% {
-    clip: rect(0, 900px, 200px, 0);
+    clip: rect(257px, 900px, 258px, 0);
   }
   40% {
-    clip: rect(0, 900px, 300px, 0);
+    clip: rect(109px, 900px, 110px, 0);
   }
   60% {
-    clip: rect(0, 900px, 400px, 0);
+    clip: rect(53px, 900px, 54px, 0);
   }
   80% {
-    clip: rect(0, 900px, 500px, 0);
+    clip: rect(432px, 900px, 433px, 0);
   }
   100% {
-    clip: rect(0, 900px, 600px, 0);
+    clip: rect(136px, 900px, 137px, 0);
   }
 }
 
 @keyframes glitch-2 {
   0% {
-    clip: rect(100px, 900px, 200px, 0);
+    clip: rect(12px, 900px, 13px, 0);
   }
   20% {
-    clip: rect(200px, 900px, 300px, 0);
+    clip: rect(124px, 900px, 125px, 0);
   }
   40% {
-    clip: rect(300px, 900px, 400px, 0);
+    clip: rect(36px, 900px, 37px, 0);
   }
   60% {
-    clip: rect(400px, 900px, 500px, 0);
+    clip: rect(213px, 900px, 214px, 0);
   }
   80% {
-    clip: rect(500px, 900px, 600px, 0);
+    clip: rect(321px, 900px, 322px, 0);
   }
   100% {
-    clip: rect(600px, 900px, 700px, 0);
+    clip: rect(87px, 900px, 88px, 0);
   }
 }
 
@@ -730,25 +786,53 @@
     transform: none;
     opacity: 1;
   }
+  7% {
+    transform: skew(-0.5deg, -0.9deg);
+    opacity: 0.75;
+  }
   10% {
-    transform: skew(-1deg, -0.5deg);
-    opacity: 0.9;
-  }
-  20% {
     transform: none;
     opacity: 1;
   }
-  40% {
-    transform: skew(0.5deg, -0.2deg);
-    opacity: 0.9;
-  }
-  60% {
+  27% {
     transform: none;
     opacity: 1;
+  }
+  30% {
+    transform: skew(0.8deg, -0.1deg);
+    opacity: 0.75;
+  }
+  35% {
+    transform: none;
+    opacity: 1;
+  }
+  52% {
+    transform: none;
+    opacity: 1;
+  }
+  55% {
+    transform: skew(-1deg, 0.2deg);
+    opacity: 0.75;
+  }
+  50% {
+    transform: none;
+    opacity: 1;
+  }
+  72% {
+    transform: none;
+    opacity: 1;
+  }
+  75% {
+    transform: skew(0.4deg, 1deg);
+    opacity: 0.75;
   }
   80% {
-    transform: skew(-0.2deg, 0.5deg);
-    opacity: 0.9;
+    transform: none;
+    opacity: 1;
+  }
+  100% {
+    transform: none;
+    opacity: 1;
   }
 }
 
@@ -842,4 +926,176 @@
   color: #ffb700;
   font-size: 1.3rem;
   filter: drop-shadow(0 0 5px rgba(255, 183, 0, 0.5));
+}
+
+.menu-buttons-group {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.menu-item.stop-button {
+  background: linear-gradient(45deg, var(--gray-3) 0%, var(--gray-2) 100%);
+  border: 1px solid rgba(255, 68, 68, 0.3);
+  box-shadow: 
+    0 5px 15px rgba(255, 68, 68, 0.2),
+    0 0 20px rgba(255, 68, 68, 0.1),
+    inset 0 0 10px rgba(255, 68, 68, 0.05);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.menu-item.stop-button:hover {
+  background: linear-gradient(45deg, #ff4444 0%, #ff6666 100%);
+  border-color: rgba(255, 68, 68, 0.5);
+  box-shadow: 
+    0 5px 15px rgba(255, 68, 68, 0.3),
+    0 0 20px rgba(255, 68, 68, 0.2),
+    inset 0 0 10px rgba(255, 68, 68, 0.1);
+  transform: translateY(-2px) scale(1.05);
+}
+
+.menu-item.stop-button:hover .glow {
+  transform: scale(2);
+  opacity: 0.3;
+}
+
+.menu-item span {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.menu-item:hover span {
+  animation: buttonTextGlow 2s infinite;
+}
+
+@keyframes buttonTextGlow {
+  0%, 100% {
+    text-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
+  }
+  50% {
+    text-shadow: 0 0 15px rgba(255, 255, 255, 0.8);
+  }
+}
+
+.glow-effect {
+  position: relative;
+  overflow: hidden;
+}
+
+.glow-container {
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  pointer-events: none;
+}
+
+.glow {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle at center, rgba(255,255,255,0.8) 0%, transparent 70%);
+  transform: scale(0.5);
+  opacity: 0;
+  transition: transform 0.5s ease-out, opacity 0.5s ease-out;
+}
+
+.menu-item.start-button {
+  background: linear-gradient(45deg, var(--green) 0%, #b8e83b 100%);
+  border: none;
+  box-shadow: 
+    0 5px 15px rgba(158, 209, 29, 0.3),
+    0 0 20px rgba(158, 209, 29, 0.2),
+    inset 0 0 10px rgba(158, 209, 29, 0.1);
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.menu-item.start-button:hover {
+  background: linear-gradient(45deg, var(--yellow-1) 0%, var(--yellow-2) 100%);
+  box-shadow: 
+    0 5px 15px rgba(255, 183, 0, 0.3),
+    0 0 20px rgba(255, 183, 0, 0.2),
+    inset 0 0 10px rgba(255, 183, 0, 0.1);
+  transform: translateY(-2px) scale(1.05);
+}
+
+.menu-item.start-button:hover .glow {
+  transform: scale(2);
+  opacity: 0.3;
+}
+
+.menu-item.next-button {
+  background: linear-gradient(45deg, var(--yellow-1) 0%, var(--yellow-2) 100%);
+  border: none;
+  box-shadow: 
+    0 5px 15px rgba(255, 183, 0, 0.3),
+    0 0 20px rgba(255, 183, 0, 0.2),
+    inset 0 0 10px rgba(255, 183, 0, 0.1);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.menu-item.next-button:hover {
+  background: linear-gradient(45deg, var(--yellow-2) 0%, var(--yellow-1) 100%);
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: 
+    0 8px 20px rgba(255, 183, 0, 0.4),
+    0 0 30px rgba(255, 183, 0, 0.3),
+    inset 0 0 15px rgba(255, 183, 0, 0.2);
+}
+
+.menu-item.next-button:hover .glow {
+  transform: scale(2);
+  opacity: 0.3;
+}
+
+.menu-item.stop-button {
+  background: linear-gradient(45deg, var(--gray-3) 0%, var(--gray-2) 100%);
+  border: 1px solid rgba(255, 68, 68, 0.3);
+  box-shadow: 
+    0 5px 15px rgba(255, 68, 68, 0.2),
+    0 0 20px rgba(255, 68, 68, 0.1),
+    inset 0 0 10px rgba(255, 68, 68, 0.05);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.menu-item.stop-button:hover {
+  background: linear-gradient(45deg, #ff4444 0%, #ff6666 100%);
+  border-color: rgba(255, 68, 68, 0.5);
+  box-shadow: 
+    0 5px 15px rgba(255, 68, 68, 0.3),
+    0 0 20px rgba(255, 68, 68, 0.2),
+    inset 0 0 10px rgba(255, 68, 68, 0.1);
+  transform: translateY(-2px) scale(1.05);
+}
+
+.menu-item.stop-button:hover .glow {
+  transform: scale(2);
+  opacity: 0.3;
+}
+
+.menu-item span {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.menu-item:hover span {
+  animation: buttonTextGlow 2s infinite;
+}
+
+@keyframes buttonTextGlow {
+  0%, 100% {
+    text-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
+  }
+  50% {
+    text-shadow: 0 0 15px rgba(255, 255, 255, 0.8);
+  }
 } 

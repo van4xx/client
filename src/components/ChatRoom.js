@@ -180,21 +180,32 @@ function ChatRoom() {
           className={`slide-menu mode-menu ${showModeMenu ? 'show' : ''}`}
           onMouseLeave={() => setShowModeMenu(false)}
         >
-          {!isConnected && !isSearching && (
-            <button className="menu-item start-button" onClick={startChat}>
-              Рулетим
-            </button>
-          )}
-          {isSearching && (
-            <button className="menu-item cancel-button" onClick={stopSearch}>
-              Отменить поиск
-            </button>
-          )}
-          {isConnected && (
-            <button className="menu-item next-button" onClick={nextPartner}>
-              <BsArrowRepeat /> Следующий
-            </button>
-          )}
+          <div className="menu-buttons-group">
+            {!isConnected && !isSearching && (
+              <button className="menu-item start-button glow-effect" onClick={startChat}>
+                <span>Рулетим</span>
+                <div className="glow-container">
+                  <div className="glow"></div>
+                </div>
+              </button>
+            )}
+            {isConnected && (
+              <>
+                <button className="menu-item next-button glow-effect" onClick={nextPartner}>
+                  <span><BsArrowRepeat /> Следующий</span>
+                  <div className="glow-container">
+                    <div className="glow"></div>
+                  </div>
+                </button>
+                <button className="menu-item stop-button glow-effect" onClick={stopSearch}>
+                  <span>Стоп</span>
+                  <div className="glow-container">
+                    <div className="glow"></div>
+                  </div>
+                </button>
+              </>
+            )}
+          </div>
           <div className="menu-divider" />
           <div 
             className="mode-toggle"
@@ -213,10 +224,6 @@ function ChatRoom() {
               <BsMic /> Аудио
             </button>
           </div>
-          <div className="menu-divider" />
-          <button className="menu-item" onClick={stopSearch}>
-            Стоп
-          </button>
         </div>
 
         <div 
