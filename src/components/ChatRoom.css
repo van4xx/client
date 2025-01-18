@@ -56,7 +56,7 @@
   width: 100vw;
   display: flex;
   flex-direction: column;
-  padding: 10px;
+  padding: 0;
   background-color: var(--background);
   color: var(--text);
   transition: all 0.3s ease;
@@ -73,8 +73,10 @@
 .video-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 20px;
+  gap: 0;
   height: 100vh;
+  width: 100%;
+  margin: 0;
   padding: 0;
 }
 
@@ -344,8 +346,6 @@
 .controls-section {
   position: fixed;
   bottom: -100px;
-  left: 50%;
-  transform: translateX(-50%);
   display: flex;
   align-items: center;
   padding: 12px 25px;
@@ -359,46 +359,100 @@
   transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* Индикатор для вытягивания меню */
+/* Левое меню */
+.controls-section.left {
+  left: 100px;
+  transform: translateX(0);
+}
+
+/* Правое меню */
+.controls-section.right {
+  right: 100px;
+  transform: translateX(0);
+}
+
+/* Индикаторы для вытягивания меню */
 .controls-indicator {
   position: fixed;
   bottom: 15px;
-  left: 50%;
-  transform: translateX(-50%);
   width: 100px;
-  height: 6px;
+  height: 4px;
   background: rgba(255, 255, 255, 0.3);
-  border-radius: 3px;
+  border-radius: 2px;
   cursor: pointer;
   z-index: 99;
   transition: all 0.3s ease;
 }
 
-/* Область для наведения */
+/* Индикатор левого меню */
+.controls-indicator.left {
+  left: 100px;
+}
+
+/* Индикатор правого меню */
+.controls-indicator.right {
+  right: 100px;
+}
+
+/* Области для наведения */
 .controls-trigger {
   position: fixed;
   bottom: 0;
-  left: 0;
-  right: 0;
   height: 40px;
+  width: 300px;
   z-index: 98;
 }
 
-/* Анимация появления при наведении */
-.controls-indicator:hover + .controls-section,
-.controls-section:hover {
-  bottom: 20px;
-  box-shadow: 
-    0 10px 30px rgba(0, 0, 0, 0.2),
-    0 0 0 1px rgba(255, 255, 255, 0.1);
+/* Триггер левого меню */
+.controls-trigger.left {
+  left: 0;
 }
 
-.controls-indicator:hover,
-.controls-section:hover ~ .controls-indicator {
+/* Триггер правого меню */
+.controls-trigger.right {
+  right: 0;
+}
+
+/* Анимация появления при наведении для левого меню */
+.controls-indicator.left:hover + .controls-section.left,
+.controls-section.left:hover {
+  bottom: 20px;
+}
+
+/* Анимация появления при наведении для правого меню */
+.controls-indicator.right:hover + .controls-section.right,
+.controls-section.right:hover {
+  bottom: 20px;
+}
+
+/* Анимация индикаторов при наведении */
+.controls-indicator:hover {
   background: var(--neon-blue);
   box-shadow: 0 0 15px var(--neon-blue);
-  transform: translateX(-50%) scaleX(1.3);
-  height: 8px;
+}
+
+/* Стили для мобильных устройств */
+@media (max-width: 768px) {
+  .controls-section.left,
+  .controls-section.right {
+    left: 50%;
+    transform: translateX(-50%);
+    width: 90%;
+    max-width: 400px;
+  }
+
+  .controls-indicator.left,
+  .controls-indicator.right {
+    left: 50%;
+    transform: translateX(-50%);
+  }
+
+  .controls-trigger.left,
+  .controls-trigger.right {
+    left: 0;
+    right: 0;
+    width: 100%;
+  }
 }
 
 /* Делаем кнопки более прозрачными изначально */
@@ -1139,7 +1193,6 @@
 /* Темная тема */
 .dark .video-box {
   background: #1a1a1a;
-  border: 1px solid rgba(255, 255, 255, 0.1);
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
 }
 
@@ -2282,15 +2335,20 @@
 }
 
 .video-box:first-child::before {
-  content: '';
+  content: 'Рулетка\A ruletka.top\A Новая реальность общения';
   position: absolute;
-  width: 150%;
-  height: 150%;
-  background: 
-    radial-gradient(circle at 30% 30%, rgba(0, 243, 255, 0.1) 0%, transparent 50%),
-    radial-gradient(circle at 70% 70%, rgba(157, 0, 255, 0.1) 0%, transparent 50%);
-  animation: gradientMove 8s linear infinite;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 32px;
+  font-weight: 900;
+  color: rgba(255, 255, 255, 0.1);
+  white-space: pre;
+  text-align: center;
   z-index: 1;
+  text-shadow: 0 0 50px rgba(0, 243, 255, 0.2);
+  letter-spacing: 2px;
+  line-height: 1.5;
 }
 
 .video-box:first-child::after {

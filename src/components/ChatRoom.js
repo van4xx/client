@@ -481,6 +481,7 @@ function ChatRoom() {
             autoPlay
             playsInline
             className={chatMode === 'audio' ? 'hidden' : 'video-element'}
+            style={{ transform: 'scaleX(-1)' }}
           />
           {chatMode === 'audio' && isConnected && (
             <div className="audio-indicator">
@@ -507,6 +508,7 @@ function ChatRoom() {
             playsInline
             muted
             className={chatMode === 'audio' ? 'hidden' : 'video-element'}
+            style={{ transform: 'scaleX(-1)' }}
           />
           {chatMode === 'audio' && (
             <div className="audio-indicator">
@@ -547,11 +549,29 @@ function ChatRoom() {
         </div>
       </div>
 
-      <div className="controls-trigger" />
-      <div className="controls-indicator" />
-      <div className="controls-section">
+      {/* Левое меню */}
+      <div className="controls-trigger left" />
+      <div className="controls-indicator left" />
+      <div className="controls-section left">
         <div className="controls-buttons">
           <div className="mode-switcher">
+            <button 
+              className={`mode-btn ${chatMode === 'video' ? 'active' : ''}`}
+              onClick={() => setChatMode('video')}
+              disabled={isConnected}
+            >
+              <BsCameraVideoFill size={20} />
+              <span>Видео чат</span>
+            </button>
+            <button 
+              className={`mode-btn ${chatMode === 'audio' ? 'active' : ''}`}
+              onClick={() => setChatMode('audio')}
+              disabled={isConnected}
+            >
+              <BsMicFill size={20} />
+              <span>Аудио чат</span>
+            </button>
+          </div>
 
           <div className="main-controls">
             {!isConnected && !isSearching && (
@@ -587,27 +607,14 @@ function ChatRoom() {
               </>
             )}
           </div>
+        </div>
+      </div>
 
-            <button 
-              className={`mode-btn ${chatMode === 'video' ? 'active' : ''}`}
-              onClick={() => setChatMode('video')}
-              disabled={isConnected}
-            >
-              <BsCameraVideoFill size={20} />
-              <span>Видео чат</span>
-            </button>
-            <button 
-              className={`mode-btn ${chatMode === 'audio' ? 'active' : ''}`}
-              onClick={() => setChatMode('audio')}
-              disabled={isConnected}
-            >
-              <BsMicFill size={20} />
-              <span>Аудио чат</span>
-            </button>
-          </div>
-
-          
-
+      {/* Правое меню */}
+      <div className="controls-trigger right" />
+      <div className="controls-indicator right" />
+      <div className="controls-section right">
+        <div className="controls-buttons">
           <div className="controls-menu">
             <button 
               className="menu-button" 
@@ -714,6 +721,9 @@ function ChatRoom() {
                 previewConfig={{
                   showPreview: false
                 }}
+                quality="best"
+                emojiVersion="12.1"
+                suggestedEmojisMode="recent"
               />
             </div>
           )}

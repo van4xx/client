@@ -135,8 +135,19 @@ class WebRTCService {
     this.peerConnection = new RTCPeerConnection({
       iceServers: [
         { urls: 'stun:stun.l.google.com:19302' },
-        { urls: 'stun:stun1.l.google.com:19302' }
-      ]
+        { urls: 'stun:stun1.l.google.com:19302' },
+        { urls: 'stun:stun2.l.google.com:19302' },
+        { urls: 'stun:stun3.l.google.com:19302' },
+        { urls: 'stun:stun4.l.google.com:19302' },
+        {
+          urls: 'turn:numb.viagenie.ca',
+          username: 'webrtc@live.com',
+          credential: 'muazkh'
+        }
+      ],
+      iceCandidatePoolSize: 10,
+      bundlePolicy: 'max-bundle',
+      rtcpMuxPolicy: 'require'
     });
 
     this.peerConnection.ontrack = (event) => {
@@ -176,8 +187,18 @@ class WebRTCService {
     try {
       console.log('Requesting media permissions for mode:', mode);
       const constraints = {
-        video: mode === 'video' ? (this.selectedDevices.video ? { deviceId: { exact: this.selectedDevices.video } } : true) : false,
-        audio: this.selectedDevices.audio ? { deviceId: { exact: this.selectedDevices.audio } } : true
+        video: mode === 'video' ? {
+          deviceId: this.selectedDevices.video ? { exact: this.selectedDevices.video } : undefined,
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+          frameRate: { ideal: 30 }
+        } : false,
+        audio: {
+          deviceId: this.selectedDevices.audio ? { exact: this.selectedDevices.audio } : undefined,
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true
+        }
       };
 
       this.localStream = await navigator.mediaDevices.getUserMedia(constraints);
