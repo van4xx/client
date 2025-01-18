@@ -567,4 +567,125 @@
   100% {
     box-shadow: 0 0 0 0 rgba(255, 183, 0, 0);
   }
+}
+
+.remote-video {
+  position: relative;
+  background: var(--dark-gray);
+}
+
+.start-screen {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #2c2c2c 0%, var(--dark-gray) 100%);
+  z-index: 5;
+}
+
+.bouncing-logo {
+  font-family: 'Arial Black', sans-serif;
+  font-size: 4rem;
+  font-weight: bold;
+  color: var(--yellow-1);
+  text-shadow: 0 0 20px rgba(255, 183, 0, 0.5);
+  position: absolute;
+  animation: bounce 15s linear infinite;
+  white-space: nowrap;
+  user-select: none;
+}
+
+.bouncing-logo span {
+  display: inline-block;
+  animation: glowPulse 2s ease-in-out infinite;
+}
+
+.bouncing-logo span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.bouncing-logo span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+.start-instructions {
+  position: absolute;
+  bottom: 15%;
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
+  color: white;
+  background: rgba(82, 82, 82, 0.7);
+  backdrop-filter: var(--menu-blur);
+  padding: 20px 40px;
+  border-radius: 15px;
+  border: var(--glass-border);
+  box-shadow: var(--menu-shadow);
+}
+
+.start-instructions h2 {
+  font-size: 1.5rem;
+  margin-bottom: 15px;
+  color: var(--yellow-1);
+}
+
+.start-instructions p {
+  font-size: 1.1rem;
+  margin: 10px 0;
+  opacity: 0.9;
+}
+
+.instruction-step {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 8px 0;
+}
+
+.instruction-step svg {
+  color: var(--yellow-1);
+  font-size: 1.2rem;
+}
+
+@keyframes bounce {
+  0% {
+    top: 20%;
+    left: 10%;
+    transform: translate(0, 0) rotate(0deg);
+  }
+  25% {
+    top: 70%;
+    left: 80%;
+    transform: translate(-50%, -50%) rotate(5deg);
+  }
+  50% {
+    top: 30%;
+    left: 60%;
+    transform: translate(-50%, -50%) rotate(-5deg);
+  }
+  75% {
+    top: 60%;
+    left: 20%;
+    transform: translate(-50%, -50%) rotate(5deg);
+  }
+  100% {
+    top: 20%;
+    left: 10%;
+    transform: translate(0, 0) rotate(0deg);
+  }
+}
+
+@keyframes glowPulse {
+  0%, 100% {
+    text-shadow: 0 0 20px rgba(255, 183, 0, 0.5);
+  }
+  50% {
+    text-shadow: 0 0 30px rgba(255, 183, 0, 0.8),
+                 0 0 40px rgba(255, 183, 0, 0.4);
+  }
 } 

@@ -10,7 +10,10 @@ import {
   BsCameraVideo,
   BsMic,
   BsStars,
-  BsQuestionCircle
+  BsQuestionCircle,
+  BsChevronDown,
+  BsMouseFill,
+  BsPlayFill
 } from 'react-icons/bs';
 import './ChatRoom.css';
 
@@ -95,9 +98,30 @@ function ChatRoom() {
     <div className="chat-room">
       <div className="video-grid">
         <div className="video-box remote-video">
-          <div className="waiting-message">
-            Ожидание собеседника...
-          </div>
+          {!isSearching && !isConnected && (
+            <div className="start-screen">
+              <div className="bouncing-logo">
+                <span>RULETKA</span><span>.</span><span>TOP</span>
+              </div>
+              <div className="start-instructions">
+                <h2>Как начать общение?</h2>
+                <div className="instruction-step">
+                  <BsMouseFill /> Наведите на нижний индикатор
+                </div>
+                <div className="instruction-step">
+                  <BsChevronDown /> Откройте меню
+                </div>
+                <div className="instruction-step">
+                  <BsPlayFill /> Нажмите "Рулетим"
+                </div>
+              </div>
+            </div>
+          )}
+          {isSearching && (
+            <div className="waiting-message">
+              Ожидание собеседника...
+            </div>
+          )}
           <video
             ref={remoteVideoRef}
             autoPlay
@@ -158,7 +182,7 @@ function ChatRoom() {
         >
           {!isConnected && !isSearching && (
             <button className="menu-item start-button" onClick={startChat}>
-              Начать чат
+              Рулетим
             </button>
           )}
           {isSearching && (
