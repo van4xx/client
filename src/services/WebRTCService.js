@@ -168,20 +168,30 @@ class WebRTCService {
         },
         offerOptions: {
           offerToReceiveAudio: true,
-          offerToReceiveVideo: true
+          offerToReceiveVideo: true,
+          voiceActivityDetection: true
         },
         answerOptions: {
           offerToReceiveAudio: true,
-          offerToReceiveVideo: true
+          offerToReceiveVideo: true,
+          voiceActivityDetection: true
         },
         sdpTransform: (sdp) => {
           let modifiedSdp = sdp;
           
-          // Добавляем поддержку H264
-          if (!modifiedSdp.includes('H264')) {
+          // Добавляем поддержку H264 и VP8
+          if (!modifiedSdp.includes('H264') && !modifiedSdp.includes('VP8')) {
             modifiedSdp = modifiedSdp.replace(
               /(m=video.*\r\n)/g,
-              '$1a=rtpmap:125 H264/90000\r\na=rtcp-fb:125 nack\r\na=rtcp-fb:125 nack pli\r\na=rtcp-fb:125 ccm fir\r\n'
+              '$1a=rtpmap:96 VP8/90000\r\na=rtcp-fb:96 nack\r\na=rtcp-fb:96 nack pli\r\na=rtcp-fb:96 ccm fir\r\na=rtpmap:97 H264/90000\r\na=rtcp-fb:97 nack\r\na=rtcp-fb:97 nack pli\r\na=rtcp-fb:97 ccm fir\r\n'
+            );
+          }
+          
+          // Устанавливаем максимальный битрейт для видео
+          if (!modifiedSdp.includes('b=AS:')) {
+            modifiedSdp = modifiedSdp.replace(
+              /(m=video.*\r\n)/g,
+              '$1b=AS:2000\r\n'
             );
           }
           
@@ -224,16 +234,50 @@ class WebRTCService {
 
       this.peer.on('stream', stream => {
         console.log('Received remote stream:', stream);
-        if (stream && stream.active && this.onStreamCallback) {
-          clearTimeout(connectionTimeout);
-          this.onStreamCallback(stream);
+        if (stream && stream.active) {
+          const audioTracks = stream.getAudioTracks();
+          const videoTracks = stream.getVideoTracks();
+          
+          console.log('Audio tracks:', audioTracks.length, 'Video tracks:', videoTracks.length);
+          
+          audioTracks.forEach(track => {
+            track.enabled = true;
+            console.log('Audio track enabled:', track.enabled, 'muted:', track.muted);
+          });
+          
+          videoTracks.forEach(track => {
+            track.enabled = true;
+            console.log('Video track enabled:', track.enabled, 'muted:', track.muted);
+          });
+
+          if (this.onStreamCallback) {
+            // Создаем новый MediaStream с активными треками
+            const newStream = new MediaStream();
+            audioTracks.forEach(track => newStream.addTrack(track));
+            videoTracks.forEach(track => newStream.addTrack(track));
+            
+            clearTimeout(connectionTimeout);
+            this.onStreamCallback(newStream);
+          }
         }
       });
 
       this.peer.on('track', (track, stream) => {
         console.log('Received track:', track.kind, track.id, 'in stream:', stream.id);
+        console.log('Track settings:', track.getSettings());
+        console.log('Track constraints:', track.getConstraints());
+        
         track.onunmute = () => {
-          console.log('Track unmuted:', track.kind);
+          console.log('Track unmuted:', track.kind, 'enabled:', track.enabled, 'muted:', track.muted);
+          track.enabled = true;
+        };
+        
+        track.onmute = () => {
+          console.log('Track muted:', track.kind);
+        };
+        
+        track.onended = () => {
+          console.log('Track ended:', track.kind);
         };
       });
 
