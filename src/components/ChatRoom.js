@@ -227,7 +227,11 @@ function ChatRoom() {
             )}
             {isSearching && (
               <div className="waiting-message">
-                Ожидание собеседника...
+                <div className="waiting-dots">
+                  <span></span>
+                  <span></span>
+                  <span></span>
+                </div>
               </div>
             )}
             <video
