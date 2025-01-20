@@ -22,6 +22,7 @@ import {
 } from 'react-icons/bs';
 import './ChatRoom.css';
 import FaceDetectionService from '../services/FaceDetectionService';
+import WebRTCService from '../services/WebRTCService';
 
 function ChatRoom() {
   const [isConnected, setIsConnected] = useState(false);
@@ -60,6 +61,29 @@ function ChatRoom() {
         if (localVideoRef.current) {
           localVideoRef.current.srcObject = stream;
         }
+        // Initialize WebRTC with the stream
+        WebRTCService.init('http://localhost:5000');
+        WebRTCService.setStream(stream);
+        
+        // Set up WebRTC callbacks
+        WebRTCService.onStream((remoteStream) => {
+          if (remoteVideoRef.current) {
+            remoteVideoRef.current.srcObject = remoteStream;
+          }
+        });
+
+        WebRTCService.onChatMessage((message) => {
+          setMessages(prev => [...prev, { text: message, type: 'received' }]);
+        });
+
+        WebRTCService.onConnectionClosed(() => {
+          setIsConnected(false);
+          setIsSearching(false);
+          if (remoteVideoRef.current) {
+            remoteVideoRef.current.srcObject = null;
+          }
+        });
+
       } catch (error) {
         console.error('Ошибка доступа к камере или микрофону:', error);
       }
@@ -68,6 +92,7 @@ function ChatRoom() {
     initializeMedia();
 
     return () => {
+      WebRTCService.disconnect();
       if (localStream) {
         localStream.getTracks().forEach(track => track.stop());
       }
@@ -124,15 +149,18 @@ function ChatRoom() {
   const startChat = () => {
     setIsSearching(true);
     setIsConnected(true);
+    WebRTCService.startSearch(chatMode);
   };
 
   const stopSearch = () => {
     setIsSearching(false);
     setIsConnected(false);
+    WebRTCService.stopSearch();
   };
 
   const nextPartner = () => {
     setIsConnected(false);
+    WebRTCService.nextPartner(chatMode);
     startChat();
   };
 
@@ -166,6 +194,7 @@ function ChatRoom() {
   const sendMessage = () => {
     if (messageInput.trim()) {
       setMessages([...messages, { text: messageInput, type: 'sent' }]);
+      WebRTCService.sendMessage(messageInput);
       setMessageInput('');
     }
   };

@@ -9,10 +9,26 @@ class WebRTCService {
     this.onStreamCallback = null;
     this.onChatMessageCallback = null;
     this.onConnectionClosedCallback = null;
+    this.isSearching = false;
   }
 
   init(serverUrl = 'http://localhost:5000') {
-    this.socket = io(serverUrl);
+    console.log('Initializing WebRTC service with server:', serverUrl);
+    
+    this.socket = io(serverUrl, {
+      transports: ['websocket'],
+      cors: {
+        origin: "http://localhost:3000"
+      }
+    });
+    
+    this.socket.on('connect', () => {
+      console.log('Connected to signaling server');
+    });
+
+    this.socket.on('connect_error', (error) => {
+      console.error('Connection error:', error);
+    });
     
     this.socket.on('partner_found', ({ initiator }) => {
       console.log('Partner found, initiator:', initiator);
@@ -20,18 +36,21 @@ class WebRTCService {
     });
 
     this.socket.on('signal', ({ signal }) => {
+      console.log('Received signal:', signal);
       if (this.peer) {
         this.peer.signal(signal);
       }
     });
 
     this.socket.on('chat_message', ({ message }) => {
+      console.log('Received chat message:', message);
       if (this.onChatMessageCallback) {
         this.onChatMessageCallback(message);
       }
     });
 
     this.socket.on('connection_closed', () => {
+      console.log('Connection closed by partner');
       if (this.onConnectionClosedCallback) {
         this.onConnectionClosedCallback();
       }
@@ -40,8 +59,16 @@ class WebRTCService {
   }
 
   initializePeer(initiator) {
+    console.log('Initializing peer connection, initiator:', initiator);
+    
     if (this.peer) {
+      console.log('Destroying existing peer connection');
       this.peer.destroy();
+    }
+
+    if (!this.stream) {
+      console.warn('No local stream available');
+      return;
     }
 
     this.peer = new Peer({
@@ -57,50 +84,75 @@ class WebRTCService {
     });
 
     this.peer.on('signal', signal => {
+      console.log('Generated signal:', signal);
       this.socket.emit('signal', { signal });
     });
 
     this.peer.on('stream', stream => {
+      console.log('Received remote stream');
       if (this.onStreamCallback) {
         this.onStreamCallback(stream);
       }
+    });
+
+    this.peer.on('connect', () => {
+      console.log('Peer connection established');
     });
 
     this.peer.on('error', err => {
       console.error('Peer error:', err);
       this.destroyPeer();
     });
+
+    this.peer.on('close', () => {
+      console.log('Peer connection closed');
+      this.destroyPeer();
+    });
   }
 
   setStream(stream) {
+    console.log('Setting local stream');
     this.stream = stream;
-    if (this.peer) {
+    if (this.peer && this.stream) {
       this.peer.addStream(stream);
     }
   }
 
   startSearch(mode = 'video') {
+    if (this.isSearching) {
+      console.log('Already searching, ignoring request');
+      return;
+    }
+    
+    console.log('Starting search in mode:', mode);
+    this.isSearching = true;
     this.socket.emit('start_search', { mode });
   }
 
   stopSearch() {
+    console.log('Stopping search');
+    this.isSearching = false;
     this.socket.emit('stop_search');
     this.destroyPeer();
   }
 
   nextPartner(mode = 'video') {
+    console.log('Finding next partner in mode:', mode);
     this.socket.emit('next', { mode });
   }
 
   sendMessage(message) {
+    console.log('Sending chat message:', message);
     this.socket.emit('chat_message', { message });
   }
 
   destroyPeer() {
     if (this.peer) {
+      console.log('Destroying peer connection');
       this.peer.destroy();
       this.peer = null;
     }
+    this.isSearching = false;
   }
 
   onStream(callback) {
@@ -116,6 +168,7 @@ class WebRTCService {
   }
 
   disconnect() {
+    console.log('Disconnecting from service');
     if (this.socket) {
       this.socket.disconnect();
     }
