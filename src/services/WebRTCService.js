@@ -100,6 +100,7 @@ class WebRTCService {
       stream: this.stream,
       trickle: false,
       objectMode: true,
+      streams: [this.stream],
       config: {
         iceServers: [
           { urls: 'stun:stun.l.google.com:19302' },
@@ -111,20 +112,43 @@ class WebRTCService {
         ]
       },
       sdpTransform: (sdp) => {
-        // Принудительно используем UDP
-        return sdp.replace(/a=candidate.*tcp.*\r\n/g, '');
+        // Force UDP and remove TCP candidates
+        const lines = sdp.split('\r\n');
+        const filtered = lines.filter(line => !line.includes('tcp'));
+        return filtered.join('\r\n');
       }
     });
 
     this.peer.on('signal', signal => {
-      console.log('Generated signal:', signal);
-      this.socket.emit('signal', { signal });
+      try {
+        console.log('Generated signal:', signal);
+        this.socket.emit('signal', { signal });
+      } catch (error) {
+        console.error('Error sending signal:', error);
+        this.destroyPeer();
+      }
     });
 
     this.peer.on('stream', stream => {
-      console.log('Received remote stream');
-      if (this.onStreamCallback) {
-        this.onStreamCallback(stream);
+      try {
+        console.log('Received remote stream');
+        if (this.onStreamCallback) {
+          this.onStreamCallback(stream);
+        }
+      } catch (error) {
+        console.error('Error handling remote stream:', error);
+      }
+    });
+
+    this.peer.on('data', data => {
+      try {
+        const message = data.toString();
+        console.log('Received data:', message);
+        if (this.onChatMessageCallback) {
+          this.onChatMessageCallback(message);
+        }
+      } catch (error) {
+        console.error('Error handling data:', error);
       }
     });
 
@@ -141,10 +165,6 @@ class WebRTCService {
     this.peer.on('close', () => {
       console.log('Peer connection closed');
       this.destroyPeer();
-    });
-
-    this.peer.on('data', data => {
-      console.log('Received data:', data);
     });
   }
 
