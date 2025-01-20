@@ -1682,8 +1682,8 @@ button.premium-button:hover::after {
     transform: scale(1.1);
     opacity: 1;
     text-shadow: 
-      0 0 10px rgba(158, 209, 29, 0.8),
-      0 0 20px rgba(158, 209, 29, 0.4);
+      0 0 15px rgba(76, 175, 80, 0.8),
+      0 0 30px rgba(76, 175, 80, 0.4);
   }
 }
 
@@ -1969,6 +1969,13 @@ button.premium-button:hover::after {
   animation: successPulse 2s infinite;
 }
 
+.status-text.connected {
+  color: #4CAF50;
+  font-weight: bold;
+  animation: connectedPulse 2s infinite;
+  text-shadow: 0 0 10px rgba(76, 175, 80, 0.5);
+}
+
 @keyframes warningPulse {
   0%, 100% {
     background: rgba(255, 152, 0, 0.1);
@@ -2010,5 +2017,19 @@ button.premium-button:hover::after {
   50% {
     height: 40px;
     opacity: 1;
+  }
+}
+
+@keyframes connectedPulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 1;
+    text-shadow: 
+      0 0 15px rgba(76, 175, 80, 0.8),
+      0 0 30px rgba(76, 175, 80, 0.4);
   }
 } 
