@@ -235,6 +235,8 @@ class WebRTCService {
         initiator,
         trickle: true,
         streams: [this.stream],
+        reconnectTimer: 3000,
+        iceCompleteTimeout: 5000,
         config: {
           iceServers: [
             {
@@ -294,7 +296,15 @@ class WebRTCService {
           rtcpMuxPolicy: 'require',
           sdpSemantics: 'unified-plan',
           enableDtlsSrtp: true,
-          iceCandidatePoolSize: 2
+          iceCandidatePoolSize: 2,
+          iceServersTimeout: 2000,
+          // Добавляем параметры для улучшения стабильности
+          iceTransports: 'all',
+          rtcpMuxPolicy: 'require',
+          bundlePolicy: 'max-bundle',
+          // Параметры для keepalive
+          peerIdentity: null,
+          certificates: undefined
         },
         offerOptions: {
           offerToReceiveAudio: true,
@@ -358,12 +368,29 @@ class WebRTCService {
         }
       });
 
+      // Добавляем keepalive механизм
+      let keepaliveInterval;
+      const startKeepalive = () => {
+        if (keepaliveInterval) clearInterval(keepaliveInterval);
+        keepaliveInterval = setInterval(() => {
+          if (this.peer && !this.peer.destroyed) {
+            try {
+              // Отправляем пустое сообщение для поддержания соединения
+              this.peer.send(JSON.stringify({ type: 'keepalive', timestamp: Date.now() }));
+            } catch (error) {
+              console.warn('Keepalive error:', error);
+            }
+          }
+        }, 5000); // Каждые 5 секунд
+      };
+
       this.peer.on('connect', () => {
         console.log('Peer connection established');
         isConnected = true;
         this.isSearching = false;
         clearTimeout(connectionTimeout);
         clearTimeout(iceConnectionTimeout);
+        startKeepalive(); // Запускаем keepalive после установки соединения
       });
 
       this.peer.on('stream', stream => {
@@ -544,9 +571,9 @@ class WebRTCService {
                   this.peer._pc.setConfiguration({
                     ...peerConfig.config,
                     iceTransportPolicy: 'relay',
-                    iceCandidatePoolSize: 5
+                    iceCandidatePoolSize: 5,
+                    iceServersTimeout: 5000 // Увеличиваем таймаут для TURN серверов
                   });
-                  // Restart ICE
                   this.peer._pc.restartIce();
                 } catch (error) {
                   console.error('Error setting relay configuration:', error);
@@ -562,14 +589,29 @@ class WebRTCService {
                 }
               }
             }
-          }, 15000); // Увеличиваем таймаут до 15 секунд
+          }, 15000);
         } else if (iceConnectionState === 'connected' || iceConnectionState === 'completed') {
           console.log('ICE connection established');
           isConnected = true;
           clearTimeout(iceConnectionTimeout);
           clearTimeout(connectionTimeout);
-        } else if (iceConnectionState === 'failed' || iceConnectionState === 'disconnected' || iceConnectionState === 'closed') {
+          // Перезапускаем keepalive при восстановлении соединения
+          startKeepalive();
+        } else if (iceConnectionState === 'disconnected') {
+          console.log('ICE connection disconnected, waiting for reconnection');
+          // Даем время на восстановление соединения
+          setTimeout(() => {
+            if (iceConnectionState === 'disconnected') {
+              try {
+                this.peer._pc.restartIce();
+              } catch (error) {
+                console.error('Error restarting ICE after disconnect:', error);
+              }
+            }
+          }, 5000);
+        } else if (iceConnectionState === 'failed' || iceConnectionState === 'closed') {
           console.log('ICE connection failed/closed');
+          clearInterval(keepaliveInterval);
           if (!isConnected) {
             this.destroyPeer();
           }
@@ -600,6 +642,7 @@ class WebRTCService {
         console.log('Peer connection closed');
         clearTimeout(iceConnectionTimeout);
         clearTimeout(connectionTimeout);
+        if (keepaliveInterval) clearInterval(keepaliveInterval);
         this.destroyPeer();
       });
 
