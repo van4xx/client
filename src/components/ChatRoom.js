@@ -13,7 +13,8 @@ import {
   BsQuestionCircle,
   BsChevronDown,
   BsMouseFill,
-  BsPlayFill
+  BsPlayFill,
+  BsSend
 } from 'react-icons/bs';
 import './ChatRoom.css';
 
@@ -30,9 +31,12 @@ function ChatRoom() {
   const [showPremiumModal, setShowPremiumModal] = useState(false);
   const [showStatsModal, setShowStatsModal] = useState(false);
   const [showHelpModal, setShowHelpModal] = useState(false);
+  const [messages, setMessages] = useState([]);
+  const [messageInput, setMessageInput] = useState('');
   
   const localVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
+  const chatMessagesRef = useRef(null);
 
   useEffect(() => {
     const initializeMedia = async () => {
@@ -58,6 +62,12 @@ function ChatRoom() {
       }
     };
   }, [chatMode]);
+
+  useEffect(() => {
+    if (chatMessagesRef.current) {
+      chatMessagesRef.current.scrollTop = chatMessagesRef.current.scrollHeight;
+    }
+  }, [messages]);
 
   const startChat = () => {
     setIsSearching(true);
@@ -98,66 +108,128 @@ function ChatRoom() {
     setChatMode(mode);
   };
 
+  const sendMessage = () => {
+    if (messageInput.trim()) {
+      setMessages([...messages, { text: messageInput, type: 'sent' }]);
+      setMessageInput('');
+    }
+  };
+
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  };
+
   return (
     <div className="chat-room">
       <div className="video-grid">
-        <div className="video-box remote-video">
-          {!isSearching && !isConnected && (
-            <div className="start-screen">
-              <div className="bouncing-logo" data-text="RULETKA.TOP">
-                <span>RULETKA</span><span>.</span><span>TOP</span>
-              </div>
-              <div className="start-instructions">
-                <h2>Как начать общение?</h2>
-                <div className="instruction-step">
-                  <BsMouseFill /> Наведите на нижний индикатор
-                </div>
-                <div className="instruction-step">
-                  <BsChevronDown /> Откройте меню
-                </div>
-                <div className="instruction-step">
-                  <BsPlayFill /> Нажмите "Рулетим"
+        <div className="remote-container">
+          <div className="remote-video">
+            {!isSearching && !isConnected && (
+              <div className="start-screen">
+                <div className="bouncing-logo" data-text="RULETKA.TOP">
+                  <span>RULETKA</span><span>.</span><span>TOP</span>
                 </div>
               </div>
-            </div>
-          )}
-          {isSearching && (
-            <div className="waiting-message">
-              Ожидание собеседника...
-            </div>
-          )}
-          <video
-            ref={remoteVideoRef}
-            autoPlay
-            playsInline
-            className="video-element"
-          />
-        </div>
-        <div className="video-box">
-          <video
-            ref={localVideoRef}
-            autoPlay
-            muted
-            playsInline
-            className="video-element"
-          />
-          <div className="local-controls">
-            <button 
-              className={`control-button ${isMuted ? 'danger active' : ''}`}
-              onClick={toggleMic}
-              data-tooltip={isMuted ? 'Включить микрофон' : 'Выключить микрофон'}
-            >
-              {isMuted ? <BsMicMuteFill /> : <BsMicFill />}
-            </button>
-            {chatMode === 'video' && (
-              <button 
-                className={`control-button ${isVideoOff ? 'danger active' : ''}`}
-                onClick={toggleVideo}
-                data-tooltip={isVideoOff ? 'Включить камеру' : 'Выключить камеру'}
-              >
-                {isVideoOff ? <BsCameraVideoOffFill /> : <BsCameraVideoFill />}
-              </button>
             )}
+            {isSearching && (
+              <div className="waiting-message">
+                Ожидание собеседника...
+              </div>
+            )}
+            <video
+              ref={remoteVideoRef}
+              autoPlay
+              playsInline
+              className="video-element"
+            />
+          </div>
+          <div className="remote-controls">
+            <div className="mode-toggle-panel">
+              <div className="mode-toggle" data-mode={chatMode}>
+                <button 
+                  className={chatMode === 'video' ? 'active' : ''}
+                  onClick={() => changeChatMode('video')}
+                >
+                  <BsCameraVideo /> Видео
+                </button>
+                <button 
+                  className={chatMode === 'audio' ? 'active' : ''}
+                  onClick={() => changeChatMode('audio')}
+                >
+                  <BsMic /> Аудио
+                </button>
+              </div>
+            </div>
+            <div className="control-buttons">
+              {!isConnected && !isSearching ? (
+                <button className="control-button-large start" onClick={startChat}>
+                  <BsPlayFill /> Рулетим
+                </button>
+              ) : (
+                <>
+                  <button className="control-button-large next" onClick={nextPartner}>
+                    <BsArrowRepeat /> Следующий
+                  </button>
+                  <button className="control-button-large stop" onClick={stopSearch}>
+                    Стоп
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+        <div className="local-container">
+          <div className="local-video">
+            <video
+              ref={localVideoRef}
+              autoPlay
+              muted
+              playsInline
+              className="video-element"
+            />
+            <div className="local-controls">
+              <button 
+                className={`control-button ${isMuted ? 'danger active' : ''}`}
+                onClick={toggleMic}
+                data-tooltip={isMuted ? 'Включить микрофон' : 'Выключить микрофон'}
+              >
+                {isMuted ? <BsMicMuteFill /> : <BsMicFill />}
+              </button>
+              {chatMode === 'video' && (
+                <button 
+                  className={`control-button ${isVideoOff ? 'danger active' : ''}`}
+                  onClick={toggleVideo}
+                  data-tooltip={isVideoOff ? 'Включить камеру' : 'Выключить камеру'}
+                >
+                  {isVideoOff ? <BsCameraVideoOffFill /> : <BsCameraVideoFill />}
+                </button>
+              )}
+            </div>
+          </div>
+          <div className="chat-container">
+            <div className="chat-messages" ref={chatMessagesRef}>
+              {messages.map((message, index) => (
+                <div key={index} className={`message ${message.type}`}>
+                  {message.text}
+                </div>
+              ))}
+            </div>
+            <div className="chat-input-container">
+              <input
+                type="text"
+                className="chat-input"
+                placeholder="Написать сообщение..."
+                value={messageInput}
+                onChange={(e) => setMessageInput(e.target.value)}
+                onKeyPress={handleKeyPress}
+              />
+              <button className="send-button" onClick={sendMessage}>
+                <BsSend />
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -166,68 +238,8 @@ function ChatRoom() {
         <div className="menu-indicators">
           <div 
             className="menu-indicator"
-            onMouseEnter={() => {
-              setShowModeMenu(true);
-              setShowSettingsMenu(false);
-            }}
+            onMouseEnter={() => setShowSettingsMenu(true)}
           />
-          <div 
-            className="menu-indicator"
-            onMouseEnter={() => {
-              setShowSettingsMenu(true);
-              setShowModeMenu(false);
-            }}
-          />
-        </div>
-
-        <div 
-          className={`slide-menu mode-menu ${showModeMenu ? 'show' : ''}`}
-          onMouseLeave={() => setShowModeMenu(false)}
-        >
-          <div className="menu-buttons-group">
-            {!isConnected && !isSearching && (
-              <button className="menu-item start-button glow-effect" onClick={startChat}>
-                <span>Рулетим</span>
-                <div className="glow-container">
-                  <div className="glow"></div>
-                </div>
-              </button>
-            )}
-            {isConnected && (
-              <>
-                <button className="menu-item next-button glow-effect" onClick={nextPartner}>
-                  <span><BsArrowRepeat /> Следующий</span>
-                  <div className="glow-container">
-                    <div className="glow"></div>
-                  </div>
-                </button>
-                <button className="menu-item stop-button glow-effect" onClick={stopSearch}>
-                  <span>Стоп</span>
-                  <div className="glow-container">
-                    <div className="glow"></div>
-                  </div>
-                </button>
-              </>
-            )}
-          </div>
-          <div className="menu-divider" />
-          <div 
-            className="mode-toggle"
-            data-mode={chatMode}
-          >
-            <button 
-              className={chatMode === 'video' ? 'active' : ''}
-              onClick={() => changeChatMode('video')}
-            >
-              <BsCameraVideo /> Видео
-            </button>
-            <button 
-              className={chatMode === 'audio' ? 'active' : ''}
-              onClick={() => changeChatMode('audio')}
-            >
-              <BsMic /> Аудио
-            </button>
-          </div>
         </div>
 
         <div 
@@ -347,7 +359,7 @@ function ChatRoom() {
                     <p>Выбирайте собеседников по интересам</p>
                   </div>
                 </div>
-                <button className="premium-button">Получить премиум</button>
+                <button className="modal-premium-button">Получить премиум</button>
               </div>
             </div>
           </div>
