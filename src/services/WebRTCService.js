@@ -16,10 +16,14 @@ class WebRTCService {
     console.log('Initializing WebRTC service with server:', serverUrl);
     
     this.socket = io(serverUrl, {
-      transports: ['websocket'],
+      transports: ['websocket', 'polling'],
+      reconnectionDelayMax: 10000,
+      reconnectionAttempts: 10,
       cors: {
-        origin: "http://localhost:3000"
-      }
+        origin: "*",
+        credentials: true
+      },
+      forceNew: true
     });
     
     this.socket.on('connect', () => {
@@ -78,7 +82,11 @@ class WebRTCService {
       config: {
         iceServers: [
           { urls: 'stun:stun.l.google.com:19302' },
-          { urls: 'stun:global.stun.twilio.com:3478' }
+          { urls: 'stun:global.stun.twilio.com:3478' },
+          { urls: 'stun:stun1.l.google.com:19302' },
+          { urls: 'stun:stun2.l.google.com:19302' },
+          { urls: 'stun:stun3.l.google.com:19302' },
+          { urls: 'stun:stun4.l.google.com:19302' }
         ]
       }
     });
