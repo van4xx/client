@@ -12,7 +12,7 @@ class WebRTCService {
     this.isSearching = false;
   }
 
-  init(serverUrl = process.env.REACT_APP_SERVER_URL || 'http://localhost:5000') {
+  init(serverUrl = 'http://89.104.70.7:5000') {
     console.log('Initializing WebRTC service with server:', serverUrl);
     
     this.socket = io(serverUrl, {
@@ -24,11 +24,16 @@ class WebRTCService {
         origin: "*",
         credentials: true
       },
-      forceNew: true
+      forceNew: true,
+      reconnection: true,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,
+      timeout: 20000
     });
     
     this.socket.on('connect', () => {
       console.log('Connected to signaling server');
+      this.isSearching = false; // Сбрасываем флаг поиска при переподключении
     });
 
     this.socket.on('connect_error', (error) => {
@@ -46,6 +51,11 @@ class WebRTCService {
       }
     });
     
+    this.socket.on('disconnect', (reason) => {
+      console.log('Disconnected from server:', reason);
+      this.isSearching = false;
+    });
+
     this.socket.on('partner_found', ({ initiator }) => {
       console.log('Partner found, initiator:', initiator);
       this.initializePeer(initiator);
