@@ -62,7 +62,8 @@ function ChatRoom() {
           localVideoRef.current.srcObject = stream;
         }
         // Initialize WebRTC with the stream
-        WebRTCService.init('https://ruletka.top:5000');
+        const serverUrl = window.location.protocol === 'https:' ? 'https://ruletka.top' : 'http://localhost:5000';
+        WebRTCService.init(serverUrl);
         WebRTCService.setStream(stream);
         
         // Set up WebRTC callbacks

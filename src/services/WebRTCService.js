@@ -12,25 +12,20 @@ class WebRTCService {
     this.isSearching = false;
   }
 
-  init(serverUrl = 'https://ruletka.top:5000') {
+  init(serverUrl = window.location.protocol === 'https:' ? 'https://ruletka.top' : 'http://localhost:5000') {
     console.log('Initializing WebRTC service with server:', serverUrl);
     
     this.socket = io(serverUrl, {
       transports: ['websocket', 'polling'],
-      reconnectionDelayMax: 10000,
-      reconnectionAttempts: 10,
-      path: '/socket.io',
+      path: '/socket.io/',
       secure: true,
-      rejectUnauthorized: false,
-      cors: {
-        origin: window.location.origin,
-        credentials: true
-      },
-      forceNew: true,
       reconnection: true,
+      reconnectionAttempts: 10,
       reconnectionDelay: 1000,
       reconnectionDelayMax: 5000,
-      timeout: 20000
+      timeout: 20000,
+      autoConnect: true,
+      withCredentials: true
     });
     
     this.socket.on('connect', () => {
