@@ -976,8 +976,9 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.8);
-  backdrop-filter: blur(5px);
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -986,10 +987,11 @@
 }
 
 .modal {
-  background: linear-gradient(135deg, rgba(82, 82, 82, 0.9) 0%, rgba(45, 45, 45, 0.95) 100%);
+  background: rgba(45, 45, 45, 0.95);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   border-radius: 20px;
   padding: 0;
-  bottom: 460px;
   width: 90%;
   max-width: 600px;
   max-height: 90vh;
