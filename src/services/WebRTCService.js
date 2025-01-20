@@ -25,7 +25,9 @@ class WebRTCService {
       reconnectionDelayMax: 5000,
       timeout: 20000,
       autoConnect: true,
-      withCredentials: true
+      withCredentials: true,
+      forceNew: true,
+      closeOnBeforeunload: true
     });
     
     this.socket.on('connect', () => {
@@ -97,6 +99,7 @@ class WebRTCService {
       initiator,
       stream: this.stream,
       trickle: false,
+      objectMode: true,
       config: {
         iceServers: [
           { urls: 'stun:stun.l.google.com:19302' },
@@ -106,6 +109,10 @@ class WebRTCService {
           { urls: 'stun:stun3.l.google.com:19302' },
           { urls: 'stun:stun4.l.google.com:19302' }
         ]
+      },
+      sdpTransform: (sdp) => {
+        // Принудительно используем UDP
+        return sdp.replace(/a=candidate.*tcp.*\r\n/g, '');
       }
     });
 
@@ -123,6 +130,7 @@ class WebRTCService {
 
     this.peer.on('connect', () => {
       console.log('Peer connection established');
+      this.isSearching = false;
     });
 
     this.peer.on('error', err => {
@@ -133,6 +141,10 @@ class WebRTCService {
     this.peer.on('close', () => {
       console.log('Peer connection closed');
       this.destroyPeer();
+    });
+
+    this.peer.on('data', data => {
+      console.log('Received data:', data);
     });
   }
 
@@ -175,7 +187,11 @@ class WebRTCService {
   destroyPeer() {
     if (this.peer) {
       console.log('Destroying peer connection');
-      this.peer.destroy();
+      try {
+        this.peer.destroy();
+      } catch (error) {
+        console.error('Error destroying peer:', error);
+      }
       this.peer = null;
     }
     this.isSearching = false;
@@ -195,10 +211,12 @@ class WebRTCService {
 
   disconnect() {
     console.log('Disconnecting from service');
-    if (this.socket) {
-      this.socket.disconnect();
-    }
     this.destroyPeer();
+    if (this.socket) {
+      this.socket.emit('stop_search');
+      this.socket.disconnect();
+      this.socket = null;
+    }
   }
 }
 
