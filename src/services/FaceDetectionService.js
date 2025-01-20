@@ -3,19 +3,12 @@ import * as faceapi from 'face-api.js';
 class FaceDetectionService {
   constructor() {
     this.isModelLoaded = false;
-    this.lastFaceCheck = Date.now();
-    this.faceCheckInterval = 0.1 * 60 * 1000; // 0.1 минуты
-    this.activeMask = null;
     this.canvas = null;
   }
 
   async loadModels() {
     try {
-      await Promise.all([
-        faceapi.nets.tinyFaceDetector.loadFromUri('/models'),
-        faceapi.nets.faceLandmark68Net.loadFromUri('/models'),
-        faceapi.nets.faceExpressionNet.loadFromUri('/models')
-      ]);
+      await faceapi.nets.tinyFaceDetector.loadFromUri('/models');
       this.isModelLoaded = true;
       console.log('Модели загружены успешно');
     } catch (error) {
@@ -24,8 +17,7 @@ class FaceDetectionService {
   }
 
   async detectFace(videoElement) {
-    if (!this.isModelLoaded) {
-      console.warn('Модели не загружены');
+    if (!this.isModelLoaded || !videoElement || !videoElement.videoWidth) {
       return null;
     }
 
@@ -33,7 +25,7 @@ class FaceDetectionService {
       const detection = await faceapi.detectSingleFace(
         videoElement,
         new faceapi.TinyFaceDetectorOptions()
-      ).withFaceLandmarks();
+      );
 
       return detection;
     } catch (error) {
@@ -42,19 +34,11 @@ class FaceDetectionService {
     }
   }
 
-  async checkFacePresence(videoElement) {
-    const now = Date.now();
-    if (now - this.lastFaceCheck < this.faceCheckInterval) {
-      return true;
+  initCanvas(videoElement) {
+    if (!videoElement || !videoElement.videoWidth || !videoElement.videoHeight) {
+      return;
     }
 
-    const detection = await this.detectFace(videoElement);
-    this.lastFaceCheck = now;
-
-    return !!detection;
-  }
-
-  initCanvas(videoElement) {
     if (!this.canvas) {
       this.canvas = faceapi.createCanvasFromMedia(videoElement);
       this.canvas.style.position = 'absolute';
@@ -68,7 +52,9 @@ class FaceDetectionService {
   }
 
   async applyMask(videoElement, maskId) {
-    if (!this.isModelLoaded) return;
+    if (!this.isModelLoaded || !videoElement || !videoElement.videoWidth || !videoElement.videoHeight) {
+      return;
+    }
 
     this.activeMask = maskId;
     this.initCanvas(videoElement);

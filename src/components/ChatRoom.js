@@ -92,9 +92,9 @@ function ChatRoom() {
   }, []);
 
   useEffect(() => {
-    if (!localVideoRef.current) return;
+    if (!localVideoRef.current || chatMode !== 'video') return;
 
-    const checkFace = async () => {
+    const initialCheck = async () => {
       const hasFace = await FaceDetectionService.detectFace(localVideoRef.current);
       if (hasFace) {
         setFaceDetected(true);
@@ -105,10 +105,21 @@ function ChatRoom() {
       }
     };
 
-    const interval = setInterval(checkFace, 10000); // Проверяем каждые 10 секунд
+    // Первая проверка при загрузке
+    initialCheck();
 
-    return () => clearInterval(interval);
-  }, [localVideoRef]);
+    // Вторая проверка через 10 секунд
+    const secondCheck = setTimeout(async () => {
+      const hasFace = await FaceDetectionService.detectFace(localVideoRef.current);
+      if (hasFace) {
+        setFaceDetected(true);
+        setShowFaceCheckModal(false);
+      }
+      // После второй проверки больше не проверяем
+    }, 10000);
+
+    return () => clearTimeout(secondCheck);
+  }, [localVideoRef, chatMode]);
 
   const startChat = () => {
     setIsSearching(true);
@@ -147,6 +158,9 @@ function ChatRoom() {
 
   const changeChatMode = (mode) => {
     setChatMode(mode);
+    if (mode === 'audio') {
+      setShowFaceCheckModal(false); // Скрываем модальное окно в аудио режиме
+    }
   };
 
   const sendMessage = () => {
@@ -217,7 +231,7 @@ function ChatRoom() {
     <div className="chat-room">
       <div className="video-grid">
         <div className="remote-container">
-          <div className="remote-video">
+          <div className="remote-video" data-mode={chatMode}>
             {!isSearching && !isConnected && (
               <div className="start-screen">
                 <div className="bouncing-logo" data-text="RULETKA.TOP">
@@ -227,11 +241,21 @@ function ChatRoom() {
             )}
             {isSearching && (
               <div className="waiting-message">
-                <div className="waiting-dots">
+                <div className="search-animation"></div>
+                <div className="search-dots">
                   <span></span>
                   <span></span>
                   <span></span>
                 </div>
+              </div>
+            )}
+            {chatMode === 'audio' && isConnected && (
+              <div className="audio-bars">
+                <span></span>
+                <span></span>
+                <span></span>
+                <span></span>
+                <span></span>
               </div>
             )}
             <video
@@ -277,7 +301,7 @@ function ChatRoom() {
           </div>
         </div>
         <div className="local-container">
-          <div className="local-video">
+          <div className="local-video" data-mode={chatMode}>
             <video
               ref={localVideoRef}
               autoPlay
@@ -285,6 +309,17 @@ function ChatRoom() {
               playsInline
               className="video-element"
             />
+            {chatMode === 'audio' && (
+              <>
+                <div className="audio-wave"></div>
+                <div className="audio-circles">
+                  <span></span>
+                  <span></span>
+                  <span></span>
+                  <span></span>
+                </div>
+              </>
+            )}
             <div className="local-controls">
               <button 
                 className={`control-button ${isMuted ? 'danger active' : ''}`}

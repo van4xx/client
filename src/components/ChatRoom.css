@@ -1759,142 +1759,277 @@ button.premium-button:hover::after {
 
 .waiting-message {
   position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  text-align: center;
-  z-index: 10;
+  top: 0;
+  left: 0;
   width: 100%;
-  padding: 30px;
-  perspective: 1000px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background: linear-gradient(135deg, rgba(25,25,25,0.95), rgba(40,40,40,0.95));
+  z-index: 1000;
 }
 
 .waiting-message::before {
-  content: 'Ожидание собеседника...';
-  display: block;
+  content: "Поиск собеседника...";
   font-size: 2.8rem;
-  font-weight: bold;
-  color: white;
-  text-shadow: 
-    0 0 10px rgba(255, 183, 0, 0.5),
-    0 0 20px rgba(255, 183, 0, 0.3),
-    0 0 30px rgba(255, 183, 0, 0.2);
-  margin-bottom: 15px;
-  animation: textPulse 2s infinite;
-  transform-style: preserve-3d;
+  font-weight: 600;
+  color: #FFB700;
+  text-shadow: 0 0 10px rgba(255,183,0,0.5),
+               0 0 20px rgba(255,183,0,0.3),
+               0 0 30px rgba(255,183,0,0.2);
+  margin-bottom: 2rem;
+  animation: textPulse 2s ease-in-out infinite;
 }
 
-.waiting-message::after {
-  content: '';
-  display: block;
-  width: 100px;
-  height: 100px;
-  margin: 30px auto;
+.search-animation {
+  width: 120px;
+  height: 120px;
   border: 4px solid transparent;
-  border-top-color: var(--yellow-1);
-  border-right-color: var(--yellow-1);
+  border-top-color: #FFB700;
+  border-right-color: #FFB700;
   border-radius: 50%;
-  animation: spinnerRotate 1.5s linear infinite;
-  filter: drop-shadow(0 0 15px rgba(255, 183, 0, 0.5));
-}
-
-.waiting-dots {
-  display: flex;
-  justify-content: center;
-  gap: 12px;
-  margin-top: 30px;
-  transform-style: preserve-3d;
-}
-
-.waiting-dots span {
-  width: 15px;
-  height: 15px;
-  background: var(--yellow-1);
-  border-radius: 50%;
-  animation: dotsBounce 1.4s infinite;
-  box-shadow: 
-    0 0 10px rgba(255, 183, 0, 0.5),
-    0 0 20px rgba(255, 183, 0, 0.3);
   position: relative;
+  animation: searchSpin 1.5s linear infinite;
+  margin-bottom: 2rem;
 }
 
-.waiting-dots span::after {
+.search-animation::before {
   content: '';
   position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 100%;
-  height: 100%;
-  background: inherit;
-  border-radius: inherit;
-  transform: translate(-50%, -50%) scale(1);
-  opacity: 0.5;
-  animation: dotsPulse 1.4s infinite;
+  top: -15px;
+  left: -15px;
+  right: -15px;
+  bottom: -15px;
+  border: 4px solid transparent;
+  border-top-color: rgba(255,183,0,0.5);
+  border-right-color: rgba(255,183,0,0.5);
+  border-radius: 50%;
+  animation: searchSpin 2s linear infinite reverse;
 }
 
-.waiting-dots span:nth-child(2) {
+.search-dots {
+  display: flex;
+  gap: 12px;
+}
+
+.search-dots span {
+  width: 20px;
+  height: 20px;
+  background-color: #FFB700;
+  border-radius: 50%;
+  animation: searchDots 1.4s ease-in-out infinite;
+}
+
+.search-dots span:nth-child(2) {
   animation-delay: 0.2s;
 }
 
-.waiting-dots span:nth-child(2)::after {
-  animation-delay: 0.2s;
-}
-
-.waiting-dots span:nth-child(3) {
+.search-dots span:nth-child(3) {
   animation-delay: 0.4s;
 }
 
-.waiting-dots span:nth-child(3)::after {
-  animation-delay: 0.4s;
+@keyframes searchSpin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 @keyframes textPulse {
   0%, 100% {
     opacity: 1;
-    transform: scale(1) rotateX(0deg);
-    text-shadow: 
-      0 0 10px rgba(255, 183, 0, 0.5),
-      0 0 20px rgba(255, 183, 0, 0.3),
-      0 0 30px rgba(255, 183, 0, 0.2);
+    transform: scale(1);
   }
   50% {
     opacity: 0.8;
-    transform: scale(1.05) rotateX(10deg);
-    text-shadow: 
-      0 0 20px rgba(255, 183, 0, 0.7),
-      0 0 30px rgba(255, 183, 0, 0.5),
-      0 0 40px rgba(255, 183, 0, 0.3);
+    transform: scale(0.95);
   }
 }
 
-@keyframes spinnerRotate {
-  0% {
-    transform: rotate(0deg) scale(1);
+@keyframes searchDots {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
   }
   50% {
-    transform: rotate(180deg) scale(1.2);
-  }
-  100% {
-    transform: rotate(360deg) scale(1);
+    transform: scale(1.5);
+    opacity: 0.5;
   }
 }
 
-@keyframes dotsBounce {
-  0%, 100% {
-    transform: translateY(0) scale(1);
-  }
-  50% {
-    transform: translateY(-20px) scale(1.2);
-  }
+.remote-video[data-mode="audio"] .video-element,
+.local-video[data-mode="audio"] .video-element {
+  display: none;
 }
 
-@keyframes dotsPulse {
+.remote-video[data-mode="audio"]::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(45deg, #1a1a1a, #000);
+  z-index: 1;
+}
+
+.remote-video[data-mode="audio"] {
+  position: relative;
+  overflow: hidden;
+}
+
+.remote-video[data-mode="audio"]::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 300px;
+  height: 300px;
+  background: var(--yellow-1);
+  border-radius: 50%;
+  filter: blur(100px);
+  opacity: 0.3;
+  animation: pulseGlow 3s ease-in-out infinite;
+  z-index: 2;
+}
+
+.remote-video[data-mode="audio"] .audio-bars {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  gap: 8px;
+  z-index: 3;
+}
+
+.remote-video[data-mode="audio"] .audio-bars span {
+  width: 12px;
+  height: 100px;
+  background: var(--yellow-1);
+  border-radius: 6px;
+  animation: audioBarAnimate 1.2s ease-in-out infinite;
+}
+
+.remote-video[data-mode="audio"] .audio-bars span:nth-child(1) { animation-delay: 0.1s; }
+.remote-video[data-mode="audio"] .audio-bars span:nth-child(2) { animation-delay: 0.2s; }
+.remote-video[data-mode="audio"] .audio-bars span:nth-child(3) { animation-delay: 0.3s; }
+.remote-video[data-mode="audio"] .audio-bars span:nth-child(4) { animation-delay: 0.4s; }
+.remote-video[data-mode="audio"] .audio-bars span:nth-child(5) { animation-delay: 0.5s; }
+
+.local-video[data-mode="audio"] {
+  position: relative;
+  overflow: hidden;
+}
+
+.local-video[data-mode="audio"]::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, #1a1a1a, #000);
+  z-index: 1;
+}
+
+.local-video[data-mode="audio"] .audio-wave {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 300px;
+  height: 300px;
+  z-index: 2;
+}
+
+.local-video[data-mode="audio"] .audio-wave::before,
+.local-video[data-mode="audio"] .audio-wave::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 100%;
+  height: 100%;
+  border: 4px solid var(--yellow-1);
+  border-radius: 50%;
+  animation: waveExpand 3s ease-out infinite;
+}
+
+.local-video[data-mode="audio"] .audio-wave::after {
+  animation-delay: 1.5s;
+}
+
+.local-video[data-mode="audio"] .audio-circles {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 3;
+}
+
+.local-video[data-mode="audio"] .audio-circles span {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  background: var(--yellow-1);
+  border-radius: 50%;
+  animation: circleRotate 4s linear infinite;
+}
+
+.local-video[data-mode="audio"] .audio-circles span:nth-child(1) { animation-delay: 0s; }
+.local-video[data-mode="audio"] .audio-circles span:nth-child(2) { animation-delay: 1s; }
+.local-video[data-mode="audio"] .audio-circles span:nth-child(3) { animation-delay: 2s; }
+.local-video[data-mode="audio"] .audio-circles span:nth-child(4) { animation-delay: 3s; }
+
+@keyframes audioBarAnimate {
   0%, 100% {
-    transform: translate(-50%, -50%) scale(1);
+    height: 40px;
     opacity: 0.5;
   }
   50% {
-    transform: translate(-50%, -50%) scale(2);
+    height: 100px;
+    opacity: 1;
+  }
+}
+
+@keyframes pulseGlow {
+  0%, 100% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 0.3;
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.5);
+    opacity: 0.5;
+  }
+}
+
+@keyframes waveExpand {
+  0% {
+    width: 0;
+    height: 0;
+    opacity: 1;
+  }
+  100% {
+    width: 300px;
+    height: 300px;
     opacity: 0;
+  }
+}
+
+@keyframes circleRotate {
+  0% {
+    transform: rotate(0deg) translate(100px) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: rotate(360deg) translate(100px) rotate(-360deg);
+    opacity: 0.5;
   }
 } 
