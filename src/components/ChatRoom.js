@@ -269,7 +269,7 @@ function ChatRoom() {
                 </div>
               </div>
             )}
-            {isSearching && chatMode === 'video' && !isConnected && (
+            {isSearching && !isConnected && chatMode === 'video' && (
               <div className="waiting-message">
                 <div className="radar-animation">
                   <div className="radar-circle"></div>
