@@ -152,13 +152,9 @@ class WebRTCService {
             },
             {
               urls: [
-                'turn:turn.anyfirewall.com:443?transport=tcp'
+                'turn:turn.anyfirewall.com:443?transport=tcp',
+                'turn:turn.anyfirewall.com:443?transport=udp'
               ],
-              credential: 'webrtc',
-              username: 'webrtc'
-            },
-            {
-              urls: 'turn:turn.anyfirewall.com:443',
               credential: 'webrtc',
               username: 'webrtc'
             }
@@ -166,15 +162,36 @@ class WebRTCService {
           iceTransportPolicy: 'all',
           bundlePolicy: 'max-bundle',
           rtcpMuxPolicy: 'require',
-          iceServersPolicy: 'all',
-          iceCandidatePoolSize: 0,
-          sdpSemantics: 'unified-plan'
+          sdpSemantics: 'unified-plan',
+          enableDtlsSrtp: true,
+          iceCandidatePoolSize: 1
+        },
+        offerOptions: {
+          offerToReceiveAudio: true,
+          offerToReceiveVideo: true
+        },
+        answerOptions: {
+          offerToReceiveAudio: true,
+          offerToReceiveVideo: true
         },
         sdpTransform: (sdp) => {
+          let modifiedSdp = sdp;
+          
+          // Добавляем поддержку H264
+          if (!modifiedSdp.includes('H264')) {
+            modifiedSdp = modifiedSdp.replace(
+              /(m=video.*\r\n)/g,
+              '$1a=rtpmap:125 H264/90000\r\na=rtcp-fb:125 nack\r\na=rtcp-fb:125 nack pli\r\na=rtcp-fb:125 ccm fir\r\n'
+            );
+          }
+          
           // Увеличиваем приоритет для TCP кандидатов
-          return sdp.replace(/a=candidate.*udp.*priority (.*)/g, (match, priority) => {
-            return match.replace(priority, '1');
-          });
+          modifiedSdp = modifiedSdp.replace(
+            /a=candidate.*udp.*priority (.*)/g,
+            (match, priority) => match.replace(priority, '1')
+          );
+          
+          return modifiedSdp;
         }
       };
 
@@ -183,6 +200,7 @@ class WebRTCService {
       let iceConnectionTimeout;
       let connectionTimeout;
       let candidatesReceived = 0;
+      let isConnected = false;
 
       this.peer.on('signal', signal => {
         if (this.socket && this.socket.connected) {
@@ -191,11 +209,14 @@ class WebRTCService {
             candidatesReceived++;
           }
           this.socket.emit('signal', { signal });
+        } else {
+          console.warn('Socket not connected, cannot send signal');
         }
       });
 
       this.peer.on('connect', () => {
         console.log('Peer connection established');
+        isConnected = true;
         this.isSearching = false;
         clearTimeout(connectionTimeout);
         clearTimeout(iceConnectionTimeout);
@@ -210,7 +231,10 @@ class WebRTCService {
       });
 
       this.peer.on('track', (track, stream) => {
-        console.log('Received track:', track, 'in stream:', stream);
+        console.log('Received track:', track.kind, track.id, 'in stream:', stream.id);
+        track.onunmute = () => {
+          console.log('Track unmuted:', track.kind);
+        };
       });
 
       this.peer.on('iceStateChange', (iceConnectionState) => {
@@ -219,24 +243,34 @@ class WebRTCService {
         if (iceConnectionState === 'checking') {
           clearTimeout(iceConnectionTimeout);
           iceConnectionTimeout = setTimeout(() => {
-            if (candidatesReceived === 0) {
-              console.log('No ICE candidates received, trying TCP/TURN');
-              this.peer._pc.setConfiguration({
-                ...peerConfig.config,
-                iceTransportPolicy: 'relay'
-              });
-            } else {
-              console.log('ICE connection timeout');
-              this.destroyPeer();
+            if (!isConnected) {
+              if (candidatesReceived === 0) {
+                console.log('No ICE candidates received, trying TCP/TURN');
+                try {
+                  this.peer._pc.setConfiguration({
+                    ...peerConfig.config,
+                    iceTransportPolicy: 'relay'
+                  });
+                } catch (error) {
+                  console.error('Error setting relay configuration:', error);
+                  this.destroyPeer();
+                }
+              } else {
+                console.log('ICE connection timeout');
+                this.destroyPeer();
+              }
             }
-          }, 5000);
+          }, 8000);
         } else if (iceConnectionState === 'connected' || iceConnectionState === 'completed') {
           console.log('ICE connection established');
+          isConnected = true;
           clearTimeout(iceConnectionTimeout);
           clearTimeout(connectionTimeout);
         } else if (iceConnectionState === 'failed' || iceConnectionState === 'disconnected' || iceConnectionState === 'closed') {
           console.log('ICE connection failed/closed');
-          this.destroyPeer();
+          if (!isConnected) {
+            this.destroyPeer();
+          }
         }
       });
 
@@ -255,7 +289,9 @@ class WebRTCService {
 
       this.peer.on('error', err => {
         console.error('Peer error:', err);
-        this.destroyPeer();
+        if (!isConnected) {
+          this.destroyPeer();
+        }
       });
 
       this.peer.on('close', () => {
@@ -266,8 +302,10 @@ class WebRTCService {
       });
 
       connectionTimeout = setTimeout(() => {
-        console.log('Connection establishment timeout');
-        this.destroyPeer();
+        if (!isConnected) {
+          console.log('Connection establishment timeout');
+          this.destroyPeer();
+        }
       }, 20000);
 
     } catch (error) {
