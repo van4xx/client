@@ -1,6 +1,14 @@
 import io from 'socket.io-client';
 import Peer from 'simple-peer';
 
+// Polyfill for process
+if (typeof window !== 'undefined') {
+  window.process = {
+    env: {},
+    nextTick: function(fn) { setTimeout(fn, 0); }
+  };
+}
+
 class WebRTCService {
   constructor() {
     this.socket = null;
@@ -95,12 +103,10 @@ class WebRTCService {
       return;
     }
 
-    this.peer = new Peer({
+    const peerConfig = {
       initiator,
       stream: this.stream,
       trickle: false,
-      objectMode: true,
-      streams: [this.stream],
       config: {
         iceServers: [
           { urls: 'stun:stun.l.google.com:19302' },
@@ -112,60 +118,68 @@ class WebRTCService {
         ]
       },
       sdpTransform: (sdp) => {
-        // Force UDP and remove TCP candidates
         const lines = sdp.split('\r\n');
         const filtered = lines.filter(line => !line.includes('tcp'));
         return filtered.join('\r\n');
       }
-    });
+    };
 
-    this.peer.on('signal', signal => {
-      try {
-        console.log('Generated signal:', signal);
-        this.socket.emit('signal', { signal });
-      } catch (error) {
-        console.error('Error sending signal:', error);
+    try {
+      this.peer = new Peer(peerConfig);
+
+      this.peer.on('signal', signal => {
+        try {
+          console.log('Generated signal:', signal);
+          this.socket.emit('signal', { signal });
+        } catch (error) {
+          console.error('Error sending signal:', error);
+          this.destroyPeer();
+        }
+      });
+
+      this.peer.on('stream', stream => {
+        try {
+          console.log('Received remote stream');
+          if (this.onStreamCallback) {
+            this.onStreamCallback(stream);
+          }
+        } catch (error) {
+          console.error('Error handling remote stream:', error);
+        }
+      });
+
+      this.peer.on('data', data => {
+        try {
+          if (data instanceof Uint8Array) {
+            const message = new TextDecoder().decode(data);
+            console.log('Received data:', message);
+            if (this.onChatMessageCallback) {
+              this.onChatMessageCallback(message);
+            }
+          }
+        } catch (error) {
+          console.error('Error handling data:', error);
+        }
+      });
+
+      this.peer.on('connect', () => {
+        console.log('Peer connection established');
+        this.isSearching = false;
+      });
+
+      this.peer.on('error', err => {
+        console.error('Peer error:', err);
         this.destroyPeer();
-      }
-    });
+      });
 
-    this.peer.on('stream', stream => {
-      try {
-        console.log('Received remote stream');
-        if (this.onStreamCallback) {
-          this.onStreamCallback(stream);
-        }
-      } catch (error) {
-        console.error('Error handling remote stream:', error);
-      }
-    });
-
-    this.peer.on('data', data => {
-      try {
-        const message = data.toString();
-        console.log('Received data:', message);
-        if (this.onChatMessageCallback) {
-          this.onChatMessageCallback(message);
-        }
-      } catch (error) {
-        console.error('Error handling data:', error);
-      }
-    });
-
-    this.peer.on('connect', () => {
-      console.log('Peer connection established');
-      this.isSearching = false;
-    });
-
-    this.peer.on('error', err => {
-      console.error('Peer error:', err);
+      this.peer.on('close', () => {
+        console.log('Peer connection closed');
+        this.destroyPeer();
+      });
+    } catch (error) {
+      console.error('Error initializing peer:', error);
       this.destroyPeer();
-    });
-
-    this.peer.on('close', () => {
-      console.log('Peer connection closed');
-      this.destroyPeer();
-    });
+    }
   }
 
   setStream(stream) {
