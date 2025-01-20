@@ -107,6 +107,10 @@ class WebRTCService {
       initiator,
       stream: this.stream,
       trickle: false,
+      channelConfig: {
+        ordered: true,
+        maxRetransmits: 3
+      },
       config: {
         iceServers: [
           { urls: 'stun:stun.l.google.com:19302' },
@@ -115,7 +119,13 @@ class WebRTCService {
           { urls: 'stun:stun2.l.google.com:19302' },
           { urls: 'stun:stun3.l.google.com:19302' },
           { urls: 'stun:stun4.l.google.com:19302' }
-        ]
+        ],
+        iceTransportPolicy: 'all',
+        iceCandidatePoolSize: 10
+      },
+      offerOptions: {
+        offerToReceiveAudio: true,
+        offerToReceiveVideo: true
       },
       sdpTransform: (sdp) => {
         const lines = sdp.split('\r\n');
@@ -130,7 +140,9 @@ class WebRTCService {
       this.peer.on('signal', signal => {
         try {
           console.log('Generated signal:', signal);
-          this.socket.emit('signal', { signal });
+          if (this.socket && this.socket.connected) {
+            this.socket.emit('signal', { signal });
+          }
         } catch (error) {
           console.error('Error sending signal:', error);
           this.destroyPeer();
@@ -140,7 +152,7 @@ class WebRTCService {
       this.peer.on('stream', stream => {
         try {
           console.log('Received remote stream');
-          if (this.onStreamCallback) {
+          if (stream && stream.active && this.onStreamCallback) {
             this.onStreamCallback(stream);
           }
         } catch (error) {
@@ -150,12 +162,20 @@ class WebRTCService {
 
       this.peer.on('data', data => {
         try {
+          if (!data) return;
+          
+          let message;
           if (data instanceof Uint8Array) {
-            const message = new TextDecoder().decode(data);
-            console.log('Received data:', message);
-            if (this.onChatMessageCallback) {
-              this.onChatMessageCallback(message);
-            }
+            message = new TextDecoder().decode(data);
+          } else if (typeof data === 'string') {
+            message = data;
+          } else {
+            message = JSON.stringify(data);
+          }
+          
+          console.log('Received data:', message);
+          if (this.onChatMessageCallback) {
+            this.onChatMessageCallback(message);
           }
         } catch (error) {
           console.error('Error handling data:', error);
@@ -176,6 +196,15 @@ class WebRTCService {
         console.log('Peer connection closed');
         this.destroyPeer();
       });
+
+      // Add additional error handlers
+      this.peer.on('iceStateChange', (state) => {
+        console.log('ICE state:', state);
+        if (state === 'disconnected' || state === 'failed' || state === 'closed') {
+          this.destroyPeer();
+        }
+      });
+
     } catch (error) {
       console.error('Error initializing peer:', error);
       this.destroyPeer();
@@ -219,9 +248,10 @@ class WebRTCService {
   }
 
   destroyPeer() {
+    console.log('Destroying peer connection');
     if (this.peer) {
-      console.log('Destroying peer connection');
       try {
+        this.peer.removeAllListeners();
         this.peer.destroy();
       } catch (error) {
         console.error('Error destroying peer:', error);
