@@ -244,7 +244,11 @@ class WebRTCService {
                 'stun:stun2.l.google.com:19302',
                 'stun:stun3.l.google.com:19302',
                 'stun:stun4.l.google.com:19302',
-                'stun:stun.stunprotocol.org:3478'
+                'stun:stun.stunprotocol.org:3478',
+                'stun:stun.ekiga.net:3478',
+                'stun:stun.ideasip.com:3478',
+                'stun:stun.voipbuster.com:3478',
+                'stun:stun.voipstunt.com:3478'
               ]
             },
             {
@@ -264,17 +268,31 @@ class WebRTCService {
               username: 'webrtc'
             },
             {
-              urls: 'turn:openrelay.metered.ca:443',
+              urls: [
+                'turn:openrelay.metered.ca:443',
+                'turn:openrelay.metered.ca:443?transport=tcp',
+                'turn:openrelay.metered.ca:443?transport=udp',
+                'turn:openrelay.metered.ca:80',
+                'turn:openrelay.metered.ca:80?transport=tcp',
+                'turn:openrelay.metered.ca:80?transport=udp'
+              ],
               username: 'openrelayproject',
               credential: 'openrelayproject'
             },
             {
               urls: [
-                'turn:openrelay.metered.ca:443?transport=tcp',
-                'turn:openrelay.metered.ca:443?transport=udp'
+                'turn:relay.webwormhole.io:3478',
+                'turn:relay.webwormhole.io:3478?transport=udp',
+                'turn:relay.webwormhole.io:3478?transport=tcp',
+                'turn:relay.webwormhole.io:80',
+                'turn:relay.webwormhole.io:80?transport=udp',
+                'turn:relay.webwormhole.io:80?transport=tcp',
+                'turn:relay.webwormhole.io:443',
+                'turn:relay.webwormhole.io:443?transport=udp',
+                'turn:relay.webwormhole.io:443?transport=tcp'
               ],
-              username: 'openrelayproject',
-              credential: 'openrelayproject'
+              username: 'webwormhole',
+              credential: 'webwormhole'
             }
           ],
           iceTransportPolicy: 'all',
@@ -282,7 +300,7 @@ class WebRTCService {
           rtcpMuxPolicy: 'require',
           sdpSemantics: 'unified-plan',
           enableDtlsSrtp: true,
-          iceCandidatePoolSize: 1
+          iceCandidatePoolSize: 2
         },
         offerOptions: {
           offerToReceiveAudio: true,
@@ -527,22 +545,30 @@ class WebRTCService {
           iceConnectionTimeout = setTimeout(() => {
             if (!isConnected) {
               if (candidatesReceived === 0) {
-                console.log('No ICE candidates received, trying TCP/TURN');
+                console.log('No ICE candidates received, switching to relay-only mode');
                 try {
                   this.peer._pc.setConfiguration({
                     ...peerConfig.config,
-                    iceTransportPolicy: 'relay'
+                    iceTransportPolicy: 'relay',
+                    iceCandidatePoolSize: 5
                   });
+                  // Restart ICE
+                  this.peer._pc.restartIce();
                 } catch (error) {
                   console.error('Error setting relay configuration:', error);
                   this.destroyPeer();
                 }
               } else {
-                console.log('ICE connection timeout');
-                this.destroyPeer();
+                console.log('ICE connection timeout, trying to restart ICE');
+                try {
+                  this.peer._pc.restartIce();
+                } catch (error) {
+                  console.error('Error restarting ICE:', error);
+                  this.destroyPeer();
+                }
               }
             }
-          }, 8000);
+          }, 15000); // Увеличиваем таймаут до 15 секунд
         } else if (iceConnectionState === 'connected' || iceConnectionState === 'completed') {
           console.log('ICE connection established');
           isConnected = true;
@@ -588,7 +614,7 @@ class WebRTCService {
           console.log('Connection establishment timeout');
           this.destroyPeer();
         }
-      }, 20000);
+      }, 30000); // Увеличиваем общий таймаут до 30 секунд
 
     } catch (error) {
       console.error('Error initializing peer:', error);
