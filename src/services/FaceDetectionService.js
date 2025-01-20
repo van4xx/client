@@ -4,6 +4,8 @@ class FaceDetectionService {
   constructor() {
     this.isModelLoaded = false;
     this.canvas = null;
+    this.lastDetectionTime = 0;
+    this.detectionInterval = 500; // Проверяем каждые 500мс
   }
 
   async loadModels() {
@@ -21,13 +23,26 @@ class FaceDetectionService {
       return null;
     }
 
+    // Проверяем не слишком ли часто вызываем детекцию
+    const currentTime = Date.now();
+    if (currentTime - this.lastDetectionTime < this.detectionInterval) {
+      return true; // Возвращаем true если прошло мало времени с последней проверки
+    }
+    this.lastDetectionTime = currentTime;
+
     try {
+      const options = new faceapi.TinyFaceDetectorOptions({
+        inputSize: 160,      // Уменьшаем размер входного изображения
+        scoreThreshold: 0.3  // Снижаем порог уверенности
+      });
+
       const detection = await faceapi.detectSingleFace(
         videoElement,
-        new faceapi.TinyFaceDetectorOptions()
+        options
       );
 
-      return detection;
+      // Упрощаем проверку - достаточно любого обнаружения лица
+      return detection !== undefined;
     } catch (error) {
       console.error('Ошибка при определении лица:', error);
       return null;

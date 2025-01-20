@@ -108,17 +108,17 @@ function ChatRoom() {
     // Первая проверка при загрузке
     initialCheck();
 
-    // Вторая проверка через 10 секунд
-    const secondCheck = setTimeout(async () => {
+    // Проверяем каждые 2 секунды
+    const checkInterval = setInterval(async () => {
       const hasFace = await FaceDetectionService.detectFace(localVideoRef.current);
       if (hasFace) {
         setFaceDetected(true);
         setShowFaceCheckModal(false);
+        clearInterval(checkInterval); // Останавливаем проверку после успешного обнаружения
       }
-      // После второй проверки больше не проверяем
-    }, 10000);
+    }, 2000);
 
-    return () => clearTimeout(secondCheck);
+    return () => clearInterval(checkInterval);
   }, [localVideoRef, chatMode]);
 
   const startChat = () => {
@@ -239,23 +239,61 @@ function ChatRoom() {
                 </div>
               </div>
             )}
-            {isSearching && (
+            {isSearching && chatMode === 'video' && (
               <div className="waiting-message">
-                <div className="search-animation"></div>
-                <div className="search-dots">
-                  <span></span>
-                  <span></span>
-                  <span></span>
+                <div className="radar-animation">
+                  <div className="radar-circle"></div>
+                  <div className="radar-circle"></div>
+                  <div className="radar-circle"></div>
+                  <div className="radar-sweep"></div>
+                  <div className="detection-point" style={{top: '30%', left: '70%'}}></div>
+                  <div className="detection-point" style={{top: '60%', left: '40%'}}></div>
+                  <div className="detection-point" style={{top: '20%', left: '20%'}}></div>
+                </div>
+                <div className="search-text">
+                  <span className="connecting-text">Ищем нового</span>
+                  <div className="wave-text">
+                    <span>с</span>
+                    <span>о</span>
+                    <span>б</span>
+                    <span>е</span>
+                    <span>с</span>
+                    <span>е</span>
+                    <span>д</span>
+                    <span>н</span>
+                    <span>и</span>
+                    <span>к</span>
+                    <span>а</span>
+                  </div>
                 </div>
               </div>
             )}
-            {chatMode === 'audio' && isConnected && (
-              <div className="audio-bars">
-                <span></span>
-                <span></span>
-                <span></span>
-                <span></span>
-                <span></span>
+            {(chatMode === 'audio' && (isSearching || isConnected)) && (
+              <div className="audio-visualization">
+                <div className="audio-wave-container">
+                  <div className="audio-circle"></div>
+                  <div className="audio-bars">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                  </div>
+                </div>
+                <div className="audio-status">
+                  {isSearching ? (
+                    <span className="status-text">Ищем интересного собеседника</span>
+                  ) : isMuted ? (
+                    <span className="status-text warning">Включите микрофон для общения</span>
+                  ) : (
+                    <span className="status-text success">Идет разговор</span>
+                  )}
+                </div>
               </div>
             )}
             <video
@@ -271,12 +309,16 @@ function ChatRoom() {
                 <button 
                   className={chatMode === 'video' ? 'active' : ''}
                   onClick={() => changeChatMode('video')}
+                  disabled={isSearching}
+                  title={isSearching ? "Нельзя менять режим во время поиска" : ""}
                 >
                   <BsCameraVideo /> Видео
                 </button>
                 <button 
                   className={chatMode === 'audio' ? 'active' : ''}
                   onClick={() => changeChatMode('audio')}
+                  disabled={isSearching}
+                  title={isSearching ? "Нельзя менять режим во время поиска" : ""}
                 >
                   <BsMic /> Аудио
                 </button>
@@ -310,15 +352,30 @@ function ChatRoom() {
               className="video-element"
             />
             {chatMode === 'audio' && (
-              <>
-                <div className="audio-wave"></div>
-                <div className="audio-circles">
-                  <span></span>
-                  <span></span>
-                  <span></span>
-                  <span></span>
+              <div className="audio-visualization local">
+                <div className="audio-wave-container">
+                  <div className="audio-circle"></div>
+                  <div className="audio-bars">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                  </div>
                 </div>
-              </>
+                <div className="audio-status">
+                  {isMuted ? (
+                    <span className="status-text warning">🎤 Микрофон отключен</span>
+                  ) : (
+                    <span className="status-text success">🎵 Ваш голос передается</span>
+                  )}
+                </div>
+              </div>
             )}
             <div className="local-controls">
               <button 
