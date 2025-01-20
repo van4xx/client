@@ -12,17 +12,16 @@ class WebRTCService {
     this.isSearching = false;
   }
 
-  init(serverUrl = process.env.NODE_ENV === 'production' ? 'https://ruletka.top:5000' : 'http://localhost:5000') {
+  init(serverUrl = process.env.REACT_APP_SERVER_URL || 'http://localhost:5000') {
     console.log('Initializing WebRTC service with server:', serverUrl);
     
     this.socket = io(serverUrl, {
       transports: ['websocket', 'polling'],
       reconnectionDelayMax: 10000,
       reconnectionAttempts: 10,
-      secure: true,
-      rejectUnauthorized: false,
+      path: '/socket.io',
       cors: {
-        origin: window.location.origin,
+        origin: "*",
         credentials: true
       },
       forceNew: true
@@ -34,6 +33,12 @@ class WebRTCService {
 
     this.socket.on('connect_error', (error) => {
       console.error('Connection error:', error);
+      console.error('Connection error details:', {
+        url: serverUrl,
+        transport: this.socket.io.opts.transports,
+        error: error.message
+      });
+      
       // Попробуем переподключиться с другими параметрами
       if (this.socket.io.opts.transports.includes('websocket')) {
         console.log('Retrying with polling transport...');
