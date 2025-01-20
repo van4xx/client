@@ -141,44 +141,55 @@ class WebRTCService {
       const peerConfig = {
         initiator,
         trickle: true,
-        reconnectTimer: 3000,
-        iceCompleteTimeout: 5000,
         streams: [this.stream],
         config: {
           iceServers: [
-            { 
+            {
               urls: [
                 'stun:stun.l.google.com:19302',
-                'stun:stun1.l.google.com:19302',
-                'stun:stun2.l.google.com:19302',
-                'stun:stun3.l.google.com:19302',
-                'stun:stun4.l.google.com:19302'
+                'stun:stun1.l.google.com:19302'
               ]
             },
             {
-              urls: 'turn:numb.viagenie.ca',
-              username: 'webrtc@live.com',
-              credential: 'muazkh'
+              urls: [
+                'turn:turn.anyfirewall.com:443?transport=tcp'
+              ],
+              credential: 'webrtc',
+              username: 'webrtc'
+            },
+            {
+              urls: 'turn:turn.anyfirewall.com:443',
+              credential: 'webrtc',
+              username: 'webrtc'
             }
           ],
           iceTransportPolicy: 'all',
-          iceCandidatePoolSize: 10,
           bundlePolicy: 'max-bundle',
           rtcpMuxPolicy: 'require',
+          iceServersPolicy: 'all',
+          iceCandidatePoolSize: 0,
           sdpSemantics: 'unified-plan'
+        },
+        sdpTransform: (sdp) => {
+          // Увеличиваем приоритет для TCP кандидатов
+          return sdp.replace(/a=candidate.*udp.*priority (.*)/g, (match, priority) => {
+            return match.replace(priority, '1');
+          });
         }
       };
 
       this.peer = new Peer(peerConfig);
 
-      // Connection state monitoring
       let iceConnectionTimeout;
-      let iceGatheringTimeout;
       let connectionTimeout;
+      let candidatesReceived = 0;
 
       this.peer.on('signal', signal => {
         if (this.socket && this.socket.connected) {
           console.log('Sending signal:', signal);
+          if (signal.type === 'candidate') {
+            candidatesReceived++;
+          }
           this.socket.emit('signal', { signal });
         }
       });
@@ -187,11 +198,13 @@ class WebRTCService {
         console.log('Peer connection established');
         this.isSearching = false;
         clearTimeout(connectionTimeout);
+        clearTimeout(iceConnectionTimeout);
       });
 
       this.peer.on('stream', stream => {
         console.log('Received remote stream:', stream);
         if (stream && stream.active && this.onStreamCallback) {
+          clearTimeout(connectionTimeout);
           this.onStreamCallback(stream);
         }
       });
@@ -206,11 +219,21 @@ class WebRTCService {
         if (iceConnectionState === 'checking') {
           clearTimeout(iceConnectionTimeout);
           iceConnectionTimeout = setTimeout(() => {
-            console.log('ICE connection timeout');
-            this.destroyPeer();
-          }, 10000);
+            if (candidatesReceived === 0) {
+              console.log('No ICE candidates received, trying TCP/TURN');
+              this.peer._pc.setConfiguration({
+                ...peerConfig.config,
+                iceTransportPolicy: 'relay'
+              });
+            } else {
+              console.log('ICE connection timeout');
+              this.destroyPeer();
+            }
+          }, 5000);
         } else if (iceConnectionState === 'connected' || iceConnectionState === 'completed') {
+          console.log('ICE connection established');
           clearTimeout(iceConnectionTimeout);
+          clearTimeout(connectionTimeout);
         } else if (iceConnectionState === 'failed' || iceConnectionState === 'disconnected' || iceConnectionState === 'closed') {
           console.log('ICE connection failed/closed');
           this.destroyPeer();
@@ -238,16 +261,14 @@ class WebRTCService {
       this.peer.on('close', () => {
         console.log('Peer connection closed');
         clearTimeout(iceConnectionTimeout);
-        clearTimeout(iceGatheringTimeout);
         clearTimeout(connectionTimeout);
         this.destroyPeer();
       });
 
-      // Set connection establishment timeout
       connectionTimeout = setTimeout(() => {
         console.log('Connection establishment timeout');
         this.destroyPeer();
-      }, 15000);
+      }, 20000);
 
     } catch (error) {
       console.error('Error initializing peer:', error);
