@@ -269,7 +269,7 @@ function ChatRoom() {
                 </div>
               </div>
             )}
-            {isSearching && chatMode === 'video' && (
+            {isSearching && chatMode === 'video' && !isConnected && (
               <div className="waiting-message">
                 <div className="radar-animation">
                   <div className="radar-circle"></div>
@@ -316,8 +316,10 @@ function ChatRoom() {
                   </div>
                 </div>
                 <div className="audio-status">
-                  {isSearching ? (
+                  {isSearching && !isConnected ? (
                     <span className="status-text">Ищем интересного собеседника</span>
+                  ) : isConnected ? (
+                    <span className="status-text connected">Собеседник подключился!</span>
                   ) : isMuted ? (
                     <span className="status-text warning">Включите микрофон для общения</span>
                   ) : (

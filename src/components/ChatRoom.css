@@ -139,18 +139,19 @@
 }
 
 .control-buttons {
-  position: relative;
   display: flex;
   justify-content: center;
   gap: 15px;
   margin-top: 20px;
-  padding: 0 50px;
+  padding: 0 20px;
+  width: 100%;
+  flex-direction: row;
 }
 
 .control-button-large {
-  min-width: 220px;
-  height: 60px;
-  border-radius: 12px;
+  flex: 1;
+  height: 80px;
+  border-radius: 4px;
   border: none;
   color: white;
   cursor: pointer;
@@ -163,6 +164,8 @@
   transition: all 0.2s ease;
   position: relative;
   text-transform: uppercase;
+  min-width: unset;
+  width: 100%;
 }
 
 .control-button-large.start {
@@ -170,77 +173,28 @@
   box-shadow: 0 4px 15px rgba(46, 204, 113, 0.3);
 }
 
-.control-button-large.start:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(46, 204, 113, 0.4);
-}
-
-.control-button-large.start:active {
-  transform: translateY(0);
-}
-
 .control-button-large.next {
-  background: linear-gradient(45deg, #f1c40f, #f39c12);
-  box-shadow: 0 4px 15px rgba(241, 196, 15, 0.3);
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
-}
-
-.control-button-large.next:hover {
-  transform: translateX(-50%) translateY(-2px);
-  box-shadow: 0 6px 20px rgba(241, 196, 15, 0.4);
-}
-
-.control-button-large.next:active {
-  transform: translateX(-50%) translateY(0);
+  background: linear-gradient(45deg, #3498db, #2980b9);
+  box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3);
 }
 
 .control-button-large.stop {
   background: linear-gradient(45deg, #e74c3c, #c0392b);
   box-shadow: 0 4px 15px rgba(231, 76, 60, 0.3);
-  position: absolute;
-  right: 50px;
 }
 
-.control-button-large.stop:hover {
+.control-button-large:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(231, 76, 60, 0.4);
+  filter: brightness(1.1);
 }
 
-.control-button-large.stop:active {
+.control-button-large:active {
   transform: translateY(0);
+  filter: brightness(0.9);
 }
 
 .control-button-large svg {
-  font-size: 1.2rem;
-  transition: transform 0.2s ease;
-}
-
-.control-button-large:hover svg {
-  transform: scale(1.1);
-}
-
-@keyframes buttonAppear {
-  from {
-    opacity: 0;
-    transform: translateX(-50%) translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(-50%) translateY(0);
-  }
-}
-
-@keyframes buttonSlideIn {
-  from {
-    opacity: 0;
-    transform: translateX(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
+  font-size: 1.5rem;
 }
 
 .control-button-large svg {
@@ -252,34 +206,9 @@
   transform: scale(1.2);
 }
 
-/* Добавляем эффект пульсации для кнопки "Следующий" */
+/* Remove the pulse effect for next button since it will be in the same position */
 .control-button-large.next::after {
-  content: '';
-  position: absolute;
-  top: -2px;
-  left: -2px;
-  right: -2px;
-  bottom: -2px;
-  border-radius: 17px;
-  background: linear-gradient(45deg, var(--yellow-1), var(--yellow-2));
-  z-index: -1;
-  animation: pulse 2s infinite;
-  opacity: 0;
-}
-
-@keyframes pulse {
-  0% {
-    transform: scale(1);
-    opacity: 0.5;
-  }
-  50% {
-    transform: scale(1.1);
-    opacity: 0;
-  }
-  100% {
-    transform: scale(1);
-    opacity: 0;
-  }
+  display: none;
 }
 
 .chat-container {
@@ -1573,9 +1502,9 @@ button.premium-button:hover::after {
 }
 
 .control-button-large {
-  min-width: 220px;
-  height: 60px;
-  border-radius: 12px;
+  flex: 1;
+  height: 80px;
+  border-radius: 4px;
   border: none;
   color: white;
   cursor: pointer;
@@ -1588,6 +1517,8 @@ button.premium-button:hover::after {
   transition: all 0.2s ease;
   position: relative;
   text-transform: uppercase;
+  min-width: unset;
+  width: 100%;
 }
 
 .control-button-large.start {
@@ -1595,77 +1526,28 @@ button.premium-button:hover::after {
   box-shadow: 0 4px 15px rgba(46, 204, 113, 0.3);
 }
 
-.control-button-large.start:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(46, 204, 113, 0.4);
-}
-
-.control-button-large.start:active {
-  transform: translateY(0);
-}
-
 .control-button-large.next {
-  background: linear-gradient(45deg, #f1c40f, #f39c12);
-  box-shadow: 0 4px 15px rgba(241, 196, 15, 0.3);
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
-}
-
-.control-button-large.next:hover {
-  transform: translateX(-50%) translateY(-2px);
-  box-shadow: 0 6px 20px rgba(241, 196, 15, 0.4);
-}
-
-.control-button-large.next:active {
-  transform: translateX(-50%) translateY(0);
+  background: linear-gradient(45deg, #3498db, #2980b9);
+  box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3);
 }
 
 .control-button-large.stop {
   background: linear-gradient(45deg, #e74c3c, #c0392b);
   box-shadow: 0 4px 15px rgba(231, 76, 60, 0.3);
-  position: absolute;
-  right: 50px;
 }
 
-.control-button-large.stop:hover {
+.control-button-large:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(231, 76, 60, 0.4);
+  filter: brightness(1.1);
 }
 
-.control-button-large.stop:active {
+.control-button-large:active {
   transform: translateY(0);
+  filter: brightness(0.9);
 }
 
 .control-button-large svg {
-  font-size: 1.2rem;
-  transition: transform 0.2s ease;
-}
-
-.control-button-large:hover svg {
-  transform: scale(1.1);
-}
-
-@keyframes buttonAppear {
-  from {
-    opacity: 0;
-    transform: translateX(-50%) translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(-50%) translateY(0);
-  }
-}
-
-@keyframes buttonSlideIn {
-  from {
-    opacity: 0;
-    transform: translateX(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
+  font-size: 1.5rem;
 }
 
 .control-button-large svg {
@@ -1677,34 +1559,9 @@ button.premium-button:hover::after {
   transform: scale(1.2);
 }
 
-/* Добавляем эффект пульсации для кнопки "Следующий" */
+/* Remove the pulse effect for next button since it will be in the same position */
 .control-button-large.next::after {
-  content: '';
-  position: absolute;
-  top: -2px;
-  left: -2px;
-  right: -2px;
-  bottom: -2px;
-  border-radius: 17px;
-  background: linear-gradient(45deg, var(--yellow-1), var(--yellow-2));
-  z-index: -1;
-  animation: pulse 2s infinite;
-  opacity: 0;
-}
-
-@keyframes pulse {
-  0% {
-    transform: scale(1);
-    opacity: 0.5;
-  }
-  50% {
-    transform: scale(1.1);
-    opacity: 0;
-  }
-  100% {
-    transform: scale(1);
-    opacity: 0;
-  }
+  display: none;
 }
 
 .face-check-modal {
@@ -1784,6 +1641,72 @@ button.premium-button:hover::after {
   align-items: center;
   gap: 20px;
   z-index: 10;
+  opacity: 1;
+  transition: opacity 0.3s ease;
+}
+
+.waiting-message.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.connected-message {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  z-index: 10;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.connected-message.visible {
+  opacity: 1;
+}
+
+.connected-text {
+  font-size: 2rem;
+  font-weight: bold;
+  color: var(--green);
+  text-shadow: 0 0 10px rgba(158, 209, 29, 0.5);
+  animation: connectedPulse 2s infinite;
+}
+
+@keyframes connectedPulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 1;
+    text-shadow: 
+      0 0 10px rgba(158, 209, 29, 0.8),
+      0 0 20px rgba(158, 209, 29, 0.4);
+  }
+}
+
+.audio-visualization .connected-message {
+  color: var(--yellow-1);
+  font-size: 1.8rem;
+  font-weight: bold;
+  text-shadow: 0 0 10px rgba(255, 183, 0, 0.5);
+  animation: audioConnectedPulse 2s infinite;
+}
+
+@keyframes audioConnectedPulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 1;
+    text-shadow: 
+      0 0 15px rgba(255, 183, 0, 0.8),
+      0 0 30px rgba(255, 183, 0, 0.4);
+  }
 }
 
 .radar-animation {
