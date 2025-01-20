@@ -1,11 +1,24 @@
 import io from 'socket.io-client';
-import Peer from 'simple-peer';
+import Peer from 'simple-peer/simplepeer.min.js';
 
-// Polyfill for process
+// Polyfill for process and streams
 if (typeof window !== 'undefined') {
   window.process = {
-    env: {},
-    nextTick: function(fn) { setTimeout(fn, 0); }
+    env: { NODE_ENV: 'production' },
+    nextTick: function(fn) { setTimeout(fn, 0); },
+    version: '',
+    versions: { node: '12.0.0' }
+  };
+
+  // Stream polyfill
+  if (!window.stream) {
+    window.stream = {};
+  }
+  window.stream.Readable = class {
+    pipe() { return this; }
+    on() { return this; }
+    resume() { return this; }
+    read() { return null; }
   };
 }
 
@@ -63,7 +76,6 @@ class WebRTCService {
         error: error.message
       });
       
-      // Если WebSocket не работает, пробуем polling
       if (this.socket.io.opts.transports[0] === 'websocket') {
         console.log('Switching to polling transport...');
         this.socket.io.opts.transports = ['polling'];
@@ -125,20 +137,22 @@ class WebRTCService {
       return;
     }
 
-    const peerConfig = {
-      initiator,
-      trickle: false,
-      stream: this.stream,
-      config: {
-        iceServers: [
-          { urls: 'stun:stun.l.google.com:19302' },
-          { urls: 'stun:global.stun.twilio.com:3478' }
-        ],
-        iceTransportPolicy: 'all'
-      }
-    };
-
     try {
+      const peerConfig = {
+        initiator,
+        trickle: false,
+        objectMode: false,
+        streams: [this.stream],
+        config: {
+          iceServers: [
+            { urls: 'stun:stun.l.google.com:19302' },
+            { urls: 'stun:global.stun.twilio.com:3478' }
+          ],
+          iceTransportPolicy: 'all',
+          sdpSemantics: 'unified-plan'
+        }
+      };
+
       this.peer = new Peer(peerConfig);
 
       this.peer.on('signal', signal => {
@@ -154,8 +168,9 @@ class WebRTCService {
       });
 
       this.peer.on('data', data => {
+        if (!data) return;
         try {
-          const message = data.toString();
+          const message = typeof data === 'string' ? data : new TextDecoder().decode(data);
           if (this.onChatMessageCallback) {
             this.onChatMessageCallback(message);
           }
