@@ -240,8 +240,20 @@ class WebRTCService {
             {
               urls: [
                 'stun:stun.l.google.com:19302',
-                'stun:stun1.l.google.com:19302'
+                'stun:stun1.l.google.com:19302',
+                'stun:stun2.l.google.com:19302',
+                'stun:stun3.l.google.com:19302',
+                'stun:stun4.l.google.com:19302',
+                'stun:stun.stunprotocol.org:3478'
               ]
+            },
+            {
+              urls: [
+                'turn:numb.viagenie.ca:3478',
+                'turn:numb.viagenie.ca:3478?transport=tcp'
+              ],
+              username: 'webrtc@live.com',
+              credential: 'muazkh'
             },
             {
               urls: [
@@ -250,6 +262,19 @@ class WebRTCService {
               ],
               credential: 'webrtc',
               username: 'webrtc'
+            },
+            {
+              urls: 'turn:openrelay.metered.ca:443',
+              username: 'openrelayproject',
+              credential: 'openrelayproject'
+            },
+            {
+              urls: [
+                'turn:openrelay.metered.ca:443?transport=tcp',
+                'turn:openrelay.metered.ca:443?transport=udp'
+              ],
+              username: 'openrelayproject',
+              credential: 'openrelayproject'
             }
           ],
           iceTransportPolicy: 'all',
@@ -262,12 +287,14 @@ class WebRTCService {
         offerOptions: {
           offerToReceiveAudio: true,
           offerToReceiveVideo: true,
-          voiceActivityDetection: true
+          voiceActivityDetection: true,
+          iceRestart: true
         },
         answerOptions: {
           offerToReceiveAudio: true,
           offerToReceiveVideo: true,
-          voiceActivityDetection: true
+          voiceActivityDetection: true,
+          iceRestart: true
         },
         sdpTransform: (sdp) => {
           let modifiedSdp = sdp;
@@ -288,11 +315,13 @@ class WebRTCService {
             );
           }
           
-          // Увеличиваем приоритет для TCP кандидатов
-          modifiedSdp = modifiedSdp.replace(
-            /a=candidate.*udp.*priority (.*)/g,
-            (match, priority) => match.replace(priority, '1')
-          );
+          // Добавляем параметры для улучшения связи через NAT
+          if (!modifiedSdp.includes('a=ice-options:trickle')) {
+            modifiedSdp = modifiedSdp.replace(
+              /(v=0\r\n)/g,
+              '$1a=ice-options:trickle\r\n'
+            );
+          }
           
           return modifiedSdp;
         }
