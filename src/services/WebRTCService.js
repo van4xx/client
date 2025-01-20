@@ -239,25 +239,19 @@ class WebRTCService {
           iceServers: [
             {
               urls: [
+                'stun:ruletka.top:3478',
                 'stun:stun.l.google.com:19302',
                 'stun:stun1.l.google.com:19302',
-                'stun:stun2.l.google.com:19302',
-                'stun:stun3.l.google.com:19302',
-                'stun:stun4.l.google.com:19302',
-                'stun:stun.stunprotocol.org:3478',
-                'stun:stun.ekiga.net:3478',
-                'stun:stun.ideasip.com:3478',
-                'stun:stun.voipbuster.com:3478',
-                'stun:stun.voipstunt.com:3478'
+                'stun:stun2.l.google.com:19302'
               ]
             },
             {
               urls: [
-                'turn:numb.viagenie.ca:3478',
-                'turn:numb.viagenie.ca:3478?transport=tcp'
+                'turn:ruletka.top:3478',
+                'turn:ruletka.top:3478?transport=tcp'
               ],
-              username: 'webrtc@live.com',
-              credential: 'muazkh'
+              username: 'webrtc',
+              credential: 'webrtc123'
             },
             {
               urls: [
