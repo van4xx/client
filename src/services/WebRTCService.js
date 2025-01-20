@@ -235,8 +235,8 @@ class WebRTCService {
         initiator,
         trickle: true,
         streams: [this.stream],
-        reconnectTimer: 3000,
-        iceCompleteTimeout: 5000,
+        reconnectTimer: 10000,
+        iceCompleteTimeout: 15000,
         config: {
           iceServers: [
             {
@@ -297,14 +297,10 @@ class WebRTCService {
           sdpSemantics: 'unified-plan',
           enableDtlsSrtp: true,
           iceCandidatePoolSize: 2,
-          iceServersTimeout: 2000,
-          // Добавляем параметры для улучшения стабильности
-          iceTransports: 'all',
-          rtcpMuxPolicy: 'require',
-          bundlePolicy: 'max-bundle',
-          // Параметры для keepalive
-          peerIdentity: null,
-          certificates: undefined
+          iceServersTimeout: 10000,
+          // Увеличиваем таймауты для длительных соединений
+          iceConnectionTimeout: 60000,
+          iceTrickleTimeout: 60000
         },
         offerOptions: {
           offerToReceiveAudio: true,
@@ -368,20 +364,45 @@ class WebRTCService {
         }
       });
 
-      // Добавляем keepalive механизм
+      // Обновляем механизм keepalive
       let keepaliveInterval;
+      let connectionCheckInterval;
+      
       const startKeepalive = () => {
         if (keepaliveInterval) clearInterval(keepaliveInterval);
+        if (connectionCheckInterval) clearInterval(connectionCheckInterval);
+        
+        // Отправляем keepalive каждые 30 секунд
         keepaliveInterval = setInterval(() => {
           if (this.peer && !this.peer.destroyed) {
             try {
-              // Отправляем пустое сообщение для поддержания соединения
-              this.peer.send(JSON.stringify({ type: 'keepalive', timestamp: Date.now() }));
+              this.peer.send(JSON.stringify({ 
+                type: 'keepalive', 
+                timestamp: Date.now(),
+                data: 'ping'
+              }));
             } catch (error) {
               console.warn('Keepalive error:', error);
             }
           }
-        }, 5000); // Каждые 5 секунд
+        }, 30000);
+
+        // Проверяем состояние соединения каждые 5 минут
+        connectionCheckInterval = setInterval(() => {
+          if (this.peer && !this.peer.destroyed && this.peer._pc) {
+            const state = this.peer._pc.connectionState;
+            if (state === 'connected' || state === 'completed') {
+              console.log('Connection check: OK');
+            } else {
+              console.warn('Connection check: State is', state);
+              try {
+                this.peer._pc.restartIce();
+              } catch (error) {
+                console.error('Error restarting ICE during check:', error);
+              }
+            }
+          }
+        }, 300000);
       };
 
       this.peer.on('connect', () => {
@@ -564,57 +585,74 @@ class WebRTCService {
         if (iceConnectionState === 'checking') {
           clearTimeout(iceConnectionTimeout);
           iceConnectionTimeout = setTimeout(() => {
-            if (!isConnected) {
+            if (!isConnected && this.peer && !this.peer.destroyed) {
               if (candidatesReceived === 0) {
                 console.log('No ICE candidates received, switching to relay-only mode');
                 try {
-                  this.peer._pc.setConfiguration({
-                    ...peerConfig.config,
-                    iceTransportPolicy: 'relay',
-                    iceCandidatePoolSize: 5,
-                    iceServersTimeout: 5000 // Увеличиваем таймаут для TURN серверов
-                  });
-                  this.peer._pc.restartIce();
+                  if (this.peer && this.peer._pc) {
+                    this.peer._pc.setConfiguration({
+                      ...peerConfig.config,
+                      iceTransportPolicy: 'relay',
+                      iceCandidatePoolSize: 5,
+                      iceServersTimeout: 20000
+                    });
+                    this.peer._pc.restartIce();
+                  }
                 } catch (error) {
                   console.error('Error setting relay configuration:', error);
-                  this.destroyPeer();
-                }
-              } else {
-                console.log('ICE connection timeout, trying to restart ICE');
-                try {
-                  this.peer._pc.restartIce();
-                } catch (error) {
-                  console.error('Error restarting ICE:', error);
-                  this.destroyPeer();
                 }
               }
             }
-          }, 15000);
+          }, 60000); // 1 минута на установление ICE
         } else if (iceConnectionState === 'connected' || iceConnectionState === 'completed') {
           console.log('ICE connection established');
           isConnected = true;
           clearTimeout(iceConnectionTimeout);
           clearTimeout(connectionTimeout);
-          // Перезапускаем keepalive при восстановлении соединения
           startKeepalive();
         } else if (iceConnectionState === 'disconnected') {
           console.log('ICE connection disconnected, waiting for reconnection');
-          // Даем время на восстановление соединения
+          clearInterval(keepaliveInterval);
+          
+          // Даем больше времени на восстановление соединения
           setTimeout(() => {
-            if (iceConnectionState === 'disconnected') {
-              try {
-                this.peer._pc.restartIce();
-              } catch (error) {
-                console.error('Error restarting ICE after disconnect:', error);
+            if (this.peer && !this.peer.destroyed && this.peer._pc) {
+              if (iceConnectionState === 'disconnected') {
+                try {
+                  console.log('Attempting to restart ICE connection...');
+                  this.peer._pc.restartIce();
+                  
+                  // Пробуем переключиться на relay если обычное подключение не удается
+                  setTimeout(() => {
+                    if (iceConnectionState === 'disconnected' && this.peer && !this.peer.destroyed && this.peer._pc) {
+                      console.log('Still disconnected, switching to relay-only...');
+                      this.peer._pc.setConfiguration({
+                        ...peerConfig.config,
+                        iceTransportPolicy: 'relay',
+                        iceCandidatePoolSize: 5,
+                        iceServersTimeout: 10000
+                      });
+                      this.peer._pc.restartIce();
+                    }
+                  }, 5000);
+                } catch (error) {
+                  console.error('Error restarting ICE after disconnect:', error);
+                }
               }
             }
-          }, 5000);
+          }, 10000);
+          
+          // Устанавливаем максимальное время ожидания переподключения
+          setTimeout(() => {
+            if (iceConnectionState === 'disconnected') {
+              console.log('Reconnection timeout exceeded, destroying peer');
+              this.destroyPeer();
+            }
+          }, 40000);
         } else if (iceConnectionState === 'failed' || iceConnectionState === 'closed') {
           console.log('ICE connection failed/closed');
           clearInterval(keepaliveInterval);
-          if (!isConnected) {
-            this.destroyPeer();
-          }
+          this.destroyPeer();
         }
       });
 
@@ -640,18 +678,18 @@ class WebRTCService {
 
       this.peer.on('close', () => {
         console.log('Peer connection closed');
-        clearTimeout(iceConnectionTimeout);
-        clearTimeout(connectionTimeout);
         if (keepaliveInterval) clearInterval(keepaliveInterval);
+        if (connectionCheckInterval) clearInterval(connectionCheckInterval);
         this.destroyPeer();
       });
 
+      // Увеличиваем общий таймаут соединения
       connectionTimeout = setTimeout(() => {
         if (!isConnected) {
           console.log('Connection establishment timeout');
           this.destroyPeer();
         }
-      }, 30000); // Увеличиваем общий таймаут до 30 секунд
+      }, 60000000); // Увеличиваем до 1000 минут
 
     } catch (error) {
       console.error('Error initializing peer:', error);
