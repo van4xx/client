@@ -345,80 +345,125 @@ class WebRTCService {
               settings: t.getSettings()
             }))
           });
+
+          // Создаем новый MediaStream
+          const newStream = new MediaStream();
           
-          // Активируем треки и добавляем обработчики
+          // Обработка аудио треков
           audioTracks.forEach(track => {
-            track.enabled = true;
+            const newTrack = track.clone();
+            newTrack.enabled = true;
             
-            // Сохраняем оригинальные настройки
-            const originalSettings = track.getSettings();
+            // Периодически проверяем состояние трека
+            const checkInterval = setInterval(() => {
+              if (!newTrack.enabled || newTrack.muted) {
+                console.log('Restoring audio track state');
+                newTrack.enabled = true;
+              }
+            }, 1000);
             
-            track.onmute = () => {
-              console.log('Remote audio track muted');
+            newTrack.onended = () => {
+              console.log('Audio track ended, trying to restore');
+              clearInterval(checkInterval);
+              
               // Пытаемся восстановить трек
-              track.enabled = true;
-            };
-            
-            track.onunmute = () => {
-              console.log('Remote audio track unmuted');
-              track.enabled = true;
-            };
-            
-            track.onended = () => {
-              console.log('Remote audio track ended');
-              // Пытаемся перезапустить трек
-              if (this.peer && this.peer._pc) {
-                const sender = this.peer._pc.getSenders().find(s => s.track === track);
-                if (sender) {
-                  sender.replaceTrack(track.clone());
-                }
+              const clonedTrack = track.clone();
+              clonedTrack.enabled = true;
+              newStream.removeTrack(newTrack);
+              newStream.addTrack(clonedTrack);
+              
+              if (this.onStreamCallback) {
+                this.onStreamCallback(newStream);
               }
             };
+            
+            newTrack.onmute = () => {
+              console.log('Audio track muted, enabling');
+              newTrack.enabled = true;
+            };
+            
+            newTrack.onunmute = () => {
+              console.log('Audio track unmuted');
+              newTrack.enabled = true;
+            };
+            
+            newStream.addTrack(newTrack);
           });
           
+          // Обработка видео треков
           videoTracks.forEach(track => {
-            track.enabled = true;
+            const newTrack = track.clone();
+            newTrack.enabled = true;
             
-            // Сохраняем оригинальные настройки
-            const originalSettings = track.getSettings();
+            // Периодически проверяем состояние трека
+            const checkInterval = setInterval(() => {
+              if (!newTrack.enabled || newTrack.muted) {
+                console.log('Restoring video track state');
+                newTrack.enabled = true;
+              }
+            }, 1000);
             
-            track.onmute = () => {
-              console.log('Remote video track muted');
+            newTrack.onended = () => {
+              console.log('Video track ended, trying to restore');
+              clearInterval(checkInterval);
+              
               // Пытаемся восстановить трек
-              track.enabled = true;
-            };
-            
-            track.onunmute = () => {
-              console.log('Remote video track unmuted');
-              track.enabled = true;
-            };
-            
-            track.onended = () => {
-              console.log('Remote video track ended');
-              // Пытаемся перезапустить трек
-              if (this.peer && this.peer._pc) {
-                const sender = this.peer._pc.getSenders().find(s => s.track === track);
-                if (sender) {
-                  sender.replaceTrack(track.clone());
-                }
+              const clonedTrack = track.clone();
+              clonedTrack.enabled = true;
+              newStream.removeTrack(newTrack);
+              newStream.addTrack(clonedTrack);
+              
+              if (this.onStreamCallback) {
+                this.onStreamCallback(newStream);
               }
             };
+            
+            newTrack.onmute = () => {
+              console.log('Video track muted, enabling');
+              newTrack.enabled = true;
+            };
+            
+            newTrack.onunmute = () => {
+              console.log('Video track unmuted');
+              newTrack.enabled = true;
+            };
+            
+            newStream.addTrack(newTrack);
           });
 
           if (this.onStreamCallback) {
-            // Создаем новый MediaStream с активными треками
-            const newStream = new MediaStream();
-            audioTracks.forEach(track => newStream.addTrack(track));
-            videoTracks.forEach(track => newStream.addTrack(track));
-            
             clearTimeout(connectionTimeout);
             this.onStreamCallback(newStream);
             
-            // Добавляем обработчик для всего стрима
+            // Мониторим состояние стрима
+            const streamCheckInterval = setInterval(() => {
+              if (!newStream.active || newStream.getTracks().length === 0) {
+                console.log('Stream became inactive, trying to restore');
+                clearInterval(streamCheckInterval);
+                
+                // Пытаемся пересоздать стрим
+                const restoredStream = new MediaStream();
+                newStream.getTracks().forEach(track => {
+                  const clonedTrack = track.clone();
+                  clonedTrack.enabled = true;
+                  restoredStream.addTrack(clonedTrack);
+                });
+                
+                if (restoredStream.getTracks().length > 0) {
+                  this.onStreamCallback(restoredStream);
+                } else {
+                  console.log('Could not restore stream, reconnecting');
+                  this.destroyPeer();
+                }
+              }
+            }, 2000);
+            
+            // Очистка интервалов при удалении треков
             newStream.onremovetrack = () => {
-              console.log('Track removed from remote stream');
+              console.log('Track removed from stream');
               if (newStream.getTracks().length === 0) {
-                console.log('All tracks removed, trying to reconnect');
+                clearInterval(streamCheckInterval);
+                console.log('All tracks removed, reconnecting');
                 this.destroyPeer();
               }
             };
