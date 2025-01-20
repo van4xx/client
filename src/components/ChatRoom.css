@@ -1,4 +1,5 @@
 :root {
+  --primary-color-rgb: 255, 183, 0;
   --gray-1: #555555;
   --gray-2: #4e4e4e;
   --gray-3: #525252;
@@ -277,7 +278,7 @@
   z-index: 10;
 }
 
-.video-box:hover .local-controls {
+.local-video:hover .local-controls {
   opacity: 1;
 }
 
@@ -295,12 +296,18 @@
   justify-content: center;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   font-size: 1.2rem;
+  position: relative;
 }
 
 .control-button:hover {
   background: var(--yellow-1);
   transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(255, 183, 0, 0.3);
+  box-shadow: var(--neon-glow);
+}
+
+.control-button.active {
+  background: var(--yellow-1);
+  box-shadow: var(--neon-glow);
 }
 
 .control-button.danger {
@@ -309,12 +316,12 @@
 
 .control-button.danger:hover {
   background: #ff4444;
-  box-shadow: 0 5px 15px rgba(255, 68, 68, 0.3);
+  box-shadow: var(--red-glow);
 }
 
 .control-button.danger.active {
   background: #ff4444;
-  box-shadow: 0 5px 15px rgba(255, 68, 68, 0.3);
+  box-shadow: var(--red-glow);
 }
 
 .main-controls {
@@ -1605,4 +1612,154 @@ button.premium-button:hover::after {
   object-fit: cover;
   background: #000;
   transform: scaleX(-1);
+}
+
+/* Новые стили для меню масок */
+.masks-menu {
+  position: absolute;
+  bottom: 80px;
+  right: 20px;
+  background: rgba(45, 45, 45, 0.95);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-radius: 12px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 1000;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.mask-item {
+  padding: 8px 16px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: white;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mask-item:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.mask-item.active {
+  background: rgba(var(--primary-color-rgb), 0.3);
+}
+
+.mask-preview {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+}
+
+/* Стили для кнопки масок */
+.mask-button {
+  position: relative;
+  background: rgba(var(--primary-color-rgb), 0.8);
+  border: none;
+  border-radius: 50%;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.mask-button:hover {
+  background: rgba(var(--primary-color-rgb), 1);
+}
+
+.mask-button.active {
+  background: rgba(var(--primary-color-rgb), 1);
+  box-shadow: 0 0 0 2px white;
+}
+
+/* Анимация для меню масок */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.masks-menu {
+  animation: slideIn 0.3s ease forwards;
+}
+
+.face-check-modal {
+  background: rgba(45, 45, 45, 0.98) !important;
+  border: 2px solid var(--yellow-1) !important;
+  animation: pulseModal 2s infinite !important;
+}
+
+.face-check-modal .modal-header {
+  background: linear-gradient(90deg, var(--yellow-1) 0%, var(--yellow-2) 100%) !important;
+  color: black !important;
+}
+
+.face-check-modal .modal-header h2 {
+  color: black !important;
+  text-shadow: none !important;
+}
+
+.face-check-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  padding: 30px !important;
+  text-align: center;
+}
+
+.face-check-icon {
+  font-size: 4rem;
+  color: var(--yellow-1);
+  animation: bounce 1s infinite;
+}
+
+.face-check-message {
+  font-size: 1.2rem;
+  line-height: 1.5;
+  color: white;
+}
+
+.face-check-hint {
+  font-size: 1rem;
+  color: rgba(255, 255, 255, 0.7);
+  padding: 15px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 10px;
+  margin-top: 10px;
+}
+
+@keyframes pulseModal {
+  0% {
+    box-shadow: 0 0 0 0 rgba(255, 183, 0, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(255, 183, 0, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(255, 183, 0, 0);
+  }
+}
+
+@keyframes bounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
 } 

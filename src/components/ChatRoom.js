@@ -14,9 +14,14 @@ import {
   BsChevronDown,
   BsMouseFill,
   BsPlayFill,
-  BsSend
+  BsSend,
+  BsDisplay,
+  BsEmojiSmile,
+  BsBell,
+  BsFillCameraVideoFill
 } from 'react-icons/bs';
 import './ChatRoom.css';
+import FaceDetectionService from '../services/FaceDetectionService';
 
 function ChatRoom() {
   const [isConnected, setIsConnected] = useState(false);
@@ -33,6 +38,12 @@ function ChatRoom() {
   const [showHelpModal, setShowHelpModal] = useState(false);
   const [messages, setMessages] = useState([]);
   const [messageInput, setMessageInput] = useState('');
+  const [isScreenSharing, setIsScreenSharing] = useState(false);
+  const [showMasksMenu, setShowMasksMenu] = useState(false);
+  const [activeMask, setActiveMask] = useState(null);
+  const [screenStream, setScreenStream] = useState(null);
+  const [showFaceCheckModal, setShowFaceCheckModal] = useState(true);
+  const [faceDetected, setFaceDetected] = useState(false);
   
   const localVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
@@ -68,6 +79,36 @@ function ChatRoom() {
       chatMessagesRef.current.scrollTop = chatMessagesRef.current.scrollHeight;
     }
   }, [messages]);
+
+  useEffect(() => {
+    const loadFaceModels = async () => {
+      await FaceDetectionService.loadModels();
+    };
+    loadFaceModels();
+
+    return () => {
+      FaceDetectionService.destroy();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!localVideoRef.current) return;
+
+    const checkFace = async () => {
+      const hasFace = await FaceDetectionService.detectFace(localVideoRef.current);
+      if (hasFace) {
+        setFaceDetected(true);
+        setShowFaceCheckModal(false);
+      } else {
+        setFaceDetected(false);
+        setShowFaceCheckModal(true);
+      }
+    };
+
+    const interval = setInterval(checkFace, 10000); // Проверяем каждые 10 секунд
+
+    return () => clearInterval(interval);
+  }, [localVideoRef]);
 
   const startChat = () => {
     setIsSearching(true);
@@ -120,6 +161,56 @@ function ChatRoom() {
       e.preventDefault();
       sendMessage();
     }
+  };
+
+  const toggleScreenShare = async () => {
+    try {
+      if (!isScreenSharing) {
+        const stream = await navigator.mediaDevices.getDisplayMedia({
+          video: true,
+          audio: true
+        });
+        setScreenStream(stream);
+        if (localVideoRef.current) {
+          localVideoRef.current.srcObject = stream;
+        }
+        setIsScreenSharing(true);
+
+        stream.getVideoTracks()[0].onended = () => {
+          stopScreenSharing();
+        };
+      } else {
+        stopScreenSharing();
+      }
+    } catch (error) {
+      console.error('Ошибка при демонстрации экрана:', error);
+    }
+  };
+
+  const stopScreenSharing = () => {
+    if (screenStream) {
+      screenStream.getTracks().forEach(track => track.stop());
+    }
+    if (localVideoRef.current && localStream) {
+      localVideoRef.current.srcObject = localStream;
+    }
+    setScreenStream(null);
+    setIsScreenSharing(false);
+  };
+
+  const getAttention = () => {
+    console.log('Привлечение внимания');
+  };
+
+  const handleMaskClick = async (maskId) => {
+    if (activeMask === maskId) {
+      FaceDetectionService.removeMask();
+      setActiveMask(null);
+    } else {
+      await FaceDetectionService.applyMask(localVideoRef.current, maskId);
+      setActiveMask(maskId);
+    }
+    setShowMasksMenu(false);
   };
 
   return (
@@ -199,13 +290,36 @@ function ChatRoom() {
                 {isMuted ? <BsMicMuteFill /> : <BsMicFill />}
               </button>
               {chatMode === 'video' && (
-                <button 
-                  className={`control-button ${isVideoOff ? 'danger active' : ''}`}
-                  onClick={toggleVideo}
-                  data-tooltip={isVideoOff ? 'Включить камеру' : 'Выключить камеру'}
-                >
-                  {isVideoOff ? <BsCameraVideoOffFill /> : <BsCameraVideoFill />}
-                </button>
+                <>
+                  <button 
+                    className={`control-button ${isVideoOff ? 'danger active' : ''}`}
+                    onClick={toggleVideo}
+                    data-tooltip={isVideoOff ? 'Включить камеру' : 'Выключить камеру'}
+                  >
+                    {isVideoOff ? <BsCameraVideoOffFill /> : <BsCameraVideoFill />}
+                  </button>
+                  <button 
+                    className={`control-button ${isScreenSharing ? 'active' : ''}`}
+                    onClick={toggleScreenShare}
+                    data-tooltip={isScreenSharing ? 'Остановить демонстрацию' : 'Демонстрация экрана'}
+                  >
+                    <BsDisplay />
+                  </button>
+                  <button 
+                    className={`control-button ${showMasksMenu ? 'active' : ''}`}
+                    onClick={() => setShowMasksMenu(!showMasksMenu)}
+                    data-tooltip="Маски"
+                  >
+                    <BsEmojiSmile />
+                  </button>
+                  <button 
+                    className="control-button attention-button"
+                    onClick={getAttention}
+                    data-tooltip="Привлечь внимание"
+                  >
+                    <BsBell />
+                  </button>
+                </>
               )}
             </div>
           </div>
@@ -409,6 +523,41 @@ function ChatRoom() {
                     <li>Не нарушайте законы и правила сервиса</li>
                   </ul>
                 </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showMasksMenu && (
+        <div className="masks-menu">
+          <div className="mask-item" onClick={() => handleMaskClick('mask1')}>
+            Маска 1
+          </div>
+          <div className="mask-item" onClick={() => handleMaskClick('mask2')}>
+            Маска 2
+          </div>
+          <div className="mask-item" onClick={() => handleMaskClick('mask3')}>
+            Маска 3
+          </div>
+        </div>
+      )}
+
+      {showFaceCheckModal && (
+        <div className="modal-overlay">
+          <div className="modal face-check-modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2><BsFillCameraVideoFill /> Проверка камеры</h2>
+            </div>
+            <div className="face-check-content">
+              <div className="face-check-icon">
+                <BsFillCameraVideoFill />
+              </div>
+              <div className="face-check-message">
+                Для использования видеочата необходимо показать ваше лицо в камеру
+              </div>
+              <div className="face-check-hint">
+                Убедитесь, что ваше лицо хорошо освещено и находится в кадре
               </div>
             </div>
           </div>
