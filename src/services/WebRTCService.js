@@ -125,6 +125,77 @@ class WebRTCService {
     });
   }
 
+  async setStream(stream) {
+    console.log('Setting local stream');
+    
+    try {
+      // Проверяем доступность устройств
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const hasAudio = devices.some(device => device.kind === 'audioinput');
+      const hasVideo = devices.some(device => device.kind === 'videoinput');
+      
+      console.log('Available devices:', {
+        audio: hasAudio,
+        video: hasVideo,
+        devices: devices.map(d => ({ kind: d.kind, label: d.label }))
+      });
+
+      // Проверяем треки входящего стрима
+      const audioTracks = stream.getAudioTracks();
+      const videoTracks = stream.getVideoTracks();
+
+      console.log('Input stream tracks:', {
+        audio: audioTracks.map(t => ({
+          enabled: t.enabled,
+          muted: t.muted,
+          readyState: t.readyState,
+          settings: t.getSettings()
+        })),
+        video: videoTracks.map(t => ({
+          enabled: t.enabled,
+          muted: t.muted,
+          readyState: t.readyState,
+          settings: t.getSettings()
+        }))
+      });
+
+      // Активируем треки
+      audioTracks.forEach(track => {
+        track.enabled = true;
+        track.onended = () => console.log('Local audio track ended');
+        track.onmute = () => console.log('Local audio track muted');
+        track.onunmute = () => console.log('Local audio track unmuted');
+      });
+
+      videoTracks.forEach(track => {
+        track.enabled = true;
+        track.onended = () => console.log('Local video track ended');
+        track.onmute = () => console.log('Local video track muted');
+        track.onunmute = () => console.log('Local video track unmuted');
+      });
+
+      this.stream = stream;
+
+      // Если peer уже существует, добавляем стрим
+      if (this.peer) {
+        try {
+          // Удаляем старые треки
+          const senders = this.peer._pc.getSenders();
+          await Promise.all(senders.map(sender => this.peer._pc.removeTrack(sender)));
+          
+          // Добавляем новые треки
+          stream.getTracks().forEach(track => {
+            this.peer.addTrack(track, stream);
+          });
+        } catch (error) {
+          console.error('Error updating stream in peer:', error);
+        }
+      }
+    } catch (error) {
+      console.error('Error setting stream:', error);
+    }
+  }
+
   initializePeer(initiator) {
     console.log('Initializing peer connection, initiator:', initiator);
     
@@ -136,6 +207,28 @@ class WebRTCService {
       console.warn('No local stream available');
       return;
     }
+
+    // Проверяем состояние локального стрима перед инициализацией
+    const audioTracks = this.stream.getAudioTracks();
+    const videoTracks = this.stream.getVideoTracks();
+
+    if (audioTracks.length === 0 && videoTracks.length === 0) {
+      console.error('No audio or video tracks in local stream');
+      return;
+    }
+
+    console.log('Local stream state before peer initialization:', {
+      audio: audioTracks.map(t => ({
+        enabled: t.enabled,
+        muted: t.muted,
+        readyState: t.readyState
+      })),
+      video: videoTracks.map(t => ({
+        enabled: t.enabled,
+        muted: t.muted,
+        readyState: t.readyState
+      }))
+    });
 
     try {
       const peerConfig = {
@@ -238,16 +331,78 @@ class WebRTCService {
           const audioTracks = stream.getAudioTracks();
           const videoTracks = stream.getVideoTracks();
           
-          console.log('Audio tracks:', audioTracks.length, 'Video tracks:', videoTracks.length);
+          console.log('Remote stream tracks:', {
+            audio: audioTracks.map(t => ({
+              enabled: t.enabled,
+              muted: t.muted,
+              readyState: t.readyState,
+              settings: t.getSettings()
+            })),
+            video: videoTracks.map(t => ({
+              enabled: t.enabled,
+              muted: t.muted,
+              readyState: t.readyState,
+              settings: t.getSettings()
+            }))
+          });
           
+          // Активируем треки и добавляем обработчики
           audioTracks.forEach(track => {
             track.enabled = true;
-            console.log('Audio track enabled:', track.enabled, 'muted:', track.muted);
+            
+            // Сохраняем оригинальные настройки
+            const originalSettings = track.getSettings();
+            
+            track.onmute = () => {
+              console.log('Remote audio track muted');
+              // Пытаемся восстановить трек
+              track.enabled = true;
+            };
+            
+            track.onunmute = () => {
+              console.log('Remote audio track unmuted');
+              track.enabled = true;
+            };
+            
+            track.onended = () => {
+              console.log('Remote audio track ended');
+              // Пытаемся перезапустить трек
+              if (this.peer && this.peer._pc) {
+                const sender = this.peer._pc.getSenders().find(s => s.track === track);
+                if (sender) {
+                  sender.replaceTrack(track.clone());
+                }
+              }
+            };
           });
           
           videoTracks.forEach(track => {
             track.enabled = true;
-            console.log('Video track enabled:', track.enabled, 'muted:', track.muted);
+            
+            // Сохраняем оригинальные настройки
+            const originalSettings = track.getSettings();
+            
+            track.onmute = () => {
+              console.log('Remote video track muted');
+              // Пытаемся восстановить трек
+              track.enabled = true;
+            };
+            
+            track.onunmute = () => {
+              console.log('Remote video track unmuted');
+              track.enabled = true;
+            };
+            
+            track.onended = () => {
+              console.log('Remote video track ended');
+              // Пытаемся перезапустить трек
+              if (this.peer && this.peer._pc) {
+                const sender = this.peer._pc.getSenders().find(s => s.track === track);
+                if (sender) {
+                  sender.replaceTrack(track.clone());
+                }
+              }
+            };
           });
 
           if (this.onStreamCallback) {
@@ -258,6 +413,15 @@ class WebRTCService {
             
             clearTimeout(connectionTimeout);
             this.onStreamCallback(newStream);
+            
+            // Добавляем обработчик для всего стрима
+            newStream.onremovetrack = () => {
+              console.log('Track removed from remote stream');
+              if (newStream.getTracks().length === 0) {
+                console.log('All tracks removed, trying to reconnect');
+                this.destroyPeer();
+              }
+            };
           }
         }
       });
@@ -355,14 +519,6 @@ class WebRTCService {
     } catch (error) {
       console.error('Error initializing peer:', error);
       this.destroyPeer();
-    }
-  }
-
-  setStream(stream) {
-    console.log('Setting local stream');
-    this.stream = stream;
-    if (this.peer && this.stream) {
-      this.peer.addStream(stream);
     }
   }
 
