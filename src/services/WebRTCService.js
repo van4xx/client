@@ -140,30 +140,80 @@ class WebRTCService {
     try {
       const peerConfig = {
         initiator,
-        trickle: false,
-        objectMode: false,
+        trickle: true,
+        reconnectTimer: 3000,
+        iceCompleteTimeout: 5000,
         streams: [this.stream],
         config: {
           iceServers: [
-            { urls: 'stun:stun.l.google.com:19302' },
-            { urls: 'stun:global.stun.twilio.com:3478' }
+            { 
+              urls: [
+                'stun:stun.l.google.com:19302',
+                'stun:stun1.l.google.com:19302',
+                'stun:stun2.l.google.com:19302',
+                'stun:stun3.l.google.com:19302',
+                'stun:stun4.l.google.com:19302'
+              ]
+            },
+            {
+              urls: 'turn:numb.viagenie.ca',
+              username: 'webrtc@live.com',
+              credential: 'muazkh'
+            }
           ],
           iceTransportPolicy: 'all',
+          iceCandidatePoolSize: 10,
+          bundlePolicy: 'max-bundle',
+          rtcpMuxPolicy: 'require',
           sdpSemantics: 'unified-plan'
         }
       };
 
       this.peer = new Peer(peerConfig);
 
+      // Connection state monitoring
+      let iceConnectionTimeout;
+      let iceGatheringTimeout;
+      let connectionTimeout;
+
       this.peer.on('signal', signal => {
         if (this.socket && this.socket.connected) {
+          console.log('Sending signal:', signal);
           this.socket.emit('signal', { signal });
         }
       });
 
+      this.peer.on('connect', () => {
+        console.log('Peer connection established');
+        this.isSearching = false;
+        clearTimeout(connectionTimeout);
+      });
+
       this.peer.on('stream', stream => {
+        console.log('Received remote stream:', stream);
         if (stream && stream.active && this.onStreamCallback) {
           this.onStreamCallback(stream);
+        }
+      });
+
+      this.peer.on('track', (track, stream) => {
+        console.log('Received track:', track, 'in stream:', stream);
+      });
+
+      this.peer.on('iceStateChange', (iceConnectionState) => {
+        console.log('ICE connection state:', iceConnectionState);
+        
+        if (iceConnectionState === 'checking') {
+          clearTimeout(iceConnectionTimeout);
+          iceConnectionTimeout = setTimeout(() => {
+            console.log('ICE connection timeout');
+            this.destroyPeer();
+          }, 10000);
+        } else if (iceConnectionState === 'connected' || iceConnectionState === 'completed') {
+          clearTimeout(iceConnectionTimeout);
+        } else if (iceConnectionState === 'failed' || iceConnectionState === 'disconnected' || iceConnectionState === 'closed') {
+          console.log('ICE connection failed/closed');
+          this.destroyPeer();
         }
       });
 
@@ -171,17 +221,13 @@ class WebRTCService {
         if (!data) return;
         try {
           const message = typeof data === 'string' ? data : new TextDecoder().decode(data);
+          console.log('Received data:', message);
           if (this.onChatMessageCallback) {
             this.onChatMessageCallback(message);
           }
         } catch (error) {
           console.error('Error handling data:', error);
         }
-      });
-
-      this.peer.on('connect', () => {
-        console.log('Peer connection established');
-        this.isSearching = false;
       });
 
       this.peer.on('error', err => {
@@ -191,8 +237,17 @@ class WebRTCService {
 
       this.peer.on('close', () => {
         console.log('Peer connection closed');
+        clearTimeout(iceConnectionTimeout);
+        clearTimeout(iceGatheringTimeout);
+        clearTimeout(connectionTimeout);
         this.destroyPeer();
       });
+
+      // Set connection establishment timeout
+      connectionTimeout = setTimeout(() => {
+        console.log('Connection establishment timeout');
+        this.destroyPeer();
+      }, 15000);
 
     } catch (error) {
       console.error('Error initializing peer:', error);
