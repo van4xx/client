@@ -47,10 +47,10 @@ class WebRTCService {
       secure: window.location.protocol === 'https:',
       rejectUnauthorized: false,
       reconnection: true,
-      reconnectionAttempts: 10,
-      reconnectionDelay: 2000,
-      reconnectionDelayMax: 10000,
-      timeout: 30000,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,
+      timeout: 20000,
       autoConnect: true,
       forceNew: true,
       closeOnBeforeunload: true
@@ -235,8 +235,6 @@ class WebRTCService {
         initiator,
         trickle: true,
         streams: [this.stream],
-        reconnectTimer: 5000,
-        iceCompleteTimeout: 10000,
         config: {
           iceServers: [
             {
@@ -296,21 +294,7 @@ class WebRTCService {
           rtcpMuxPolicy: 'require',
           sdpSemantics: 'unified-plan',
           enableDtlsSrtp: true,
-          iceCandidatePoolSize: 2,
-          iceServersTimeout: 2000,
-          // Добавляем параметры для улучшения стабильности
-          iceTransports: 'all',
-          rtcpMuxPolicy: 'require',
-          bundlePolicy: 'max-bundle',
-          // Параметры для keepalive
-          peerConnectionConfig: {
-            enableDscp: true,
-            sdpSemantics: 'unified-plan',
-            rtcpMuxPolicy: 'require',
-            bundlePolicy: 'max-bundle',
-            iceTransportPolicy: 'all',
-            iceCandidatePoolSize: 2
-          }
+          iceCandidatePoolSize: 2
         },
         offerOptions: {
           offerToReceiveAudio: true,
@@ -380,17 +364,6 @@ class WebRTCService {
         this.isSearching = false;
         clearTimeout(connectionTimeout);
         clearTimeout(iceConnectionTimeout);
-
-        // Добавляем keepalive механизм
-        this.keepaliveInterval = setInterval(() => {
-          if (this.peer && !this.peer.destroyed) {
-            try {
-              this.peer.send('keepalive');
-            } catch (error) {
-              console.warn('Keepalive failed:', error);
-            }
-          }
-        }, 10000);
       });
 
       this.peer.on('stream', stream => {
@@ -428,7 +401,7 @@ class WebRTCService {
                 console.log('Restoring audio track state');
                 newTrack.enabled = true;
               }
-            }, 2000);
+            }, 1000);
             
             newTrack.onended = () => {
               console.log('Audio track ended, trying to restore');
@@ -469,7 +442,7 @@ class WebRTCService {
                 console.log('Restoring video track state');
                 newTrack.enabled = true;
               }
-            }, 2000);
+            }, 1000);
             
             newTrack.onended = () => {
               console.log('Video track ended, trying to restore');
@@ -573,6 +546,7 @@ class WebRTCService {
                     iceTransportPolicy: 'relay',
                     iceCandidatePoolSize: 5
                   });
+                  // Restart ICE
                   this.peer._pc.restartIce();
                 } catch (error) {
                   console.error('Error setting relay configuration:', error);
@@ -588,24 +562,7 @@ class WebRTCService {
                 }
               }
             }
-          }, 15000);
-        } else if (iceConnectionState === 'disconnected') {
-          // Добавляем попытку восстановления при разрыве
-          console.log('ICE disconnected, attempting to recover');
-          try {
-            this.peer._pc.restartIce();
-            
-            // Устанавливаем таймер для проверки восстановления
-            setTimeout(() => {
-              if (this.peer && this.peer._pc.iceConnectionState === 'disconnected') {
-                console.log('Recovery failed, destroying peer');
-                this.destroyPeer();
-              }
-            }, 10000);
-          } catch (error) {
-            console.error('Error during recovery:', error);
-            this.destroyPeer();
-          }
+          }, 15000); // Увеличиваем таймаут до 15 секунд
         } else if (iceConnectionState === 'connected' || iceConnectionState === 'completed') {
           console.log('ICE connection established');
           isConnected = true;
@@ -688,11 +645,6 @@ class WebRTCService {
   }
 
   destroyPeer() {
-    if (this.keepaliveInterval) {
-      clearInterval(this.keepaliveInterval);
-      this.keepaliveInterval = null;
-    }
-    
     if (this.peer) {
       try {
         this.peer.removeAllListeners();
