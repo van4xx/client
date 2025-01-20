@@ -12,7 +12,7 @@ class WebRTCService {
     this.isSearching = false;
   }
 
-  init(serverUrl = 'http://89.104.70.7:5000') {
+  init(serverUrl = 'https://ruletka.top:5000') {
     console.log('Initializing WebRTC service with server:', serverUrl);
     
     this.socket = io(serverUrl, {
@@ -20,8 +20,10 @@ class WebRTCService {
       reconnectionDelayMax: 10000,
       reconnectionAttempts: 10,
       path: '/socket.io',
+      secure: true,
+      rejectUnauthorized: false,
       cors: {
-        origin: "*",
+        origin: window.location.origin,
         credentials: true
       },
       forceNew: true,
@@ -33,7 +35,7 @@ class WebRTCService {
     
     this.socket.on('connect', () => {
       console.log('Connected to signaling server');
-      this.isSearching = false; // Сбрасываем флаг поиска при переподключении
+      this.isSearching = false;
     });
 
     this.socket.on('connect_error', (error) => {
@@ -44,7 +46,6 @@ class WebRTCService {
         error: error.message
       });
       
-      // Попробуем переподключиться с другими параметрами
       if (this.socket.io.opts.transports.includes('websocket')) {
         console.log('Retrying with polling transport...');
         this.socket.io.opts.transports = ['polling'];
