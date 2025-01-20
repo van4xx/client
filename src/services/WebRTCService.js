@@ -23,20 +23,32 @@ class WebRTCService {
   init(serverUrl = window.location.protocol === 'https:' ? 'https://ruletka.top' : 'http://localhost:5000') {
     console.log('Initializing WebRTC service with server:', serverUrl);
     
-    this.socket = io(serverUrl, {
-      transports: ['websocket', 'polling'],
+    if (this.socket) {
+      this.socket.disconnect();
+      this.socket = null;
+    }
+
+    const socketOptions = {
+      transports: ['polling', 'websocket'],
       path: '/socket.io/',
-      secure: true,
+      secure: window.location.protocol === 'https:',
+      rejectUnauthorized: false,
       reconnection: true,
-      reconnectionAttempts: 10,
+      reconnectionAttempts: 5,
       reconnectionDelay: 1000,
       reconnectionDelayMax: 5000,
       timeout: 20000,
       autoConnect: true,
-      withCredentials: true,
       forceNew: true,
       closeOnBeforeunload: true
-    });
+    };
+
+    try {
+      this.socket = io(serverUrl, socketOptions);
+    } catch (error) {
+      console.error('Failed to initialize socket:', error);
+      return;
+    }
     
     this.socket.on('connect', () => {
       console.log('Connected to signaling server');
@@ -51,8 +63,9 @@ class WebRTCService {
         error: error.message
       });
       
-      if (this.socket.io.opts.transports.includes('websocket')) {
-        console.log('Retrying with polling transport...');
+      // Если WebSocket не работает, пробуем polling
+      if (this.socket.io.opts.transports[0] === 'websocket') {
+        console.log('Switching to polling transport...');
         this.socket.io.opts.transports = ['polling'];
       }
     });
@@ -60,6 +73,7 @@ class WebRTCService {
     this.socket.on('disconnect', (reason) => {
       console.log('Disconnected from server:', reason);
       this.isSearching = false;
+      this.destroyPeer();
     });
 
     this.socket.on('partner_found', ({ initiator }) => {
@@ -69,8 +83,13 @@ class WebRTCService {
 
     this.socket.on('signal', ({ signal }) => {
       console.log('Received signal:', signal);
-      if (this.peer) {
-        this.peer.signal(signal);
+      if (this.peer && !this.peer.destroyed) {
+        try {
+          this.peer.signal(signal);
+        } catch (error) {
+          console.error('Error processing signal:', error);
+          this.destroyPeer();
+        }
       }
     });
 
@@ -88,14 +107,17 @@ class WebRTCService {
       }
       this.destroyPeer();
     });
+
+    window.addEventListener('beforeunload', () => {
+      this.disconnect();
+    });
   }
 
   initializePeer(initiator) {
     console.log('Initializing peer connection, initiator:', initiator);
     
     if (this.peer) {
-      console.log('Destroying existing peer connection');
-      this.peer.destroy();
+      this.destroyPeer();
     }
 
     if (!this.stream) {
@@ -105,32 +127,14 @@ class WebRTCService {
 
     const peerConfig = {
       initiator,
-      stream: this.stream,
       trickle: false,
-      channelConfig: {
-        ordered: true,
-        maxRetransmits: 3
-      },
+      stream: this.stream,
       config: {
         iceServers: [
           { urls: 'stun:stun.l.google.com:19302' },
-          { urls: 'stun:global.stun.twilio.com:3478' },
-          { urls: 'stun:stun1.l.google.com:19302' },
-          { urls: 'stun:stun2.l.google.com:19302' },
-          { urls: 'stun:stun3.l.google.com:19302' },
-          { urls: 'stun:stun4.l.google.com:19302' }
+          { urls: 'stun:global.stun.twilio.com:3478' }
         ],
-        iceTransportPolicy: 'all',
-        iceCandidatePoolSize: 10
-      },
-      offerOptions: {
-        offerToReceiveAudio: true,
-        offerToReceiveVideo: true
-      },
-      sdpTransform: (sdp) => {
-        const lines = sdp.split('\r\n');
-        const filtered = lines.filter(line => !line.includes('tcp'));
-        return filtered.join('\r\n');
+        iceTransportPolicy: 'all'
       }
     };
 
@@ -138,42 +142,20 @@ class WebRTCService {
       this.peer = new Peer(peerConfig);
 
       this.peer.on('signal', signal => {
-        try {
-          console.log('Generated signal:', signal);
-          if (this.socket && this.socket.connected) {
-            this.socket.emit('signal', { signal });
-          }
-        } catch (error) {
-          console.error('Error sending signal:', error);
-          this.destroyPeer();
+        if (this.socket && this.socket.connected) {
+          this.socket.emit('signal', { signal });
         }
       });
 
       this.peer.on('stream', stream => {
-        try {
-          console.log('Received remote stream');
-          if (stream && stream.active && this.onStreamCallback) {
-            this.onStreamCallback(stream);
-          }
-        } catch (error) {
-          console.error('Error handling remote stream:', error);
+        if (stream && stream.active && this.onStreamCallback) {
+          this.onStreamCallback(stream);
         }
       });
 
       this.peer.on('data', data => {
         try {
-          if (!data) return;
-          
-          let message;
-          if (data instanceof Uint8Array) {
-            message = new TextDecoder().decode(data);
-          } else if (typeof data === 'string') {
-            message = data;
-          } else {
-            message = JSON.stringify(data);
-          }
-          
-          console.log('Received data:', message);
+          const message = data.toString();
           if (this.onChatMessageCallback) {
             this.onChatMessageCallback(message);
           }
@@ -195,14 +177,6 @@ class WebRTCService {
       this.peer.on('close', () => {
         console.log('Peer connection closed');
         this.destroyPeer();
-      });
-
-      // Add additional error handlers
-      this.peer.on('iceStateChange', (state) => {
-        console.log('ICE state:', state);
-        if (state === 'disconnected' || state === 'failed' || state === 'closed') {
-          this.destroyPeer();
-        }
       });
 
     } catch (error) {
@@ -248,7 +222,6 @@ class WebRTCService {
   }
 
   destroyPeer() {
-    console.log('Destroying peer connection');
     if (this.peer) {
       try {
         this.peer.removeAllListeners();
@@ -274,13 +247,17 @@ class WebRTCService {
   }
 
   disconnect() {
-    console.log('Disconnecting from service');
     this.destroyPeer();
     if (this.socket) {
-      this.socket.emit('stop_search');
-      this.socket.disconnect();
+      try {
+        this.socket.emit('stop_search');
+        this.socket.disconnect();
+      } catch (error) {
+        console.error('Error disconnecting socket:', error);
+      }
       this.socket = null;
     }
+    this.isSearching = false;
   }
 }
 
