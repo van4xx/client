@@ -1,6 +1,6 @@
 import io from 'socket.io-client';
 import Peer from 'simple-peer/simplepeer.min.js';
-import WebSocketClient from 'websocket/WebSocketClient';
+import WebSocketClient from '../services/WebSocketClient';
 
 // Polyfill for process and streams
 if (typeof window !== 'undefined') {
