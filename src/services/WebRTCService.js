@@ -220,7 +220,7 @@ class WebRTCService {
         initiator,
         trickle: true,
         streams: [this.stream],
-        reconnectTimer: 3000,
+        reconnectTimer: 1000,
         iceCompleteTimeout: 5000,
         config: {
           iceServers: [
@@ -244,66 +244,18 @@ class WebRTCService {
           sdpSemantics: 'unified-plan',
           enableDtlsSrtp: true,
           iceCandidatePoolSize: 10
-        },
-        offerOptions: {
-          offerToReceiveAudio: true,
-          offerToReceiveVideo: true,
-          voiceActivityDetection: true,
-          iceRestart: true
-        },
-        answerOptions: {
-          offerToReceiveAudio: true,
-          offerToReceiveVideo: true,
-          voiceActivityDetection: true,
-          iceRestart: true
-        },
-        sdpTransform: (sdp) => {
-          let modifiedSdp = sdp;
-          
-          // Добавляем поддержку H264 и VP8
-          if (!modifiedSdp.includes('H264') && !modifiedSdp.includes('VP8')) {
-            modifiedSdp = modifiedSdp.replace(
-              /(m=video.*\r\n)/g,
-              '$1a=rtpmap:96 VP8/90000\r\na=rtcp-fb:96 nack\r\na=rtcp-fb:96 nack pli\r\na=rtcp-fb:96 ccm fir\r\na=rtpmap:97 H264/90000\r\na=rtcp-fb:97 nack\r\na=rtcp-fb:97 nack pli\r\na=rtcp-fb:97 ccm fir\r\n'
-            );
-          }
-          
-          // Устанавливаем максимальный битрейт для видео
-          if (!modifiedSdp.includes('b=AS:')) {
-            modifiedSdp = modifiedSdp.replace(
-              /(m=video.*\r\n)/g,
-              '$1b=AS:2000\r\n'
-            );
-          }
-          
-          // Добавляем параметры для улучшения связи через NAT
-          if (!modifiedSdp.includes('a=ice-options:trickle')) {
-            modifiedSdp = modifiedSdp.replace(
-              /(v=0\r\n)/g,
-              '$1a=ice-options:trickle\r\n'
-            );
-          }
-          
-          return modifiedSdp;
         }
       };
 
       this.peer = new Peer(peerConfig);
 
       let iceConnectionTimeout;
-      let connectionTimeout;
-      let candidatesReceived = 0;
       let isConnected = false;
 
       this.peer.on('signal', signal => {
         if (this.socket && this.socket.connected) {
           console.log('Sending signal:', signal);
-          if (signal.type === 'candidate') {
-            candidatesReceived++;
-          }
           this.socket.emit('signal', { signal });
-        } else {
-          console.warn('Socket not connected, cannot send signal');
         }
       });
 
@@ -314,203 +266,14 @@ class WebRTCService {
         if (this.onSearchStatusCallback) {
           this.onSearchStatusCallback(false);
         }
-        clearTimeout(connectionTimeout);
         clearTimeout(iceConnectionTimeout);
-        startKeepalive();
-      });
-
-      this.peer.on('stream', stream => {
-        console.log('Received remote stream:', stream);
-        if (stream && stream.active) {
-          const audioTracks = stream.getAudioTracks();
-          const videoTracks = stream.getVideoTracks();
-          
-          console.log('Remote stream tracks:', {
-            audio: audioTracks.map(t => ({
-              enabled: t.enabled,
-              muted: t.muted,
-              readyState: t.readyState,
-              settings: t.getSettings()
-            })),
-            video: videoTracks.map(t => ({
-              enabled: t.enabled,
-              muted: t.muted,
-              readyState: t.readyState,
-              settings: t.getSettings()
-            }))
-          });
-
-          // Создаем новый MediaStream
-          const newStream = new MediaStream();
-          
-          // Обработка аудио треков
-          audioTracks.forEach(track => {
-            const newTrack = track.clone();
-            newTrack.enabled = true;
-            
-            // Периодически проверяем состояние трека
-            const checkInterval = setInterval(() => {
-              if (!newTrack.enabled || newTrack.muted) {
-                console.log('Restoring audio track state');
-                newTrack.enabled = true;
-              }
-            }, 1000);
-            
-            newTrack.onended = () => {
-              console.log('Audio track ended, trying to restore');
-              clearInterval(checkInterval);
-              
-              // Пытаемся восстановить трек
-              const clonedTrack = track.clone();
-              clonedTrack.enabled = true;
-              newStream.removeTrack(newTrack);
-              newStream.addTrack(clonedTrack);
-              
-              if (this.onStreamCallback) {
-                this.onStreamCallback(newStream);
-              }
-            };
-            
-            newTrack.onmute = () => {
-              console.log('Audio track muted, enabling');
-              newTrack.enabled = true;
-            };
-            
-            newTrack.onunmute = () => {
-              console.log('Audio track unmuted');
-              newTrack.enabled = true;
-            };
-            
-            newStream.addTrack(newTrack);
-          });
-          
-          // Обработка видео треков
-          videoTracks.forEach(track => {
-            const newTrack = track.clone();
-            newTrack.enabled = true;
-            
-            // Периодически проверяем состояние трека
-            const checkInterval = setInterval(() => {
-              if (!newTrack.enabled || newTrack.muted) {
-                console.log('Restoring video track state');
-                newTrack.enabled = true;
-              }
-            }, 1000);
-            
-            newTrack.onended = () => {
-              console.log('Video track ended, trying to restore');
-              clearInterval(checkInterval);
-              
-              // Пытаемся восстановить трек
-              const clonedTrack = track.clone();
-              clonedTrack.enabled = true;
-              newStream.removeTrack(newTrack);
-              newStream.addTrack(clonedTrack);
-              
-              if (this.onStreamCallback) {
-                this.onStreamCallback(newStream);
-              }
-            };
-            
-            newTrack.onmute = () => {
-              console.log('Video track muted, enabling');
-              newTrack.enabled = true;
-            };
-            
-            newTrack.onunmute = () => {
-              console.log('Video track unmuted');
-              newTrack.enabled = true;
-            };
-            
-            newStream.addTrack(newTrack);
-          });
-
-          if (this.onStreamCallback) {
-            clearTimeout(connectionTimeout);
-            this.onStreamCallback(newStream);
-            
-            // Мониторим состояние стрима
-            const streamCheckInterval = setInterval(() => {
-              if (!newStream.active || newStream.getTracks().length === 0) {
-                console.log('Stream became inactive, trying to restore');
-                clearInterval(streamCheckInterval);
-                
-                // Пытаемся пересоздать стрим
-                const restoredStream = new MediaStream();
-                newStream.getTracks().forEach(track => {
-                  const clonedTrack = track.clone();
-                  clonedTrack.enabled = true;
-                  restoredStream.addTrack(clonedTrack);
-                });
-                
-                if (restoredStream.getTracks().length > 0) {
-                  this.onStreamCallback(restoredStream);
-                } else {
-                  console.log('Could not restore stream, reconnecting');
-                  this.destroyPeer();
-                }
-              }
-            }, 2000);
-            
-            // Очистка интервалов при удалении треков
-            newStream.onremovetrack = () => {
-              console.log('Track removed from stream');
-              if (newStream.getTracks().length === 0) {
-                clearInterval(streamCheckInterval);
-                console.log('All tracks removed, reconnecting');
-                this.destroyPeer();
-              }
-            };
-          }
-        }
-      });
-
-      this.peer.on('track', (track, stream) => {
-        console.log('Received track:', track.kind, track.id, 'in stream:', stream.id);
-        console.log('Track settings:', track.getSettings());
-        console.log('Track constraints:', track.getConstraints());
-        
-        track.onunmute = () => {
-          console.log('Track unmuted:', track.kind, 'enabled:', track.enabled, 'muted:', track.muted);
-          track.enabled = true;
-        };
-        
-        track.onmute = () => {
-          console.log('Track muted:', track.kind);
-        };
-        
-        track.onended = () => {
-          console.log('Track ended:', track.kind);
-        };
       });
 
       this.peer.on('error', err => {
         console.error('Peer error:', err);
-        // Не разрываем соединение сразу при ошибке
-        if (err.message === 'Connection failed.' && this.peer && !this.peer.destroyed) {
-          try {
-            console.log('Attempting to recover from connection failure...');
-            // Пробуем перезапустить ICE
-            if (this.peer._pc) {
-              this.peer._pc.restartIce();
-              
-              // Даем время на восстановление
-              setTimeout(() => {
-                if (this.peer && !this.peer.destroyed && this.peer._pc) {
-                  const state = this.peer._pc.connectionState;
-                  if (state !== 'connected' && state !== 'completed') {
-                    console.log('Could not recover connection, destroying peer');
-                    this.destroyPeer();
-                  }
-                }
-              }, 10000);
-            }
-          } catch (error) {
-            console.error('Error during recovery attempt:', error);
-            this.destroyPeer();
-          }
-        } else if (!isConnected) {
-          this.destroyPeer();
+        if (err.message === 'Connection failed.' && !isConnected) {
+          console.log('Connection failed, trying to reconnect...');
+          this.reconnectPeer();
         }
       });
 
@@ -521,177 +284,35 @@ class WebRTCService {
           clearTimeout(iceConnectionTimeout);
           iceConnectionTimeout = setTimeout(() => {
             if (!isConnected && this.peer && !this.peer.destroyed) {
-              console.log('ICE connection timeout, attempting recovery...');
-              try {
-                if (this.peer._pc) {
-                  this.peer._pc.restartIce();
-                }
-              } catch (error) {
-                console.error('Error restarting ICE:', error);
-              }
+              console.log('ICE connection timeout, reconnecting...');
+              this.reconnectPeer();
             }
-          }, 60000);
+          }, 10000);
         } else if (iceConnectionState === 'connected' || iceConnectionState === 'completed') {
           console.log('ICE connection established');
           isConnected = true;
           clearTimeout(iceConnectionTimeout);
-          clearTimeout(connectionTimeout);
-          startKeepalive();
         } else if (iceConnectionState === 'disconnected') {
-          console.log('ICE connection disconnected, attempting recovery...');
-          
-          // Не останавливаем keepalive сразу
-          let recoveryAttempts = 0;
-          const maxRecoveryAttempts = 3;
-          
-          const attemptRecovery = () => {
-            if (recoveryAttempts < maxRecoveryAttempts) {
-              if (this.peer && !this.peer.destroyed && this.peer._pc) {
-                try {
-                  console.log(`Recovery attempt ${recoveryAttempts + 1}/${maxRecoveryAttempts}`);
-                  this.peer._pc.restartIce();
-                  recoveryAttempts++;
-                  
-                  // Проверяем результат через 5 секунд
-                  setTimeout(() => {
-                    if (this.peer && !this.peer.destroyed && this.peer._pc) {
-                      const state = this.peer._pc.connectionState;
-                      if (state !== 'connected' && state !== 'completed') {
-                        attemptRecovery();
-                      }
-                    }
-                  }, 5000);
-                } catch (error) {
-                  console.error('Error during recovery attempt:', error);
-                }
+          console.log('ICE connection disconnected');
+          if (isConnected) {
+            // Даем шанс на автоматическое восстановление
+            setTimeout(() => {
+              if (this.peer && !this.peer.destroyed && this.peer._pc.iceConnectionState === 'disconnected') {
+                console.log('Connection not restored, reconnecting...');
+                this.reconnectPeer();
               }
-            } else {
-              console.log('Max recovery attempts reached, destroying peer');
-              this.destroyPeer();
-            }
-          };
-          
-          // Начинаем попытки восстановления
-          attemptRecovery();
+            }, 5000);
+          }
         } else if (iceConnectionState === 'failed') {
-          console.log('ICE connection failed, attempting final recovery...');
-          if (this.peer && !this.peer.destroyed && this.peer._pc) {
-            try {
-              this.peer._pc.restartIce();
-              
-              // Даем последний шанс на восстановление
-              setTimeout(() => {
-                if (this.peer && !this.peer.destroyed && this.peer._pc) {
-                  const state = this.peer._pc.connectionState;
-                  if (state !== 'connected' && state !== 'completed') {
-                    this.destroyPeer();
-                  }
-                }
-              }, 5000);
-            } catch (error) {
-              console.error('Error during final recovery attempt:', error);
-              this.destroyPeer();
-            }
-          }
-        }
-      });
-
-      // Обновляем механизм keepalive
-      let keepaliveInterval;
-      let connectionCheckInterval;
-      let lastKeepaliveResponse = Date.now();
-      
-      const startKeepalive = () => {
-        if (keepaliveInterval) clearInterval(keepaliveInterval);
-        if (connectionCheckInterval) clearInterval(connectionCheckInterval);
-        
-        // Отправляем keepalive каждые 10 секунд
-        keepaliveInterval = setInterval(() => {
-          if (this.peer && !this.peer.destroyed) {
-            try {
-              this.peer.send(JSON.stringify({ 
-                type: 'keepalive', 
-                timestamp: Date.now(),
-                data: 'ping'
-              }));
-            } catch (error) {
-              console.warn('Keepalive error:', error);
-            }
-          }
-        }, 10000);
-
-        // Проверяем состояние соединения каждые 15 секунд
-        connectionCheckInterval = setInterval(() => {
-          if (this.peer && !this.peer.destroyed && this.peer._pc) {
-            const state = this.peer._pc.connectionState;
-            const now = Date.now();
-            
-            // Проверяем время последнего keepalive
-            if (now - lastKeepaliveResponse > 40000) {
-              console.warn('No keepalive response for 40 seconds');
-              // Пробуем переподключиться
-              try {
-                this.peer._pc.restartIce();
-              } catch (error) {
-                console.error('Error restarting ICE during check:', error);
-              }
-            }
-            
-            if (state === 'connected' || state === 'completed') {
-              console.log('Connection check: OK');
-            } else {
-              console.warn('Connection check: State is', state);
-              try {
-                this.peer._pc.restartIce();
-              } catch (error) {
-                console.error('Error restarting ICE during check:', error);
-              }
-            }
-          }
-        }, 15000);
-      };
-
-      // Обработка keepalive ответов
-      this.peer.on('data', data => {
-        if (!data) return;
-        try {
-          const message = typeof data === 'string' ? data : new TextDecoder().decode(data);
-          const parsed = JSON.parse(message);
-          
-          if (parsed.type === 'keepalive') {
-            lastKeepaliveResponse = Date.now();
-            // Отправляем ответ на keepalive
-            if (this.peer && !this.peer.destroyed) {
-              this.peer.send(JSON.stringify({
-                type: 'keepalive_response',
-                timestamp: Date.now(),
-                data: 'pong'
-              }));
-            }
-          } else if (parsed.type === 'keepalive_response') {
-            lastKeepaliveResponse = Date.now();
-          } else if (this.onChatMessageCallback) {
-            this.onChatMessageCallback(message);
-          }
-        } catch (error) {
-          console.error('Error handling data:', error);
+          console.log('ICE connection failed');
+          this.reconnectPeer();
         }
       });
 
       this.peer.on('close', () => {
         console.log('Peer connection closed');
-        if (keepaliveInterval) clearInterval(keepaliveInterval);
-        if (connectionCheckInterval) clearInterval(connectionCheckInterval);
         this.handleConnectionClosed();
       });
-
-      // Увеличиваем общий таймаут соединения
-      connectionTimeout = setTimeout(() => {
-        if (!isConnected) {
-          console.log('Connection establishment timeout');
-          this.destroyPeer();
-        }
-      }, 60000000); // 1000 минут
 
     } catch (error) {
       console.error('Error initializing peer:', error);
@@ -704,6 +325,16 @@ class WebRTCService {
     this.intentionalClose = false;
     if (this.isSearching) {
       console.log('Already searching, ignoring request');
+      return;
+    }
+    
+    if (!this.socket || !this.socket.connected) {
+      console.log('Socket not connected, reconnecting...');
+      this.init();
+      this.socket.once('connect', () => {
+        console.log('Socket reconnected, starting search');
+        this.startSearch(mode);
+      });
       return;
     }
     
@@ -791,13 +422,12 @@ class WebRTCService {
       this.peer = null;
     }
 
-    // Пересоздаем WebSocket соединение
-    if (this.socket) {
-      this.socket.close();
+    // Переподключаем Socket.IO если нужно
+    if (!this.socket || !this.socket.connected) {
       this.init();
     }
 
-    // Пытаемся переподключиться через 2 секунды
+    // Пытаемся переподключиться через короткий интервал
     setTimeout(() => {
       if (this.stream) {
         this.setStream(this.stream);
@@ -806,7 +436,7 @@ class WebRTCService {
         }
       }
       this.isReconnecting = false;
-    }, 2000);
+    }, 1000);
   }
 
   handleConnectionClosed() {
