@@ -30,6 +30,7 @@ class WebRTCService {
     this.onStreamCallback = null;
     this.onChatMessageCallback = null;
     this.onConnectionClosedCallback = null;
+    this.onSearchStatusCallback = null;
     this.isSearching = false;
   }
 
@@ -395,9 +396,12 @@ class WebRTCService {
         console.log('Peer connection established');
         isConnected = true;
         this.isSearching = false;
+        if (this.onSearchStatusCallback) {
+          this.onSearchStatusCallback(false);
+        }
         clearTimeout(connectionTimeout);
         clearTimeout(iceConnectionTimeout);
-        startKeepalive(); // Запускаем keepalive после установки соединения
+        startKeepalive();
       });
 
       this.peer.on('stream', stream => {
@@ -740,18 +744,28 @@ class WebRTCService {
     
     console.log('Starting search in mode:', mode);
     this.isSearching = true;
+    if (this.onSearchStatusCallback) {
+      this.onSearchStatusCallback(true);
+    }
     this.socket.emit('start_search', { mode });
   }
 
   stopSearch() {
     console.log('Stopping search');
     this.isSearching = false;
+    if (this.onSearchStatusCallback) {
+      this.onSearchStatusCallback(false);
+    }
     this.socket.emit('stop_search');
     this.destroyPeer();
   }
 
   nextPartner(mode = 'video') {
     console.log('Finding next partner in mode:', mode);
+    this.isSearching = true;
+    if (this.onSearchStatusCallback) {
+      this.onSearchStatusCallback(true);
+    }
     this.socket.emit('next', { mode });
   }
 
@@ -785,6 +799,10 @@ class WebRTCService {
     this.onConnectionClosedCallback = callback;
   }
 
+  onSearchStatus(callback) {
+    this.onSearchStatusCallback = callback;
+  }
+
   disconnect() {
     this.destroyPeer();
     if (this.socket) {
@@ -797,6 +815,9 @@ class WebRTCService {
       this.socket = null;
     }
     this.isSearching = false;
+    if (this.onSearchStatusCallback) {
+      this.onSearchStatusCallback(false);
+    }
   }
 }
 
