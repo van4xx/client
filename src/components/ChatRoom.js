@@ -85,6 +85,10 @@ function ChatRoom() {
           }
         });
 
+        WebRTCService.onSearchStatusCallback((searching) => {
+          setIsSearching(searching);
+        });
+
       } catch (error) {
         console.error('Ошибка доступа к камере или микрофону:', error);
       }
