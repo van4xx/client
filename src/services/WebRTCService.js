@@ -1,4 +1,4 @@
-import WebSocketClient from './WebSocketClient';
+import io from 'socket.io-client';
 import Peer from 'simple-peer/simplepeer.min.js';
 
 // Polyfill for process and streams
@@ -32,95 +32,125 @@ class WebRTCService {
     this.onConnectionClosedCallback = null;
     this.onSearchStatusCallback = null;
     this.isSearching = false;
-    this.isReconnecting = false;
-    this.intentionalClose = false;
-    this.currentMode = null;
-    this.onConnectionStatusCallback = null;
   }
 
   init(serverUrl = window.location.protocol === 'https:' ? 'https://ruletka.top' : 'http://localhost:5000') {
     console.log('Initializing WebRTC service with server:', serverUrl);
     
     if (this.socket) {
-      this.socket.close();
+      this.socket.disconnect();
       this.socket = null;
     }
 
+    const socketOptions = {
+      transports: ['polling', 'websocket'],
+      path: '/socket.io/',
+      secure: window.location.protocol === 'https:',
+      rejectUnauthorized: false,
+      reconnection: true,
+      reconnectionAttempts: Infinity,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,
+      timeout: 20000,
+      autoConnect: true,
+      forceNew: true,
+      closeOnBeforeunload: true,
+      // Добавляем новые параметры для улучшения стабильности
+      pingTimeout: 60000,
+      pingInterval: 25000,
+      upgrade: true,
+      rememberUpgrade: true,
+      transports: ['websocket', 'polling']
+    };
+
     try {
-      this.socket = new WebSocketClient(serverUrl, {
-        maxReconnectAttempts: 10,
-        reconnectInterval: 1000
-      });
+      this.socket = io(serverUrl, socketOptions);
 
-      this.socket.on('open', () => {
-        console.log('Connected to signaling server');
-        this.isSearching = false;
-        if (this.onConnectionStatusCallback) {
-          this.onConnectionStatusCallback('connected');
-        }
-        // Send initial connection message
-        this.socket.send(JSON.stringify({
-          type: 'connection',
-          data: { clientType: 'web' }
-        }));
-      });
-
-      this.socket.on('error', (error) => {
-        console.error('WebSocket error:', error);
-        if (this.onConnectionStatusCallback) {
-          this.onConnectionStatusCallback('error', error);
-        }
-      });
-      
-      this.socket.on('close', (event) => {
-        console.log('WebSocket closed:', event);
-        this.isSearching = false;
-        if (!this.intentionalClose) {
-          this.destroyPeer();
-        }
-        if (this.onConnectionStatusCallback) {
-          this.onConnectionStatusCallback('disconnected');
+      // Добавляем обработку переподключения
+      this.socket.io.on("reconnect_attempt", (attempt) => {
+        console.log('Reconnection attempt:', attempt);
+        if (attempt > 2) {
+          this.socket.io.opts.transports = ['polling', 'websocket'];
         }
       });
 
-      this.socket.on('message', (data) => {
-        try {
-          const message = JSON.parse(data);
-          switch (message.type) {
-            case 'partner_found':
-              console.log('Partner found, initiator:', message.initiator);
-              this.initializePeer(message.initiator);
-              break;
-            case 'signal':
-              console.log('Received signal');
-              if (this.peer && !this.peer.destroyed) {
-                this.peer.signal(message.signal);
-              }
-              break;
-            case 'chat_message':
-              if (this.onChatMessageCallback) {
-                this.onChatMessageCallback(message.message);
-              }
-              break;
-            case 'connection_closed':
-              console.log('Connection closed by partner');
-              this.handleConnectionClosed();
-              break;
-            case 'error':
-              console.error('Server error:', message.error);
-              break;
-          }
-        } catch (error) {
-          console.error('Error processing message:', error);
+      this.socket.io.on("reconnect", (attempt) => {
+        console.log('Reconnected after', attempt, 'attempts');
+        // Восстанавливаем поиск если он был активен
+        if (this.isSearching) {
+          this.startSearch('video');
         }
+      });
+
+      this.socket.io.on("reconnect_error", (error) => {
+        console.log('Reconnection error:', error);
       });
 
     } catch (error) {
-      console.error('Failed to initialize WebSocket:', error);
-      if (this.onConnectionStatusCallback) {
-        this.onConnectionStatusCallback('error', error);
-      }
+      console.error('Failed to initialize socket:', error);
+      return;
     }
+    
+    this.socket.on('connect', () => {
+      console.log('Connected to signaling server');
+      this.isSearching = false;
+    });
+
+    this.socket.on('connect_error', (error) => {
+      console.error('Connection error:', error);
+      console.error('Connection error details:', {
+        url: serverUrl,
+        transport: this.socket.io.opts.transports,
+        error: error.message
+      });
+      
+      if (this.socket.io.opts.transports[0] === 'websocket') {
+        console.log('Switching to polling transport...');
+        this.socket.io.opts.transports = ['polling'];
+      }
+    });
+    
+    this.socket.on('disconnect', (reason) => {
+      console.log('Disconnected from server:', reason);
+      this.isSearching = false;
+      this.destroyPeer();
+    });
+
+    this.socket.on('partner_found', ({ initiator }) => {
+      console.log('Partner found, initiator:', initiator);
+      this.initializePeer(initiator);
+    });
+
+    this.socket.on('signal', ({ signal }) => {
+      console.log('Received signal:', signal);
+      if (this.peer && !this.peer.destroyed) {
+        try {
+          this.peer.signal(signal);
+        } catch (error) {
+          console.error('Error processing signal:', error);
+          this.destroyPeer();
+        }
+      }
+    });
+
+    this.socket.on('chat_message', ({ message }) => {
+      console.log('Received chat message:', message);
+      if (this.onChatMessageCallback) {
+        this.onChatMessageCallback(message);
+      }
+    });
+
+    this.socket.on('connection_closed', () => {
+      console.log('Connection closed by partner');
+      if (this.onConnectionClosedCallback) {
+        this.onConnectionClosedCallback();
+      }
+      this.destroyPeer();
+    });
+
+    window.addEventListener('beforeunload', () => {
+      this.disconnect();
+    });
   }
 
   async setStream(stream) {
@@ -206,18 +236,43 @@ class WebRTCService {
       return;
     }
 
+    // Проверяем состояние локального стрима перед инициализацией
+    const audioTracks = this.stream.getAudioTracks();
+    const videoTracks = this.stream.getVideoTracks();
+
+    if (audioTracks.length === 0 && videoTracks.length === 0) {
+      console.error('No audio or video tracks in local stream');
+      return;
+    }
+
+    console.log('Local stream state before peer initialization:', {
+      audio: audioTracks.map(t => ({
+        enabled: t.enabled,
+        muted: t.muted,
+        readyState: t.readyState
+      })),
+      video: videoTracks.map(t => ({
+        enabled: t.enabled,
+        muted: t.muted,
+        readyState: t.readyState
+      }))
+    });
+
     try {
       const peerConfig = {
         initiator,
         trickle: true,
         streams: [this.stream],
-        reconnectTimer: 3000,
-        iceCompleteTimeout: 5000,
+        reconnectTimer: 10000,
+        iceCompleteTimeout: 15000,
         config: {
           iceServers: [
             {
               urls: [
-                'stun:ruletka.top:3478'
+                'stun:ruletka.top:3478',
+                'stun:stun.l.google.com:19302',
+                'stun:stun1.l.google.com:19302',
+                'stun:stun2.l.google.com:19302'
               ]
             },
             {
@@ -227,6 +282,41 @@ class WebRTCService {
               ],
               username: 'webrtc',
               credential: 'webrtc123'
+            },
+            {
+              urls: [
+                'turn:turn.anyfirewall.com:443?transport=tcp',
+                'turn:turn.anyfirewall.com:443?transport=udp'
+              ],
+              credential: 'webrtc',
+              username: 'webrtc'
+            },
+            {
+              urls: [
+                'turn:openrelay.metered.ca:443',
+                'turn:openrelay.metered.ca:443?transport=tcp',
+                'turn:openrelay.metered.ca:443?transport=udp',
+                'turn:openrelay.metered.ca:80',
+                'turn:openrelay.metered.ca:80?transport=tcp',
+                'turn:openrelay.metered.ca:80?transport=udp'
+              ],
+              username: 'openrelayproject',
+              credential: 'openrelayproject'
+            },
+            {
+              urls: [
+                'turn:relay.webwormhole.io:3478',
+                'turn:relay.webwormhole.io:3478?transport=udp',
+                'turn:relay.webwormhole.io:3478?transport=tcp',
+                'turn:relay.webwormhole.io:80',
+                'turn:relay.webwormhole.io:80?transport=udp',
+                'turn:relay.webwormhole.io:80?transport=tcp',
+                'turn:relay.webwormhole.io:443',
+                'turn:relay.webwormhole.io:443?transport=udp',
+                'turn:relay.webwormhole.io:443?transport=tcp'
+              ],
+              username: 'webwormhole',
+              credential: 'webwormhole'
             }
           ],
           iceTransportPolicy: 'all',
@@ -234,7 +324,11 @@ class WebRTCService {
           rtcpMuxPolicy: 'require',
           sdpSemantics: 'unified-plan',
           enableDtlsSrtp: true,
-          iceCandidatePoolSize: 10
+          iceCandidatePoolSize: 2,
+          iceServersTimeout: 10000,
+          // Увеличиваем таймауты для длительных соединений
+          iceConnectionTimeout: 60000,
+          iceTrickleTimeout: 60000
         },
         offerOptions: {
           offerToReceiveAudio: true,
@@ -292,12 +386,9 @@ class WebRTCService {
           if (signal.type === 'candidate') {
             candidatesReceived++;
           }
-          this.socket.send(JSON.stringify({
-            type: 'signal',
-            signal: signal
-          }));
+          this.socket.emit('signal', { signal });
         } else {
-          console.warn('WebSocket not connected, cannot send signal');
+          console.warn('Socket not connected, cannot send signal');
         }
       });
 
@@ -676,7 +767,7 @@ class WebRTCService {
         console.log('Peer connection closed');
         if (keepaliveInterval) clearInterval(keepaliveInterval);
         if (connectionCheckInterval) clearInterval(connectionCheckInterval);
-        this.handleConnectionClosed();
+        this.destroyPeer();
       });
 
       // Увеличиваем общий таймаут соединения
@@ -694,54 +785,27 @@ class WebRTCService {
   }
 
   startSearch(mode = 'video') {
-    console.log('Starting search in mode:', mode);
-    this.currentMode = mode;
-    this.intentionalClose = false;
-    
-    if (!this.socket) {
-      console.warn('No socket connection, initializing...');
-      this.init();
+    if (this.isSearching) {
+      console.log('Already searching, ignoring request');
       return;
     }
-
+    
+    console.log('Starting search in mode:', mode);
     this.isSearching = true;
     if (this.onSearchStatusCallback) {
       this.onSearchStatusCallback(true);
     }
-
-    try {
-      this.socket.send(JSON.stringify({
-        type: 'start_search',
-        mode: mode,
-        clientType: 'web'
-      }));
-    } catch (error) {
-      console.error('Error starting search:', error);
-      this.isSearching = false;
-      if (this.onSearchStatusCallback) {
-        this.onSearchStatusCallback(false);
-      }
-    }
+    this.socket.emit('start_search', { mode });
   }
 
   stopSearch() {
     console.log('Stopping search');
-    this.intentionalClose = true;
     this.isSearching = false;
-    
-    if (this.socket) {
-      try {
-        this.socket.send(JSON.stringify({
-          type: 'stop_search'
-        }));
-      } catch (error) {
-        console.error('Error stopping search:', error);
-      }
-    }
-
     if (this.onSearchStatusCallback) {
       this.onSearchStatusCallback(false);
     }
+    this.socket.emit('stop_search');
+    this.destroyPeer();
   }
 
   nextPartner(mode = 'video') {
@@ -750,18 +814,12 @@ class WebRTCService {
     if (this.onSearchStatusCallback) {
       this.onSearchStatusCallback(true);
     }
-    this.socket.send(JSON.stringify({
-      type: 'next',
-      mode: mode
-    }));
+    this.socket.emit('next', { mode });
   }
 
   sendMessage(message) {
     console.log('Sending chat message:', message);
-    this.socket.send(JSON.stringify({
-      type: 'chat_message',
-      message: message
-    }));
+    this.socket.emit('chat_message', { message });
   }
 
   destroyPeer() {
@@ -787,61 +845,6 @@ class WebRTCService {
 
   onConnectionClosed(callback) {
     this.onConnectionClosedCallback = callback;
-    if (this.peer) {
-      this.peer.on('close', () => {
-        console.log('Peer connection closed');
-        this.handleConnectionClosed();
-      });
-
-      this.peer.on('error', (err) => {
-        console.error('Peer error:', err);
-        if (err.message.includes('User-Initiated Abort')) {
-          // Пытаемся переподключиться
-          this.reconnectPeer();
-        }
-      });
-    }
-  }
-
-  reconnectPeer() {
-    if (this.isReconnecting) return;
-    this.isReconnecting = true;
-
-    console.log('Attempting to reconnect peer...');
-    
-    // Очищаем старое соединение
-    if (this.peer) {
-      this.peer.destroy();
-      this.peer = null;
-    }
-
-    // Пересоздаем WebSocket соединение
-    if (this.socket) {
-      this.socket.close();
-      this.init();
-    }
-
-    // Пытаемся переподключиться через 2 секунды
-    setTimeout(() => {
-      if (this.stream) {
-        this.setStream(this.stream);
-        if (this.currentMode) {
-          this.startSearch(this.currentMode);
-        }
-      }
-      this.isReconnecting = false;
-    }, 2000);
-  }
-
-  handleConnectionClosed() {
-    if (this.onConnectionClosedCallback) {
-      this.onConnectionClosedCallback();
-    }
-    
-    // Если соединение закрылось не по нашей инициативе, пытаемся переподключиться
-    if (!this.intentionalClose) {
-      this.reconnectPeer();
-    }
   }
 
   onSearchStatus(callback) {
@@ -852,10 +855,8 @@ class WebRTCService {
     this.destroyPeer();
     if (this.socket) {
       try {
-        this.socket.send(JSON.stringify({
-          type: 'stop_search'
-        }));
-        this.socket.close();
+        this.socket.emit('stop_search');
+        this.socket.disconnect();
       } catch (error) {
         console.error('Error disconnecting socket:', error);
       }
@@ -865,10 +866,6 @@ class WebRTCService {
     if (this.onSearchStatusCallback) {
       this.onSearchStatusCallback(false);
     }
-  }
-
-  onConnectionStatus(callback) {
-    this.onConnectionStatusCallback = callback;
   }
 }
 
