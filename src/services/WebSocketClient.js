@@ -17,6 +17,7 @@ class WebSocketClient {
       error: []
     };
     this.isIntentionalClose = false;
+    this.pingInterval = null;
     this.connect();
   }
 
@@ -37,10 +38,56 @@ class WebSocketClient {
 
   handleMessage(event) {
     try {
-      this.handlers.message.forEach(handler => handler(event.data));
+      const data = event.data;
+      
+      // Handle Socket.IO protocol messages
+      if (typeof data === 'string') {
+        // Socket.IO ping message
+        if (data === '2') {
+          this.ws.send('3'); // Respond with pong
+          return;
+        }
+        
+        // Socket.IO handshake
+        if (data.startsWith('0')) {
+          const config = JSON.parse(data.slice(1));
+          this.setupHeartbeat(config);
+          return;
+        }
+        
+        // Regular message starting with '42' (Socket.IO message identifier)
+        if (data.startsWith('42')) {
+          try {
+            const parsedData = JSON.parse(data.slice(2));
+            this.handlers.message.forEach(handler => handler(JSON.stringify({
+              type: parsedData[0],
+              ...parsedData[1]
+            })));
+          } catch (e) {
+            console.warn('Failed to parse message:', e);
+          }
+          return;
+        }
+      }
+      
+      // Pass through any other messages
+      this.handlers.message.forEach(handler => handler(data));
     } catch (error) {
       console.error('Error handling message:', error);
     }
+  }
+
+  setupHeartbeat(config) {
+    if (this.pingInterval) {
+      clearInterval(this.pingInterval);
+    }
+    
+    // Setup ping interval
+    this.pingInterval = setInterval(() => {
+      if (this.ws.readyState === WebSocket.OPEN) {
+        this.ws.send('2');
+      }
+    }, config.pingInterval || 25000);
   }
 
   handleOpen() {
@@ -51,6 +98,11 @@ class WebSocketClient {
 
   handleClose(event) {
     console.log('WebSocket closed:', event.code, event.reason);
+    if (this.pingInterval) {
+      clearInterval(this.pingInterval);
+      this.pingInterval = null;
+    }
+    
     this.handlers.close.forEach(handler => handler(event));
     
     if (!this.isIntentionalClose) {
@@ -85,7 +137,10 @@ class WebSocketClient {
   send(data) {
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
       try {
-        this.ws.send(data);
+        // Format message according to Socket.IO protocol
+        const message = JSON.parse(data);
+        const socketMessage = `42${JSON.stringify([message.type, message])}`;
+        this.ws.send(socketMessage);
       } catch (error) {
         console.error('Error sending message:', error);
         this.handlers.error.forEach(handler => handler(error));
@@ -97,6 +152,10 @@ class WebSocketClient {
 
   close() {
     this.isIntentionalClose = true;
+    if (this.pingInterval) {
+      clearInterval(this.pingInterval);
+      this.pingInterval = null;
+    }
     if (this.ws) {
       this.ws.close();
     }

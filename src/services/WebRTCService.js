@@ -58,6 +58,11 @@ class WebRTCService {
         if (this.onConnectionStatusCallback) {
           this.onConnectionStatusCallback('connected');
         }
+        // Send initial connection message
+        this.socket.send(JSON.stringify({
+          type: 'connection',
+          data: { clientType: 'web' }
+        }));
       });
 
       this.socket.on('error', (error) => {
@@ -100,6 +105,9 @@ class WebRTCService {
             case 'connection_closed':
               console.log('Connection closed by partner');
               this.handleConnectionClosed();
+              break;
+            case 'error':
+              console.error('Server error:', message.error);
               break;
           }
         } catch (error) {
@@ -704,7 +712,8 @@ class WebRTCService {
     try {
       this.socket.send(JSON.stringify({
         type: 'start_search',
-        mode: mode
+        mode: mode,
+        clientType: 'web'
       }));
     } catch (error) {
       console.error('Error starting search:', error);
