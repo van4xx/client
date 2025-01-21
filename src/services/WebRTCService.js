@@ -1,5 +1,6 @@
 import io from 'socket.io-client';
 import Peer from 'simple-peer/simplepeer.min.js';
+import WebSocketClient from 'websocket/WebSocketClient';
 
 // Polyfill for process and streams
 if (typeof window !== 'undefined') {
@@ -32,6 +33,9 @@ class WebRTCService {
     this.onConnectionClosedCallback = null;
     this.onSearchStatusCallback = null;
     this.isSearching = false;
+    this.isReconnecting = false;
+    this.intentionalClose = false;
+    this.currentMode = null;
   }
 
   init(serverUrl = window.location.protocol === 'https:' ? 'https://ruletka.top' : 'http://localhost:5000') {
@@ -150,6 +154,52 @@ class WebRTCService {
 
     window.addEventListener('beforeunload', () => {
       this.disconnect();
+    });
+  }
+
+  initSocket() {
+    const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsUrl = `${wsProtocol}//${window.location.hostname}:3000/ws`;
+    
+    this.socket = new WebSocketClient(wsUrl, {
+      maxReconnectAttempts: 5,
+      reconnectInterval: 3000
+    });
+
+    this.socket.on('open', () => {
+      console.log('Connected to signaling server');
+      // Если было активное соединение, пытаемся восстановить
+      if (this.currentMode && !this.intentionalClose) {
+        this.startSearch(this.currentMode);
+      }
+    });
+
+    this.socket.on('message', (data) => {
+      try {
+        const message = JSON.parse(data);
+        if (message.type === 'partner-found') {
+          console.log('Partner found, initiator:', message.initiator);
+          this.handlePartnerFound(message.initiator);
+        } else if (message.type === 'signal') {
+          console.log('Received signal:', message.signal);
+          this.handleSignal(message.signal);
+        } else if (message.type === 'chat') {
+          console.log('Received chat message:', message.message);
+          if (this.onChatMessageCallback) {
+            this.onChatMessageCallback(message.message);
+          }
+        }
+      } catch (error) {
+        console.error('Error parsing WebSocket message:', error);
+      }
+    });
+
+    this.socket.on('error', (error) => {
+      console.error('WebSocket error:', error);
+    });
+
+    this.socket.on('close', () => {
+      console.log('WebSocket connection closed');
     });
   }
 
@@ -767,7 +817,7 @@ class WebRTCService {
         console.log('Peer connection closed');
         if (keepaliveInterval) clearInterval(keepaliveInterval);
         if (connectionCheckInterval) clearInterval(connectionCheckInterval);
-        this.destroyPeer();
+        this.handleConnectionClosed();
       });
 
       // Увеличиваем общий таймаут соединения
@@ -784,7 +834,9 @@ class WebRTCService {
     }
   }
 
-  startSearch(mode = 'video') {
+  startSearch(mode) {
+    this.currentMode = mode;
+    this.intentionalClose = false;
     if (this.isSearching) {
       console.log('Already searching, ignoring request');
       return;
@@ -799,6 +851,7 @@ class WebRTCService {
   }
 
   stopSearch() {
+    this.intentionalClose = true;
     console.log('Stopping search');
     this.isSearching = false;
     if (this.onSearchStatusCallback) {
@@ -845,6 +898,61 @@ class WebRTCService {
 
   onConnectionClosed(callback) {
     this.onConnectionClosedCallback = callback;
+    if (this.peer) {
+      this.peer.on('close', () => {
+        console.log('Peer connection closed');
+        this.handleConnectionClosed();
+      });
+
+      this.peer.on('error', (err) => {
+        console.error('Peer error:', err);
+        if (err.message.includes('User-Initiated Abort')) {
+          // Пытаемся переподключиться
+          this.reconnectPeer();
+        }
+      });
+    }
+  }
+
+  reconnectPeer() {
+    if (this.isReconnecting) return;
+    this.isReconnecting = true;
+
+    console.log('Attempting to reconnect peer...');
+    
+    // Очищаем старое соединение
+    if (this.peer) {
+      this.peer.destroy();
+      this.peer = null;
+    }
+
+    // Пересоздаем WebSocket соединение
+    if (this.socket) {
+      this.socket.close();
+      this.initSocket();
+    }
+
+    // Пытаемся переподключиться через 2 секунды
+    setTimeout(() => {
+      if (this.stream) {
+        this.setStream(this.stream);
+        if (this.currentMode) {
+          this.startSearch(this.currentMode);
+        }
+      }
+      this.isReconnecting = false;
+    }, 2000);
+  }
+
+  handleConnectionClosed() {
+    if (this.onConnectionClosedCallback) {
+      this.onConnectionClosedCallback();
+    }
+    
+    // Если соединение закрылось не по нашей инициативе, пытаемся переподключиться
+    if (!this.intentionalClose) {
+      this.reconnectPeer();
+    }
   }
 
   onSearchStatus(callback) {
