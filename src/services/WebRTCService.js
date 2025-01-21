@@ -571,62 +571,31 @@ class WebRTCService {
 
       this.peer.on('error', err => {
         console.error('Peer error:', err);
-        
+        // Не разрываем соединение сразу при ошибке
         if (err.message === 'Connection failed.' && this.peer && !this.peer.destroyed) {
           try {
             console.log('Attempting to recover from connection failure...');
-            
-            // Не уничтожаем peer сразу, даем шанс на восстановление
+            // Пробуем перезапустить ICE
             if (this.peer._pc) {
-              const currentState = this.peer._pc.connectionState;
-              console.log('Current connection state:', currentState);
+              this.peer._pc.restartIce();
               
-              if (currentState !== 'connected' && currentState !== 'completed') {
-                // Пробуем сначала мягкое восстановление
-                this.peer._pc.restartIce();
-                
-                // Ждем результата восстановления
-                setTimeout(() => {
-                  if (this.peer && !this.peer.destroyed && this.peer._pc) {
-                    const newState = this.peer._pc.connectionState;
-                    console.log('Connection state after recovery attempt:', newState);
-                    
-                    if (newState !== 'connected' && newState !== 'completed') {
-                      // Если не удалось восстановить, пробуем более агрессивное восстановление
-                      try {
-                        // Обновляем конфигурацию ICE
-                        const newConfig = {
-                          ...this.peer._pc.getConfiguration(),
-                          iceTransportPolicy: 'all',
-                          iceCandidatePoolSize: 5,
-                          bundlePolicy: 'max-bundle'
-                        };
-                        this.peer._pc.setConfiguration(newConfig);
-                        this.peer._pc.restartIce();
-                        
-                        // Даем еще время на восстановление
-                        setTimeout(() => {
-                          if (this.peer && !this.peer.destroyed && this.peer._pc) {
-                            const finalState = this.peer._pc.connectionState;
-                            if (finalState !== 'connected' && finalState !== 'completed') {
-                              console.log('Recovery failed, recreating peer connection');
-                              // Только теперь уничтожаем peer и создаем новый
-                              this.destroyPeer();
-                              this.socket.emit('reconnect_request');
-                            }
-                          }
-                        }, 5000);
-                      } catch (error) {
-                        console.error('Error during aggressive recovery:', error);
-                      }
-                    }
+              // Даем время на восстановление
+              setTimeout(() => {
+                if (this.peer && !this.peer.destroyed && this.peer._pc) {
+                  const state = this.peer._pc.connectionState;
+                  if (state !== 'connected' && state !== 'completed') {
+                    console.log('Could not recover connection, destroying peer');
+                    this.destroyPeer();
                   }
-                }, 5000);
-              }
+                }
+              }, 10000);
             }
           } catch (error) {
-            console.error('Error during connection recovery:', error);
+            console.error('Error during recovery attempt:', error);
+            this.destroyPeer();
           }
+        } else if (!isConnected) {
+          this.destroyPeer();
         }
       });
 
@@ -656,60 +625,39 @@ class WebRTCService {
         } else if (iceConnectionState === 'disconnected') {
           console.log('ICE connection disconnected, attempting recovery...');
           
+          // Не останавливаем keepalive сразу
           let recoveryAttempts = 0;
           const maxRecoveryAttempts = 3;
-          let recoveryTimer = null;
           
           const attemptRecovery = () => {
             if (recoveryAttempts < maxRecoveryAttempts) {
               if (this.peer && !this.peer.destroyed && this.peer._pc) {
                 try {
                   console.log(`Recovery attempt ${recoveryAttempts + 1}/${maxRecoveryAttempts}`);
-                  
-                  // Проверяем текущее состояние
-                  const currentState = this.peer._pc.connectionState;
-                  if (currentState === 'connected' || currentState === 'completed') {
-                    console.log('Connection already recovered');
-                    return;
-                  }
-                  
-                  // Пробуем восстановить соединение
                   this.peer._pc.restartIce();
                   recoveryAttempts++;
                   
-                  // Ждем результата
-                  recoveryTimer = setTimeout(() => {
+                  // Проверяем результат через 5 секунд
+                  setTimeout(() => {
                     if (this.peer && !this.peer.destroyed && this.peer._pc) {
-                      const newState = this.peer._pc.connectionState;
-                      if (newState !== 'connected' && newState !== 'completed') {
+                      const state = this.peer._pc.connectionState;
+                      if (state !== 'connected' && state !== 'completed') {
                         attemptRecovery();
                       }
                     }
-                  }, 7000); // Увеличиваем интервал между попытками
+                  }, 5000);
                 } catch (error) {
                   console.error('Error during recovery attempt:', error);
-                  clearTimeout(recoveryTimer);
                 }
               }
             } else {
-              console.log('Max recovery attempts reached');
-              clearTimeout(recoveryTimer);
-              // Не уничтожаем peer сразу, даем шанс автоматическому восстановлению
-              setTimeout(() => {
-                if (this.peer && !this.peer.destroyed && this.peer._pc) {
-                  const finalState = this.peer._pc.connectionState;
-                  if (finalState !== 'connected' && finalState !== 'completed') {
-                    console.log('Recovery failed, requesting new connection');
-                    this.destroyPeer();
-                    this.socket.emit('reconnect_request');
-                  }
-                }
-              }, 10000);
+              console.log('Max recovery attempts reached, destroying peer');
+              this.destroyPeer();
             }
           };
           
-          // Начинаем восстановление с небольшой задержкой
-          setTimeout(attemptRecovery, 2000);
+          // Начинаем попытки восстановления
+          attemptRecovery();
         } else if (iceConnectionState === 'failed') {
           console.log('ICE connection failed, attempting final recovery...');
           if (this.peer && !this.peer.destroyed && this.peer._pc) {

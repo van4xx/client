@@ -70,6 +70,7 @@ function ChatRoom() {
         WebRTCService.onStream((remoteStream) => {
           if (remoteVideoRef.current) {
             remoteVideoRef.current.srcObject = remoteStream;
+            setIsSearching(false);
           }
         });
 
@@ -83,10 +84,6 @@ function ChatRoom() {
           if (remoteVideoRef.current) {
             remoteVideoRef.current.srcObject = null;
           }
-        });
-
-        WebRTCService.onSearchStatusCallback((searching) => {
-          setIsSearching(searching);
         });
 
       } catch (error) {
