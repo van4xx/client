@@ -47,17 +47,44 @@ class WebRTCService {
       secure: window.location.protocol === 'https:',
       rejectUnauthorized: false,
       reconnection: true,
-      reconnectionAttempts: 5,
+      reconnectionAttempts: Infinity,
       reconnectionDelay: 1000,
       reconnectionDelayMax: 5000,
       timeout: 20000,
       autoConnect: true,
       forceNew: true,
-      closeOnBeforeunload: true
+      closeOnBeforeunload: true,
+      // Добавляем новые параметры для улучшения стабильности
+      pingTimeout: 60000,
+      pingInterval: 25000,
+      upgrade: true,
+      rememberUpgrade: true,
+      transports: ['websocket', 'polling']
     };
 
     try {
       this.socket = io(serverUrl, socketOptions);
+
+      // Добавляем обработку переподключения
+      this.socket.io.on("reconnect_attempt", (attempt) => {
+        console.log('Reconnection attempt:', attempt);
+        if (attempt > 2) {
+          this.socket.io.opts.transports = ['polling', 'websocket'];
+        }
+      });
+
+      this.socket.io.on("reconnect", (attempt) => {
+        console.log('Reconnected after', attempt, 'attempts');
+        // Восстанавливаем поиск если он был активен
+        if (this.isSearching) {
+          this.startSearch('video');
+        }
+      });
+
+      this.socket.io.on("reconnect_error", (error) => {
+        console.log('Reconnection error:', error);
+      });
+
     } catch (error) {
       console.error('Failed to initialize socket:', error);
       return;
@@ -364,47 +391,6 @@ class WebRTCService {
         }
       });
 
-      // Обновляем механизм keepalive
-      let keepaliveInterval;
-      let connectionCheckInterval;
-      
-      const startKeepalive = () => {
-        if (keepaliveInterval) clearInterval(keepaliveInterval);
-        if (connectionCheckInterval) clearInterval(connectionCheckInterval);
-        
-        // Отправляем keepalive каждые 30 секунд
-        keepaliveInterval = setInterval(() => {
-          if (this.peer && !this.peer.destroyed) {
-            try {
-              this.peer.send(JSON.stringify({ 
-                type: 'keepalive', 
-                timestamp: Date.now(),
-                data: 'ping'
-              }));
-            } catch (error) {
-              console.warn('Keepalive error:', error);
-            }
-          }
-        }, 30000);
-
-        // Проверяем состояние соединения каждые 5 минут
-        connectionCheckInterval = setInterval(() => {
-          if (this.peer && !this.peer.destroyed && this.peer._pc) {
-            const state = this.peer._pc.connectionState;
-            if (state === 'connected' || state === 'completed') {
-              console.log('Connection check: OK');
-            } else {
-              console.warn('Connection check: State is', state);
-              try {
-                this.peer._pc.restartIce();
-              } catch (error) {
-                console.error('Error restarting ICE during check:', error);
-              }
-            }
-          }
-        }, 300000);
-      };
-
       this.peer.on('connect', () => {
         console.log('Peer connection established');
         isConnected = true;
@@ -587,19 +573,13 @@ class WebRTCService {
           iceConnectionTimeout = setTimeout(() => {
             if (!isConnected && this.peer && !this.peer.destroyed) {
               if (candidatesReceived === 0) {
-                console.log('No ICE candidates received, switching to relay-only mode');
+                console.log('No ICE candidates received, trying to restart connection');
                 try {
                   if (this.peer && this.peer._pc) {
-                    this.peer._pc.setConfiguration({
-                      ...peerConfig.config,
-                      iceTransportPolicy: 'relay',
-                      iceCandidatePoolSize: 5,
-                      iceServersTimeout: 20000
-                    });
                     this.peer._pc.restartIce();
                   }
                 } catch (error) {
-                  console.error('Error setting relay configuration:', error);
+                  console.error('Error restarting ICE:', error);
                 }
               }
             }
@@ -612,56 +592,111 @@ class WebRTCService {
           startKeepalive();
         } else if (iceConnectionState === 'disconnected') {
           console.log('ICE connection disconnected, waiting for reconnection');
-          clearInterval(keepaliveInterval);
           
-          // Даем больше времени на восстановление соединения
+          // Даем время на автоматическое восстановление
           setTimeout(() => {
             if (this.peer && !this.peer.destroyed && this.peer._pc) {
               if (iceConnectionState === 'disconnected') {
                 try {
                   console.log('Attempting to restart ICE connection...');
                   this.peer._pc.restartIce();
-                  
-                  // Пробуем переключиться на relay если обычное подключение не удается
-                  setTimeout(() => {
-                    if (iceConnectionState === 'disconnected' && this.peer && !this.peer.destroyed && this.peer._pc) {
-                      console.log('Still disconnected, switching to relay-only...');
-                      this.peer._pc.setConfiguration({
-                        ...peerConfig.config,
-                        iceTransportPolicy: 'relay',
-                        iceCandidatePoolSize: 5,
-                        iceServersTimeout: 10000
-                      });
-                      this.peer._pc.restartIce();
-                    }
-                  }, 5000);
                 } catch (error) {
                   console.error('Error restarting ICE after disconnect:', error);
                 }
               }
             }
-          }, 10000);
-          
-          // Устанавливаем максимальное время ожидания переподключения
-          setTimeout(() => {
-            if (iceConnectionState === 'disconnected') {
-              console.log('Reconnection timeout exceeded, destroying peer');
+          }, 5000);
+        } else if (iceConnectionState === 'failed') {
+          console.log('ICE connection failed, trying to reconnect');
+          if (this.peer && !this.peer.destroyed) {
+            try {
+              this.peer._pc.restartIce();
+            } catch (error) {
+              console.error('Error restarting ICE after failure:', error);
               this.destroyPeer();
             }
-          }, 40000);
-        } else if (iceConnectionState === 'failed' || iceConnectionState === 'closed') {
-          console.log('ICE connection failed/closed');
-          clearInterval(keepaliveInterval);
+          }
+        } else if (iceConnectionState === 'closed') {
+          console.log('ICE connection closed');
           this.destroyPeer();
         }
       });
 
+      // Обновляем механизм keepalive
+      let keepaliveInterval;
+      let connectionCheckInterval;
+      let lastKeepaliveResponse = Date.now();
+      
+      const startKeepalive = () => {
+        if (keepaliveInterval) clearInterval(keepaliveInterval);
+        if (connectionCheckInterval) clearInterval(connectionCheckInterval);
+        
+        // Отправляем keepalive каждые 10 секунд
+        keepaliveInterval = setInterval(() => {
+          if (this.peer && !this.peer.destroyed) {
+            try {
+              this.peer.send(JSON.stringify({ 
+                type: 'keepalive', 
+                timestamp: Date.now(),
+                data: 'ping'
+              }));
+            } catch (error) {
+              console.warn('Keepalive error:', error);
+            }
+          }
+        }, 10000);
+
+        // Проверяем состояние соединения каждые 15 секунд
+        connectionCheckInterval = setInterval(() => {
+          if (this.peer && !this.peer.destroyed && this.peer._pc) {
+            const state = this.peer._pc.connectionState;
+            const now = Date.now();
+            
+            // Проверяем время последнего keepalive
+            if (now - lastKeepaliveResponse > 40000) {
+              console.warn('No keepalive response for 40 seconds');
+              // Пробуем переподключиться
+              try {
+                this.peer._pc.restartIce();
+              } catch (error) {
+                console.error('Error restarting ICE during check:', error);
+              }
+            }
+            
+            if (state === 'connected' || state === 'completed') {
+              console.log('Connection check: OK');
+            } else {
+              console.warn('Connection check: State is', state);
+              try {
+                this.peer._pc.restartIce();
+              } catch (error) {
+                console.error('Error restarting ICE during check:', error);
+              }
+            }
+          }
+        }, 15000);
+      };
+
+      // Обработка keepalive ответов
       this.peer.on('data', data => {
         if (!data) return;
         try {
           const message = typeof data === 'string' ? data : new TextDecoder().decode(data);
-          console.log('Received data:', message);
-          if (this.onChatMessageCallback) {
+          const parsed = JSON.parse(message);
+          
+          if (parsed.type === 'keepalive') {
+            lastKeepaliveResponse = Date.now();
+            // Отправляем ответ на keepalive
+            if (this.peer && !this.peer.destroyed) {
+              this.peer.send(JSON.stringify({
+                type: 'keepalive_response',
+                timestamp: Date.now(),
+                data: 'pong'
+              }));
+            }
+          } else if (parsed.type === 'keepalive_response') {
+            lastKeepaliveResponse = Date.now();
+          } else if (this.onChatMessageCallback) {
             this.onChatMessageCallback(message);
           }
         } catch (error) {
@@ -689,7 +724,7 @@ class WebRTCService {
           console.log('Connection establishment timeout');
           this.destroyPeer();
         }
-      }, 60000000); // Увеличиваем до 1000 минут
+      }, 60000000); // 1000 минут
 
     } catch (error) {
       console.error('Error initializing peer:', error);
