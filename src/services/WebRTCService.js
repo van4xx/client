@@ -569,6 +569,36 @@ class WebRTCService {
         };
       });
 
+      this.peer.on('error', err => {
+        console.error('Peer error:', err);
+        // Не разрываем соединение сразу при ошибке
+        if (err.message === 'Connection failed.' && this.peer && !this.peer.destroyed) {
+          try {
+            console.log('Attempting to recover from connection failure...');
+            // Пробуем перезапустить ICE
+            if (this.peer._pc) {
+              this.peer._pc.restartIce();
+              
+              // Даем время на восстановление
+              setTimeout(() => {
+                if (this.peer && !this.peer.destroyed && this.peer._pc) {
+                  const state = this.peer._pc.connectionState;
+                  if (state !== 'connected' && state !== 'completed') {
+                    console.log('Could not recover connection, destroying peer');
+                    this.destroyPeer();
+                  }
+                }
+              }, 10000);
+            }
+          } catch (error) {
+            console.error('Error during recovery attempt:', error);
+            this.destroyPeer();
+          }
+        } else if (!isConnected) {
+          this.destroyPeer();
+        }
+      });
+
       this.peer.on('iceStateChange', (iceConnectionState) => {
         console.log('ICE connection state:', iceConnectionState);
         
@@ -576,18 +606,16 @@ class WebRTCService {
           clearTimeout(iceConnectionTimeout);
           iceConnectionTimeout = setTimeout(() => {
             if (!isConnected && this.peer && !this.peer.destroyed) {
-              if (candidatesReceived === 0) {
-                console.log('No ICE candidates received, trying to restart connection');
-                try {
-                  if (this.peer && this.peer._pc) {
-                    this.peer._pc.restartIce();
-                  }
-                } catch (error) {
-                  console.error('Error restarting ICE:', error);
+              console.log('ICE connection timeout, attempting recovery...');
+              try {
+                if (this.peer._pc) {
+                  this.peer._pc.restartIce();
                 }
+              } catch (error) {
+                console.error('Error restarting ICE:', error);
               }
             }
-          }, 60000); // 1 минута на установление ICE
+          }, 60000);
         } else if (iceConnectionState === 'connected' || iceConnectionState === 'completed') {
           console.log('ICE connection established');
           isConnected = true;
@@ -595,34 +623,61 @@ class WebRTCService {
           clearTimeout(connectionTimeout);
           startKeepalive();
         } else if (iceConnectionState === 'disconnected') {
-          console.log('ICE connection disconnected, waiting for reconnection');
+          console.log('ICE connection disconnected, attempting recovery...');
           
-          // Даем время на автоматическое восстановление
-          setTimeout(() => {
-            if (this.peer && !this.peer.destroyed && this.peer._pc) {
-              if (iceConnectionState === 'disconnected') {
+          // Не останавливаем keepalive сразу
+          let recoveryAttempts = 0;
+          const maxRecoveryAttempts = 3;
+          
+          const attemptRecovery = () => {
+            if (recoveryAttempts < maxRecoveryAttempts) {
+              if (this.peer && !this.peer.destroyed && this.peer._pc) {
                 try {
-                  console.log('Attempting to restart ICE connection...');
+                  console.log(`Recovery attempt ${recoveryAttempts + 1}/${maxRecoveryAttempts}`);
                   this.peer._pc.restartIce();
+                  recoveryAttempts++;
+                  
+                  // Проверяем результат через 5 секунд
+                  setTimeout(() => {
+                    if (this.peer && !this.peer.destroyed && this.peer._pc) {
+                      const state = this.peer._pc.connectionState;
+                      if (state !== 'connected' && state !== 'completed') {
+                        attemptRecovery();
+                      }
+                    }
+                  }, 5000);
                 } catch (error) {
-                  console.error('Error restarting ICE after disconnect:', error);
+                  console.error('Error during recovery attempt:', error);
                 }
               }
+            } else {
+              console.log('Max recovery attempts reached, destroying peer');
+              this.destroyPeer();
             }
-          }, 5000);
+          };
+          
+          // Начинаем попытки восстановления
+          attemptRecovery();
         } else if (iceConnectionState === 'failed') {
-          console.log('ICE connection failed, trying to reconnect');
-          if (this.peer && !this.peer.destroyed) {
+          console.log('ICE connection failed, attempting final recovery...');
+          if (this.peer && !this.peer.destroyed && this.peer._pc) {
             try {
               this.peer._pc.restartIce();
+              
+              // Даем последний шанс на восстановление
+              setTimeout(() => {
+                if (this.peer && !this.peer.destroyed && this.peer._pc) {
+                  const state = this.peer._pc.connectionState;
+                  if (state !== 'connected' && state !== 'completed') {
+                    this.destroyPeer();
+                  }
+                }
+              }, 5000);
             } catch (error) {
-              console.error('Error restarting ICE after failure:', error);
+              console.error('Error during final recovery attempt:', error);
               this.destroyPeer();
             }
           }
-        } else if (iceConnectionState === 'closed') {
-          console.log('ICE connection closed');
-          this.destroyPeer();
         }
       });
 
@@ -705,13 +760,6 @@ class WebRTCService {
           }
         } catch (error) {
           console.error('Error handling data:', error);
-        }
-      });
-
-      this.peer.on('error', err => {
-        console.error('Peer error:', err);
-        if (!isConnected) {
-          this.destroyPeer();
         }
       });
 
