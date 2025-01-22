@@ -2009,12 +2009,12 @@ button.premium-button:hover::after {
 }
 
 .settings-group:hover {
-  background: rgba(0, 243, 255, 0.05);
-  border-color: rgba(0, 243, 255, 0.2);
+  background: var(--medium-gray);
+  border-color: var(--gray);
   transform: translateY(-2px);
   box-shadow: 
     0 20px 40px rgba(0, 0, 0, 0.2),
-    0 0 30px rgba(0, 243, 255, 0.1);
+    0 0 30px rgba(255, 183, 0, 0.1);
 }
 
 .settings-group h4 {
@@ -2112,20 +2112,20 @@ button.premium-button:hover::after {
   padding: 8px 12px;
   border-radius: 8px;
   transition: all 0.3s ease;
-  background: rgba(0, 243, 255, 0.03);
+  background: var(--dark-gray);
 }
 
 .settings-checkbox:hover {
-  background: rgba(0, 243, 255, 0.08);
+  background: var(--medium-gray);
 }
 
 .settings-checkbox input[type="checkbox"] {
   appearance: none;
   width: 20px;
   height: 20px;
-  border: 2px solid rgba(0, 243, 255, 0.2);
+  border: 2px solid var(--medium-gray);
   border-radius: 6px;
-  background: rgba(0, 243, 255, 0.05);
+  background: var(--dark-gray);
   position: relative;
   cursor: pointer;
   transition: all 0.3s ease;
@@ -2155,7 +2155,7 @@ button.premium-button:hover::after {
 .volume-control {
   margin-top: 15px;
   padding: 10px;
-  background: rgba(0, 243, 255, 0.03);
+  background: var(--dark-gray);
   border-radius: 12px;
   display: flex;
   flex-direction: column;
@@ -2195,12 +2195,12 @@ button.premium-button:hover::after {
 .settings-hint {
   margin-top: 15px;
   padding: 12px;
-  background: rgba(0, 243, 255, 0.03);
+  background: var(--dark-gray);
   border-radius: 8px;
   color: rgba(255, 255, 255, 0.7);
   font-size: 13px;
   line-height: 1.4;
-  border-left: 3px solid var(--yellow-1);
+  border-left: 3px solid var(--yellow);
 }
 
 .audio-meter {
