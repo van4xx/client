@@ -18,7 +18,12 @@ import {
   BsDisplay,
   BsEmojiSmile,
   BsBell,
-  BsFillCameraVideoFill
+  BsFillCameraVideoFill,
+  BsSkipEndFill,
+  BsStopFill,
+  BsShieldCheck,
+  BsPeopleFill,
+  BsGlobe
 } from 'react-icons/bs';
 import './ChatRoom.css';
 import FaceDetectionService from '../services/FaceDetectionService';
@@ -45,10 +50,29 @@ function ChatRoom() {
   const [screenStream, setScreenStream] = useState(null);
   const [showFaceCheckModal, setShowFaceCheckModal] = useState(true);
   const [faceDetected, setFaceDetected] = useState(false);
+  const [videoDevices, setVideoDevices] = useState([]);
+  const [audioDevices, setAudioDevices] = useState([]);
+  const [audioOutputDevices, setAudioOutputDevices] = useState([]);
+  const [selectedVideo, setSelectedVideo] = useState('');
+  const [selectedAudio, setSelectedAudio] = useState('');
+  const [selectedAudioOutput, setSelectedAudioOutput] = useState('');
+  const [audioLevel, setAudioLevel] = useState(0);
+  const [autoEnableDevices, setAutoEnableDevices] = useState({ camera: true, microphone: true });
+  const [showNotifications, setShowNotifications] = useState(true);
+  const [enableSoundEffects, setEnableSoundEffects] = useState(true);
+  const [enableAnimations, setEnableAnimations] = useState(true);
+  const [blurBackground, setBlurBackground] = useState(false);
+  const [noiseReduction, setNoiseReduction] = useState(false);
+  const [volume, setVolume] = useState(50);
+  const [showTelegramModal, setShowTelegramModal] = useState(false);
+  const [telegramUsername, setTelegramUsername] = useState('');
+  const [notificationStatus, setNotificationStatus] = useState('');
+  const [showAboutModal, setShowAboutModal] = useState(false);
   
   const localVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
   const chatMessagesRef = useRef(null);
+  const previewVideoRef = useRef(null);
 
   useEffect(() => {
     const initializeMedia = async () => {
@@ -147,6 +171,64 @@ function ChatRoom() {
 
     return () => clearInterval(checkInterval);
   }, [localVideoRef, chatMode]);
+
+  // Get available devices
+  useEffect(() => {
+    async function getDevices() {
+      try {
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        
+        const videoInputs = devices.filter(device => device.kind === 'videoinput');
+        const audioInputs = devices.filter(device => device.kind === 'audioinput');
+        const audioOutputs = devices.filter(device => device.kind === 'audiooutput');
+        
+        setVideoDevices(videoInputs);
+        setAudioDevices(audioInputs);
+        setAudioOutputDevices(audioOutputs);
+        
+        // Set default devices
+        if (videoInputs.length) setSelectedVideo(videoInputs[0].deviceId);
+        if (audioInputs.length) setSelectedAudio(audioInputs[0].deviceId);
+        if (audioOutputs.length) setSelectedAudioOutput(audioOutputs[0].deviceId);
+      } catch (error) {
+        console.error('Error getting devices:', error);
+      }
+    }
+    
+    getDevices();
+  }, []);
+
+  // Handle device selection
+  const handleDeviceChange = async (type, deviceId) => {
+    try {
+      if (type === 'video') {
+        setSelectedVideo(deviceId);
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { deviceId: { exact: deviceId } },
+          audio: false
+        });
+        if (previewVideoRef.current) {
+          previewVideoRef.current.srcObject = stream;
+        }
+      } else if (type === 'audio') {
+        setSelectedAudio(deviceId);
+        // Update audio stream if needed
+      }
+    } catch (error) {
+      console.error('Error changing device:', error);
+    }
+  };
+
+  const handleAudioOutputChange = async (deviceId) => {
+    try {
+      setSelectedAudioOutput(deviceId);
+      if (remoteVideoRef.current && remoteVideoRef.current.setSinkId) {
+        await remoteVideoRef.current.setSinkId(deviceId);
+      }
+    } catch (error) {
+      console.error('Error changing audio output:', error);
+    }
+  };
 
   const startChat = () => {
     setIsSearching(true);
@@ -258,6 +340,84 @@ function ChatRoom() {
     setShowMasksMenu(false);
   };
 
+  const handleAutoEnableChange = (device) => {
+    setAutoEnableDevices(prev => ({ ...prev, [device]: !prev[device] }));
+  };
+
+  const handleNotifyClick = () => {
+    setShowTelegramModal(true);
+  };
+
+  const handleTelegramSubmit = () => {
+    if (!telegramUsername.trim()) {
+      setNotificationStatus('error');
+      return;
+    }
+    // Здесь будет логика отправки ника на сервер
+    setNotificationStatus('success');
+    setTimeout(() => {
+      setShowTelegramModal(false);
+      setTelegramUsername('');
+      setNotificationStatus('');
+    }, 2000);
+  };
+
+  const renderControls = () => {
+    return (
+      <div className="control-panel">
+        <div className="control-buttons">
+          <div className="control-buttons-main">
+            {!isConnected ? (
+              <>
+                <button
+                  className="control-button-large start"
+                  onClick={startChat}
+                  disabled={!faceDetected && chatMode === 'video'}
+                >
+                  <BsPlayFill />
+                  <span>Рулетим</span>
+                </button>
+                <button
+                  className="control-button-large settings"
+                  onClick={() => setShowSettingsModal(true)}
+                >
+                  <BsGearFill />
+                  <span>Настройки</span>
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  className="control-button-large next"
+                  onClick={nextPartner}
+                >
+                  <BsSkipEndFill />
+                  <span>Следующий</span>
+                </button>
+                <button
+                  className="control-button-large stop"
+                  onClick={stopSearch}
+                >
+                  <BsStopFill />
+                  <span>Стоп</span>
+                </button>
+              </>
+            )}
+          </div>
+          <div className="control-buttons-secondary">
+            <button
+              className="control-button-secondary mode"
+              onClick={() => changeChatMode(chatMode === 'video' ? 'audio' : 'video')}
+              disabled={isSearching}
+            >
+              {chatMode === 'video' ? <BsCameraVideo /> : <BsMic />}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="chat-room">
       <div className="video-grid">
@@ -335,42 +495,7 @@ function ChatRoom() {
             />
           </div>
           <div className="remote-controls">
-            <div className="mode-toggle-panel">
-              <div className="mode-toggle" data-mode={chatMode}>
-                <button 
-                  className={chatMode === 'video' ? 'active' : ''}
-                  onClick={() => changeChatMode('video')}
-                  disabled={isSearching}
-                  title={isSearching ? "Нельзя менять режим во время поиска" : ""}
-                >
-                  <BsCameraVideo /> Видео
-                </button>
-                <button 
-                  className={chatMode === 'audio' ? 'active' : ''}
-                  onClick={() => changeChatMode('audio')}
-                  disabled={isSearching}
-                  title={isSearching ? "Нельзя менять режим во время поиска" : ""}
-                >
-                  <BsMic /> Аудио
-                </button>
-              </div>
-            </div>
-            <div className="control-buttons">
-              {!isConnected && !isSearching ? (
-                <button className="control-button-large start" onClick={startChat}>
-                  <BsPlayFill /> Рулетим
-                </button>
-              ) : (
-                <>
-                  <button className="control-button-large next" onClick={nextPartner}>
-                    <BsArrowRepeat /> Следующий
-                  </button>
-                  <button className="control-button-large stop" onClick={stopSearch}>
-                    Стоп
-                  </button>
-                </>
-              )}
-            </div>
+            {renderControls()}
           </div>
         </div>
         <div className="local-container">
@@ -476,9 +601,6 @@ function ChatRoom() {
       </div>
 
       <div className="bottom-menus">
-        <button className="menu-item settings-button" onClick={() => setShowSettingsModal(true)}>
-          <BsGearFill /> Настройки
-        </button>
         <button className="menu-item premium-button" onClick={() => setShowPremiumModal(true)}>
           <BsStars /> Премиум
         </button>
@@ -487,6 +609,9 @@ function ChatRoom() {
         </button>
         <button className="menu-item help-button" onClick={() => setShowHelpModal(true)}>
           <BsQuestionCircle /> Помощь
+        </button>
+        <button className="menu-item about-button" onClick={() => setShowAboutModal(true)}>
+          <BsPeopleFill /> Мы
         </button>
       </div>
 
@@ -497,54 +622,168 @@ function ChatRoom() {
               <h2><BsGearFill /> Настройки</h2>
               <button className="close-button" onClick={() => setShowSettingsModal(false)}>×</button>
             </div>
-            <div className="modal-content">
-              <div className="settings-section">
-                <h3>Видео</h3>
-                <div className="setting-item">
-                  <label>Камера</label>
-                  <select>
-                    <option>Веб-камера по умолчанию</option>
-                  </select>
+            <div className="settings-content">
+              <div className="settings-group">
+                <h4>
+                  <BsCameraVideoFill />
+                  Видео
+                </h4>
+                <h5>Камера</h5>
+                <select 
+                  className="settings-select"
+                  value={selectedVideo}
+                  onChange={(e) => handleDeviceChange('video', e.target.value)}
+                >
+                  {videoDevices.map(device => (
+                    <option key={device.deviceId} value={device.deviceId}>
+                      {device.label || `Камера ${videoDevices.indexOf(device) + 1}`}
+                    </option>
+                  ))}
+                </select>
+                <div className="device-preview">
+                  <video 
+                    ref={previewVideoRef}
+                    autoPlay 
+                    playsInline 
+                    muted 
+                    className="preview-video"
+                  />
                 </div>
-                <div className="setting-item">
-                  <label>Качество</label>
-                  <select>
-                    <option>Высокое (HD)</option>
-                    <option>Среднее</option>
-                    <option>Низкое</option>
-                  </select>
+                <div className="settings-options">
+                  <label className="settings-checkbox">
+                    <input 
+                      type="checkbox"
+                      checked={autoEnableDevices.camera}
+                      onChange={() => handleAutoEnableChange('camera')}
+                    />
+                    <span>Автоматически включать камеру</span>
+                  </label>
+                </div>
+                <h5>Качество видео</h5>
+                <select className="settings-select">
+                  <option value="high">Высокое качество (HD)</option>
+                  <option value="medium">Среднее качество</option>
+                  <option value="low">Низкое качество</option>
+                </select>
+                <div className="settings-hint">
+                  Выберите более низкое качество при медленном интернете
                 </div>
               </div>
-              <div className="settings-section">
-                <h3>Аудио</h3>
-                <div className="setting-item">
-                  <label>Микрофон</label>
-                  <select>
-                    <option>Микрофон по умолчанию</option>
-                  </select>
+
+              <div className="settings-group">
+                <h4>
+                  <BsMicFill />
+                  Аудио
+                </h4>
+                <h5>Микрофон</h5>
+                <select 
+                  className="settings-select"
+                  value={selectedAudio}
+                  onChange={(e) => handleDeviceChange('audio', e.target.value)}
+                >
+                  {audioDevices.map(device => (
+                    <option key={device.deviceId} value={device.deviceId}>
+                      {device.label || `Микрофон ${audioDevices.indexOf(device) + 1}`}
+                    </option>
+                  ))}
+                </select>
+                <div className="audio-meter">
+                  <div className="meter-bar" style={{ width: `${audioLevel}%` }}></div>
                 </div>
-                <div className="setting-item">
-                  <label>Динамики</label>
-                  <select>
-                    <option>Динамики по умолчанию</option>
-                  </select>
+                <div className="settings-options">
+                  <label className="settings-checkbox">
+                    <input 
+                      type="checkbox"
+                      checked={autoEnableDevices.microphone}
+                      onChange={() => handleAutoEnableChange('microphone')}
+                    />
+                    <span>Автоматически включать микрофон</span>
+                  </label>
+                </div>
+
+                <h5>Динамики</h5>
+                <select 
+                  className="settings-select"
+                  value={selectedAudioOutput}
+                  onChange={(e) => handleAudioOutputChange(e.target.value)}
+                >
+                  {audioOutputDevices.map(device => (
+                    <option key={device.deviceId} value={device.deviceId}>
+                      {device.label || `Динамики ${audioOutputDevices.indexOf(device) + 1}`}
+                    </option>
+                  ))}
+                </select>
+                <div className="volume-control">
+                  <span>Громкость</span>
+                  <input 
+                    type="range" 
+                    min="0" 
+                    max="100" 
+                    value={volume} 
+                    onChange={(e) => setVolume(e.target.value)}
+                    className="volume-slider"
+                  />
                 </div>
               </div>
-              <div className="settings-section">
-                <h3>Интерфейс</h3>
-                <div className="setting-item">
-                  <label>Тема</label>
-                  <select>
-                    <option>Тёмная</option>
-                    <option>Светлая</option>
-                  </select>
+
+              <div className="settings-group">
+                <h4>
+                  <BsDisplay />
+                  Интерфейс
+                </h4>
+                <div className="settings-options">
+                  <label className="settings-checkbox">
+                    <input 
+                      type="checkbox"
+                      checked={showNotifications}
+                      onChange={(e) => setShowNotifications(e.target.checked)}
+                    />
+                    <span>Показывать уведомления</span>
+                  </label>
+                  <label className="settings-checkbox">
+                    <input 
+                      type="checkbox"
+                      checked={enableSoundEffects}
+                      onChange={(e) => setEnableSoundEffects(e.target.checked)}
+                    />
+                    <span>Звуковые эффекты</span>
+                  </label>
+                  <label className="settings-checkbox">
+                    <input 
+                      type="checkbox"
+                      checked={enableAnimations}
+                      onChange={(e) => setEnableAnimations(e.target.checked)}
+                    />
+                    <span>Анимации интерфейса</span>
+                  </label>
                 </div>
-                <div className="setting-item">
-                  <label>Анимации</label>
-                  <div className="toggle-switch">
-                    <input type="checkbox" id="animations" defaultChecked />
-                    <label htmlFor="animations"></label>
-                  </div>
+              </div>
+
+              <div className="settings-group">
+                <h4>
+                  <BsShieldCheck />
+                  Приватность
+                </h4>
+                <div className="settings-options">
+                  <label className="settings-checkbox">
+                    <input 
+                      type="checkbox"
+                      checked={blurBackground}
+                      onChange={(e) => setBlurBackground(e.target.checked)}
+                    />
+                    <span>Размытие фона</span>
+                  </label>
+                  <label className="settings-checkbox">
+                    <input 
+                      type="checkbox"
+                      checked={noiseReduction}
+                      onChange={(e) => setNoiseReduction(e.target.checked)}
+                    />
+                    <span>Шумоподавление</span>
+                  </label>
+                </div>
+                <div className="settings-hint">
+                  Эти функции помогут сделать ваше общение более приватным
                 </div>
               </div>
             </div>
@@ -555,29 +794,63 @@ function ChatRoom() {
       {showPremiumModal && (
         <div className="modal-overlay" onClick={() => setShowPremiumModal(false)}>
           <div className="modal premium-modal" onClick={e => e.stopPropagation()}>
-            <div className="modal-header premium">
+            <div className="modal-header">
               <h2><BsStars /> Премиум</h2>
               <button className="close-button" onClick={() => setShowPremiumModal(false)}>×</button>
             </div>
-            <div className="modal-content">
-              <div className="premium-features">
-                <div className="premium-feature">
-                  <BsStars className="feature-icon" />
-                  <h3>Без рекламы</h3>
-                  <p>Общайтесь без перерывов на рекламу</p>
+            <div className="premium-content">
+              <div className="dev-animation">
+                <div className="dev-laptop">
+                  <div className="dev-screen">
+                    <div className="dev-code-lines">
+                      <span></span>
+                      <span></span>
+                      <span></span>
+                    </div>
+                  </div>
                 </div>
-                <div className="premium-feature">
-                  <BsStars className="feature-icon" />
-                  <h3>HD качество</h3>
-                  <p>Видео в высоком качестве</p>
+                <div className="dev-glow"></div>
+              </div>
+              <div className="premium-message">
+                <h3>Наши разработчики усердно работают!</h3>
+                <div className="dev-status">
+                  <div className="status-indicator">
+                    <span className="pulse"></span>
+                    <span className="text">Разработка активна</span>
+                  </div>
                 </div>
-                <div className="premium-feature">
-                  <BsStars className="feature-icon" />
-                  <h3>Фильтры поиска</h3>
-                  <p>Выбирайте собеседников по интересам</p>
+                <p className="dev-description">
+                  В данный момент наша команда разработчиков создает новые крутые функции, 
+                  которые сделают общение еще более интересным и удобным.
+                </p>
+                <div className="features-coming">
+                  <h4>Скоро будут доступны:</h4>
+                  <ul className="features-list">
+                    <li>
+                      <BsStars className="feature-icon" />
+                      <span>Маски и фильтры для видео</span>
+                    </li>
+                    <li>
+                      <BsStars className="feature-icon" />
+                      <span>Запись и сохранение чатов</span>
+                    </li>
+                    <li>
+                      <BsStars className="feature-icon" />
+                      <span>Расширенные настройки поиска</span>
+                    </li>
+                    <li>
+                      <BsStars className="feature-icon" />
+                      <span>И много других интересных функций!</span>
+                    </li>
+                  </ul>
+                </div>
+                <div className="premium-footer">
+                  <p className="stay-tuned">Следите за обновлениями!</p>
+                  <button className="notify-button" onClick={handleNotifyClick}>
+                    <BsBell /> Уведомить о запуске
+                  </button>
                 </div>
               </div>
-              <button className="modal-premium-button">Получить премиум</button>
             </div>
           </div>
         </div>
@@ -685,6 +958,112 @@ function ChatRoom() {
               </div>
               <div className="face-check-hint">
                 Убедитесь, что ваше лицо хорошо освещено и находится в кадре
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showTelegramModal && (
+        <div className="modal-overlay" onClick={() => setShowTelegramModal(false)}>
+          <div className="modal telegram-modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2><BsBell /> Уведомления</h2>
+              <button className="close-button" onClick={() => setShowTelegramModal(false)}>×</button>
+            </div>
+            <div className="telegram-content">
+              <div className="telegram-icon">
+                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.74-.55 2.92-1.27 4.86-2.11 5.83-2.51 2.78-1.16 3.35-1.36 3.73-1.36.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06-.01.13-.02.2z" fill="#FFB700"/>
+                </svg>
+              </div>
+              <div className="telegram-description">
+                <p>Получайте уведомления о новых функциях в нашем Telegram боте!</p>
+                <p className="telegram-hint">Введите ваш Telegram username без символа @</p>
+              </div>
+              <div className="telegram-input-container">
+                <span className="telegram-at">@</span>
+                <input
+                  type="text"
+                  value={telegramUsername}
+                  onChange={(e) => setTelegramUsername(e.target.value)}
+                  placeholder="username"
+                  className={`telegram-input ${notificationStatus}`}
+                />
+              </div>
+              {notificationStatus === 'error' && (
+                <div className="telegram-error">
+                  Пожалуйста, введите корректный username
+                </div>
+              )}
+              {notificationStatus === 'success' && (
+                <div className="telegram-success">
+                  Отлично! Вы будете получать уведомления о новых функциях
+                </div>
+              )}
+              <button 
+                className="telegram-submit"
+                onClick={handleTelegramSubmit}
+              >
+                <BsBell /> Подключить уведомления
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showAboutModal && (
+        <div className="modal-overlay" onClick={() => setShowAboutModal(false)}>
+          <div className="modal about-modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2><BsPeopleFill /> Мы в соцсетях</h2>
+              <button className="close-button" onClick={() => setShowAboutModal(false)}>×</button>
+            </div>
+            <div className="about-content">
+              <div className="social-links">
+                <a href="https://t.me/ruletkabot" className="social-link telegram">
+                  <div className="social-icon">
+                    <BsPeopleFill />
+                  </div>
+                  <div className="social-info">
+                    <h3>Telegram Bot</h3>
+                    <p>Наш бот для уведомлений</p>
+                  </div>
+                </a>
+
+                <a href="https://t.me/ruletka_channel" className="social-link telegram-channel">
+                  <div className="social-icon">
+                    <BsPeopleFill />
+                  </div>
+                  <div className="social-info">
+                    <h3>Telegram Канал</h3>
+                    <p>Новости и обновления проекта</p>
+                  </div>
+                </a>
+
+                <a href="https://vk.com/ruletka" className="social-link vk">
+                  <div className="social-icon">
+                    <BsPeopleFill />
+                  </div>
+                  <div className="social-info">
+                    <h3>VK Group</h3>
+                    <p>Наша группа ВКонтакте</p>
+                  </div>
+                </a>
+
+                <div className="social-link website">
+                  <div className="social-icon">
+                    <BsGlobe />
+                  </div>
+                  <div className="social-info">
+                    <h3>ruletka.top</h3>
+                    <p>Наш официальный сайт</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="about-footer">
+                <p>Присоединяйтесь к нам в социальных сетях, чтобы быть в курсе всех обновлений и новостей!</p>
               </div>
             </div>
           </div>
