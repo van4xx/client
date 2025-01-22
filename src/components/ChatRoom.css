@@ -1,19 +1,15 @@
 :root {
-  --primary-color-rgb: 255, 183, 0;
-  --gray-1: #555555;
-  --gray-2: #4e4e4e;
-  --gray-3: #525252;
-  --dark-gray: #3b3b3b;
-  --yellow-1: #ffb700;
-  --yellow-2: #ffb800;
-  --green: #9ed11d;
+  --yellow: #ffb801;
+  --dark-gray: #2f2f2f;
+  --gray: #555555;
+  --medium-gray: #4c4c4c;
+  --dark-blue: #232c41;
+
+  /* Переопределяем старые переменные новыми цветами */
+  --yellow-1: var(--yellow);
+  --yellow-2: var(--yellow);
   --red: #ff4444;
-  --menu-blur: blur(10px);
-  --glass-border: 1px solid rgba(255, 255, 255, 0.1);
-  --menu-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-  --neon-glow: 0 0 10px rgba(255, 183, 0, 0.5), 0 0 20px rgba(255, 183, 0, 0.3);
-  --red-glow: 0 0 10px rgba(255, 68, 68, 0.5), 0 0 20px rgba(255, 68, 68, 0.3);
-  --green-glow: 0 0 10px rgba(158, 209, 29, 0.5), 0 0 20px rgba(158, 209, 29, 0.3);
+  --green: #4CAF50;
 }
 
 .chat-room {
@@ -21,7 +17,7 @@
   width: 100vw;
   display: flex;
   flex-direction: column;
-  background: var(--dark-gray);
+  background: var(--dark-blue);
   color: #ffffff;
   overflow: hidden;
   position: relative;
@@ -186,7 +182,7 @@
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
   text-transform: uppercase;
-  background: var(--gray-2);
+  background: var(--dark-gray);
   border-radius: 12px;
   box-shadow: 
     0 8px 20px rgba(0, 0, 0, 0.2),
@@ -210,7 +206,7 @@
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
   text-transform: uppercase;
-  background: var(--gray-2);
+  background: var(--dark-gray);
   border-radius: 12px;
   box-shadow: 
     0 4px 15px rgba(0, 0, 0, 0.2),
@@ -250,7 +246,7 @@
 
 .control-button-large.settings:hover {
   transform: translateY(-5px);
-  background: linear-gradient(135deg, var(--yellow-1) 0%, var(--yellow-2) 100%);
+
   box-shadow: 
     0 12px 25px rgba(255, 183, 0, 0.4),
     0 0 0 1px rgba(255, 183, 0, 0.4),
@@ -282,7 +278,8 @@
 }
 
 .control-button-large.start {
-  background: linear-gradient(135deg, var(--green) 0%, #b8e83b 100%);
+  background: var(--yellow);
+  color: var(--dark-gray);
   box-shadow: 
     0 8px 20px rgba(158, 209, 29, 0.3),
     0 0 0 1px rgba(158, 209, 29, 0.3),
@@ -298,7 +295,8 @@
 }
 
 .control-button-large.next {
-  background: linear-gradient(135deg, var(--yellow-1) 0%, var(--yellow-2) 100%);
+  background: var(--yellow);
+  color: var(--dark-gray);
   box-shadow: 
     0 8px 20px rgba(255, 183, 0, 0.3),
     0 0 0 1px rgba(255, 183, 0, 0.3),
@@ -393,8 +391,8 @@
 
 .chat-input {
   flex: 1;
-  background: rgba(82, 82, 82, 0.7);
-  border: var(--glass-border);
+  background: var(--dark-gray);
+  border: 1px solid var(--medium-gray);
   border-radius: 10px;
   padding: 12px 15px;
   color: white;
@@ -436,6 +434,7 @@
   border-radius: 10px;
   max-width: 80%;
   word-wrap: break-word;
+  background: var(--medium-gray);
 }
 
 .message.received {
@@ -615,7 +614,7 @@
   left: 0;
   width: 100%;
   height: 6vh;
-  background: rgba(59, 59, 59, 0.95);
+  background: var(--dark-gray);
   backdrop-filter: var(--menu-blur);
   border-top: var(--glass-border);
   display: flex;
@@ -635,8 +634,7 @@
   min-width: 160px;
   border-radius: 25px;
   border: none;
-  background: linear-gradient(45deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
-  backdrop-filter: blur(10px);
+  background: var(--medium-gray);
   color: white;
   font-weight: 600;
   letter-spacing: 0.5px;
@@ -652,6 +650,25 @@
 
 .menu-item:hover {
   transform: translateY(-2px);
+  background: var(--gray);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+}
+
+.menu-item.premium-button,
+.menu-item.stats-button,
+.menu-item.help-button,
+.menu-item.about-button {
+  background: var(--medium-gray);
+  color: white;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+.menu-item.premium-button:hover,
+.menu-item.stats-button:hover,
+.menu-item.help-button:hover,
+.menu-item.about-button:hover {
+  background: var(--gray);
+  transform: translateY(-2px);
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
 }
 
@@ -659,37 +676,19 @@
   background: linear-gradient(45deg, var(--gray-3) 0%, var(--gray-2) 100%);
 }
 
-.menu-item.premium-button {
-  background: linear-gradient(45deg, var(--yellow-1), var(--yellow-2));
-  color: black;
-  font-weight: 600;
-  padding: 8px 15px;
-  font-size: 14px;
-  border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(255, 183, 0, 0.3);
-}
-
 .menu-item.premium-button:hover {
+
   transform: translateY(-2px);
   box-shadow: 0 4px 15px rgba(255, 183, 0, 0.4);
 }
 
-.menu-item.stats-button {
-  background: linear-gradient(45deg, #00cc6f 0%, #00ff88 100%);
-  border: none;
-  box-shadow: 
-    0 2px 10px rgba(0, 255, 136, 0.2),
-    inset 0 0 10px rgba(0, 255, 136, 0.1);
-}
 
 .menu-item.stats-button:hover {
-  background: linear-gradient(45deg, #00ff88 0%, #00cc6f 100%);
   transform: translateY(-2px);
   box-shadow: 0 5px 15px rgba(0, 255, 136, 0.3);
 }
 
 .menu-item.help-button {
-  background: linear-gradient(45deg, #0099cc 0%, #00bfff 100%);
   border: none;
   box-shadow: 
     0 2px 10px rgba(0, 191, 255, 0.2),
@@ -697,7 +696,6 @@
 }
 
 .menu-item.help-button:hover {
-  background: linear-gradient(45deg, #00bfff 0%, #0099cc 100%);
   transform: translateY(-2px);
   box-shadow: 0 5px 15px rgba(0, 191, 255, 0.3);
 }
@@ -1197,7 +1195,7 @@
 }
 
 .modal {
-  background: rgba(45, 45, 45, 0.95);
+  background: var(--dark-gray);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   border-radius: 20px;
@@ -1207,7 +1205,7 @@
   max-height: 90vh;
   overflow: hidden;
   position: relative;
-  border: 1px solid rgba(255, 183, 0, 0.3);
+  border: 1px solid var(--medium-gray);
   box-shadow: 
     0 0 20px rgba(255, 183, 0, 0.2),
     0 0 40px rgba(0, 0, 0, 0.4),
@@ -1217,8 +1215,8 @@
 
 .modal-header {
   padding: 20px;
-  background: linear-gradient(90deg, rgba(82, 82, 82, 0.9) 0%, rgba(45, 45, 45, 0.95) 100%);
-  border-bottom: 1px solid rgba(255, 183, 0, 0.3);
+  background: var(--medium-gray);
+  border-bottom: 1px solid var(--medium-gray);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -1304,8 +1302,8 @@
 }
 
 .setting-item select {
-  background: rgba(82, 82, 82, 0.7);
-  border: 1px solid rgba(255, 183, 0, 0.3);
+  background: var(--medium-gray);
+  border: 1px solid var(--gray);
   color: white;
   padding: 8px 15px;
   border-radius: 8px;
@@ -1362,7 +1360,6 @@
 button.premium-button {
   width: 50%;
   padding: 15px;
-  background: linear-gradient(45deg, #ffd700 0%, #ffb700 100%);
   border: none;
   border-radius: 10px;
   color: #000;
@@ -1532,19 +1529,8 @@ button.premium-button:hover::after {
 }
 
 .menu-item.settings-button:hover {
-  background: linear-gradient(45deg, var(--yellow-1) 0%, var(--yellow-2) 100%);
   transform: translateY(-2px);
   box-shadow: 0 5px 15px rgba(255, 183, 0, 0.3);
-}
-
-.menu-item.premium-button {
-  background: linear-gradient(45deg, var(--yellow-1), var(--yellow-2));
-  color: black;
-  font-weight: 600;
-  padding: 8px 15px;
-  font-size: 14px;
-  border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(255, 183, 0, 0.3);
 }
 
 .menu-item.premium-button:hover {
@@ -1552,30 +1538,15 @@ button.premium-button:hover::after {
   box-shadow: 0 4px 15px rgba(255, 183, 0, 0.4);
 }
 
-.menu-item.stats-button {
-  background: linear-gradient(45deg, #00cc6f 0%, #00ff88 100%);
-  border: none;
-  box-shadow: 
-    0 2px 10px rgba(0, 255, 136, 0.2),
-    inset 0 0 10px rgba(0, 255, 136, 0.1);
-}
+
 
 .menu-item.stats-button:hover {
-  background: linear-gradient(45deg, #00ff88 0%, #00cc6f 100%);
   transform: translateY(-2px);
   box-shadow: 0 5px 15px rgba(0, 255, 136, 0.3);
 }
 
-.menu-item.help-button {
-  background: linear-gradient(45deg, #0099cc 0%, #00bfff 100%);
-  border: none;
-  box-shadow: 
-    0 2px 10px rgba(0, 191, 255, 0.2),
-    inset 0 0 10px rgba(0, 191, 255, 0.1);
-}
 
 .menu-item.help-button:hover {
-  background: linear-gradient(45deg, #00bfff 0%, #0099cc 100%);
   transform: translateY(-2px);
   box-shadow: 0 5px 15px rgba(0, 191, 255, 0.3);
 }
@@ -2028,10 +1999,10 @@ button.premium-button:hover::after {
 }
 
 .settings-group {
-  background: rgba(0, 243, 255, 0.03);
+  background: var(--dark-gray);
   border-radius: 20px;
   padding: 30px;
-  border: 1px solid rgba(0, 243, 255, 0.1);
+  border: 1px solid var(--medium-gray);
   transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
   position: relative;
   overflow: hidden;
@@ -2084,8 +2055,8 @@ button.premium-button:hover::after {
 .settings-select {
   width: 100%;
   padding: 12px 16px;
-  background: rgba(0, 243, 255, 0.05);
-  border: 2px solid rgba(0, 243, 255, 0.1);
+  background: var(--medium-gray);
+  border: 1px solid var(--gray);
   border-radius: 12px;
   color: white;
   font-size: 15px;
@@ -2279,14 +2250,14 @@ button.premium-button:hover::after {
 }
 
 ::-webkit-scrollbar-track {
-  background: rgba(0, 0, 0, 0.3);
+  background: var(--dark-gray);
   border-radius: 5px;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: linear-gradient(45deg, var(--yellow-1), var(--yellow-2));
+  background: linear-gradient(45deg, var(--yellow), var(--yellow));
   border-radius: 5px;
-  border: 2px solid rgba(0, 0, 0, 0.3);
+  border: 2px solid var(--dark-gray);
 }
 
 ::-webkit-scrollbar-thumb:hover {
@@ -2297,8 +2268,8 @@ button.premium-button:hover::after {
 /* Улучшенные стили для выпадающих списков */
 select {
   appearance: none;
-  background: rgba(0, 0, 0, 0.3);
-  border: 1px solid var(--yellow-1);
+  background: var(--medium-gray);
+  border: 1px solid var(--gray);
   border-radius: 8px;
   color: white;
   cursor: pointer;
@@ -2312,19 +2283,18 @@ select {
 }
 
 select:hover {
-  background-color: rgba(255, 183, 0, 0.1);
-  border-color: var(--yellow-2);
-  box-shadow: 0 0 10px rgba(255, 183, 0, 0.2);
+  background-color: rgba(0, 243, 255, 0.08);
+  border-color: rgba(0, 243, 255, 0.2);
 }
 
 select:focus {
   outline: none;
   border-color: var(--yellow-1);
-  box-shadow: 0 0 0 3px rgba(255, 183, 0, 0.3);
+  box-shadow: 0 0 0 3px rgba(255, 183, 0, 0.2);
 }
 
 select option {
-  background-color: #2d2d2d;
+  background: var(--dark-gray);
   color: white;
   padding: 12px;
 }
@@ -2338,8 +2308,8 @@ select option:hover {
 .settings-select {
   width: 100%;
   padding: 12px 16px;
-  background: rgba(0, 0, 0, 0.3);
-  border: 2px solid var(--yellow-1);
+  background: var(--medium-gray);
+  border: 1px solid var(--gray);
   border-radius: 12px;
   color: white;
   font-size: 15px;
@@ -2354,8 +2324,8 @@ select option:hover {
 }
 
 .settings-select:hover {
-  background-color: rgba(255, 183, 0, 0.1);
-  border-color: var(--yellow-2);
+  background-color: rgba(0, 243, 255, 0.08);
+  border-color: rgba(0, 243, 255, 0.2);
   box-shadow: 0 0 15px rgba(255, 183, 0, 0.2);
   transform: translateY(-1px);
 }
@@ -2367,7 +2337,7 @@ select option:hover {
 }
 
 .settings-select option {
-  background-color: #2d2d2d;
+  background: var(--dark-gray);
   color: white;
   padding: 12px;
   font-size: 14px;
@@ -2387,15 +2357,15 @@ select option:hover {
 
 .modal-content::-webkit-scrollbar-track,
 .settings-content::-webkit-scrollbar-track {
-  background: rgba(0, 0, 0, 0.3);
+  background: var(--dark-gray);
   border-radius: 4px;
 }
 
 .modal-content::-webkit-scrollbar-thumb,
 .settings-content::-webkit-scrollbar-thumb {
-  background: linear-gradient(45deg, var(--yellow-1), var(--yellow-2));
+  background: linear-gradient(45deg, var(--yellow), var(--yellow));
   border-radius: 4px;
-  border: 2px solid rgba(0, 0, 0, 0.3);
+  border: 2px solid var(--dark-gray);
 }
 
 .modal-content::-webkit-scrollbar-thumb:hover,
@@ -2410,12 +2380,12 @@ select option:hover {
 }
 
 .chat-messages::-webkit-scrollbar-track {
-  background: rgba(0, 0, 0, 0.3);
+  background: var(--dark-gray);
   border-radius: 3px;
 }
 
 .chat-messages::-webkit-scrollbar-thumb {
-  background: linear-gradient(45deg, var(--yellow-1), var(--yellow-2));
+  background: linear-gradient(45deg, var(--yellow), var(--yellow));
   border-radius: 3px;
   border: 1px solid rgba(0, 0, 0, 0.3);
 }
@@ -2601,10 +2571,10 @@ select option:hover {
 
 .notify-button {
   padding: 12px 24px;
-  background: linear-gradient(45deg, var(--yellow-1), var(--yellow-2));
+  background: linear-gradient(45deg, var(--yellow), var(--yellow));
   border: none;
   border-radius: 25px;
-  color: black;
+  color: var(--dark-gray);
   font-size: 16px;
   font-weight: 600;
   cursor: pointer;
@@ -2685,22 +2655,12 @@ select option:hover {
 }
 
 .menu-item.about-button {
-  background: linear-gradient(45deg, #2196F3 0%, #1976D2 100%);
   border: none;
   box-shadow: 
     0 5px 15px rgba(33, 150, 243, 0.3),
     0 0 0 1px rgba(33, 150, 243, 0.3),
     inset 0 0 15px rgba(255, 255, 255, 0.2);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.menu-item.about-button:hover {
-  background: linear-gradient(45deg, #1E88E5 0%, #1565C0 100%);
-  transform: translateY(-2px);
-  box-shadow: 
-    0 8px 20px rgba(33, 150, 243, 0.4),
-    0 0 0 1px rgba(33, 150, 243, 0.4),
-    inset 0 0 20px rgba(255, 255, 255, 0.3);
 }
 
 .about-modal {
@@ -2722,17 +2682,17 @@ select option:hover {
   align-items: center;
   gap: 20px;
   padding: 20px;
-  background: rgba(0, 0, 0, 0.2);
+  background: var(--dark-gray);
   border-radius: 15px;
   transition: all 0.3s ease;
   text-decoration: none;
   color: white;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--medium-gray);
 }
 
 .social-link:hover {
   transform: translateX(10px);
-  background: rgba(0, 0, 0, 0.3);
+  background: var(--medium-gray);
   border-color: rgba(255, 255, 255, 0.2);
 }
 
@@ -2939,10 +2899,10 @@ select option:hover {
 
 .telegram-submit {
   padding: 12px 24px;
-  background: linear-gradient(45deg, var(--yellow-1), var(--yellow-2));
+  background: linear-gradient(45deg, var(--yellow), var(--yellow));
   border: none;
   border-radius: 25px;
-  color: black;
+  color: var(--dark-gray);
   font-size: 16px;
   font-weight: 600;
   cursor: pointer;
