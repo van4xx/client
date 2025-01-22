@@ -4,6 +4,7 @@
         font-size="100" 
         font-weight="bold"
         fill="#ffb700"
+        background-color="#000000"
         text-anchor="middle">
     R
   </text>
