@@ -26,7 +26,8 @@ import {
   BsGlobe,
   BsTelegram,
   BsVimeo,
-  BsVolumeUpFill
+  BsVolumeUpFill,
+  BsLockFill
 } from 'react-icons/bs';
 import './ChatRoom.css';
 import FaceDetectionService from '../services/FaceDetectionService';
@@ -51,8 +52,8 @@ function ChatRoom() {
   const [showMasksMenu, setShowMasksMenu] = useState(false);
   const [activeMask, setActiveMask] = useState(null);
   const [screenStream, setScreenStream] = useState(null);
-  const [showFaceCheckModal, setShowFaceCheckModal] = useState(false);
-  const [faceDetected, setFaceDetected] = useState(true);
+  const [showFaceCheckModal, setShowFaceCheckModal] = useState(true);
+  const [faceDetected, setFaceDetected] = useState(false);
   const [videoDevices, setVideoDevices] = useState([]);
   const [audioDevices, setAudioDevices] = useState([]);
   const [audioOutputDevices, setAudioOutputDevices] = useState([]);
@@ -72,6 +73,8 @@ function ChatRoom() {
   const [notificationStatus, setNotificationStatus] = useState('');
   const [showAboutModal, setShowAboutModal] = useState(false);
   const [remoteVolume, setRemoteVolume] = useState(50);
+  const [noFaceTimeout, setNoFaceTimeout] = useState(null);
+  const [showNoFaceModal, setShowNoFaceModal] = useState(false);
   
   const localVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
@@ -145,6 +148,48 @@ function ChatRoom() {
       FaceDetectionService.destroy();
     };
   }, []);
+
+  useEffect(() => {
+    if (!localVideoRef.current || chatMode !== 'video') return;
+
+    let noFaceTimer = null;
+
+    const checkFace = async () => {
+      const hasFace = await FaceDetectionService.detectFace(localVideoRef.current);
+      if (hasFace) {
+        setFaceDetected(true);
+        setShowFaceCheckModal(false);
+        // Сбрасываем таймер при обнаружении лица
+        if (noFaceTimer) {
+          clearTimeout(noFaceTimer);
+          noFaceTimer = null;
+        }
+      } else {
+        setFaceDetected(false);
+        // Если лицо не обнаружено и таймер еще не запущен
+        if (!noFaceTimer && isConnected) {
+          noFaceTimer = setTimeout(() => {
+            setShowNoFaceModal(true);
+            WebRTCService.disconnect();
+            setIsConnected(false);
+            if (remoteVideoRef.current) {
+              remoteVideoRef.current.srcObject = null;
+            }
+          }, 60000); // 60 секунд = 1 минута
+        }
+      }
+    };
+
+    // Проверяем каждые 2 секунды
+    const checkInterval = setInterval(checkFace, 2000);
+
+    return () => {
+      clearInterval(checkInterval);
+      if (noFaceTimer) {
+        clearTimeout(noFaceTimer);
+      }
+    };
+  }, [localVideoRef, chatMode, isConnected]);
 
   // Get available devices
   useEffect(() => {
@@ -343,14 +388,22 @@ function ChatRoom() {
           <div className="control-buttons-main">
             {!isConnected ? (
               <>
-                <button
-                  className="control-button-large start"
-                  onClick={startChat}
-                  disabled={!faceDetected && chatMode === 'video'}
-                >
-                  <BsPlayFill />
-                  <span>Рулетим</span>
-                </button>
+                <div className="button-container">
+                  <button
+                    className={`control-button-large start ${!faceDetected && chatMode === 'video' ? 'disabled' : ''}`}
+                    onClick={startChat}
+                    disabled={!faceDetected && chatMode === 'video'}
+                  >
+                    {!faceDetected && chatMode === 'video' ? <BsLockFill /> : <BsPlayFill />}
+                    <span>Рулетим</span>
+                  </button>
+                  {!faceDetected && chatMode === 'video' && (
+                    <div className="tooltip-custom">
+                      Покажите себя в камере, чтобы начать видеочат
+                    </div>
+                  )}
+                  <div className="blur-overlay"></div>
+                </div>
                 <button
                   className="control-button-large settings"
                   onClick={() => setShowSettingsModal(true)}
@@ -1075,6 +1128,28 @@ function ChatRoom() {
 
               <div className="about-footer">
                 <p>Присоединяйтесь к нам в социальных сетях, чтобы быть в курсе всех обновлений и новостей!</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showNoFaceModal && (
+        <div className="modal-overlay">
+          <div className="modal face-check-modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2><BsFillCameraVideoFill /> Соединение прервано</h2>
+              <button className="close-button" onClick={() => setShowNoFaceModal(false)}>×</button>
+            </div>
+            <div className="face-check-content">
+              <div className="face-check-icon">
+                <BsFillCameraVideoFill />
+              </div>
+              <div className="face-check-message">
+                Соединение было прервано из-за длительного отсутствия лица в кадре
+              </div>
+              <div className="face-check-hint">
+                Пожалуйста, убедитесь, что ваше лицо видно в камере для продолжения общения
               </div>
             </div>
           </div>
