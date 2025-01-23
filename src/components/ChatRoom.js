@@ -23,7 +23,10 @@ import {
   BsStopFill,
   BsShieldCheck,
   BsPeopleFill,
-  BsGlobe
+  BsGlobe,
+  BsTelegram,
+  BsVimeo,
+  BsVolumeUpFill
 } from 'react-icons/bs';
 import './ChatRoom.css';
 import FaceDetectionService from '../services/FaceDetectionService';
@@ -68,6 +71,7 @@ function ChatRoom() {
   const [telegramUsername, setTelegramUsername] = useState('');
   const [notificationStatus, setNotificationStatus] = useState('');
   const [showAboutModal, setShowAboutModal] = useState(false);
+  const [remoteVolume, setRemoteVolume] = useState(50);
   
   const localVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
@@ -411,6 +415,7 @@ function ChatRoom() {
               disabled={isSearching}
             >
               {chatMode === 'video' ? <BsCameraVideo /> : <BsMic />}
+              <span className="mode-label">{chatMode === 'video' ? 'Видео' : 'Аудио'}</span>
             </button>
           </div>
         </div>
@@ -493,6 +498,25 @@ function ChatRoom() {
               playsInline
               className="video-element"
             />
+            <div className="remote-volume-control">
+              <div className="volume-icon">
+                <BsVolumeUpFill />
+              </div>
+              <input
+                type="range"
+                min="0"
+                max="100"
+                value={remoteVolume}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setRemoteVolume(value);
+                  if (remoteVideoRef.current) {
+                    remoteVideoRef.current.volume = value / 100;
+                  }
+                }}
+                className="remote-volume-slider"
+              />
+            </div>
           </div>
           <div className="remote-controls">
             {renderControls()}
@@ -954,7 +978,7 @@ function ChatRoom() {
                 <BsFillCameraVideoFill />
               </div>
               <div className="face-check-message">
-                Для использования видеочата необходимо показать ваше лицо в камеру
+              Для активации видеочата посмотрите в веб-камеру.
               </div>
               <div className="face-check-hint">
                 Убедитесь, что ваше лицо хорошо освещено и находится в кадре
@@ -1023,7 +1047,7 @@ function ChatRoom() {
               <div className="social-links">
                 <a href="https://t.me/ruletkabot" className="social-link telegram">
                   <div className="social-icon">
-                    <BsPeopleFill />
+                    <BsTelegram />
                   </div>
                   <div className="social-info">
                     <h3>Telegram Bot</h3>
@@ -1033,7 +1057,7 @@ function ChatRoom() {
 
                 <a href="https://t.me/ruletka_channel" className="social-link telegram-channel">
                   <div className="social-icon">
-                    <BsPeopleFill />
+                    <BsTelegram />
                   </div>
                   <div className="social-info">
                     <h3>Telegram Канал</h3>
@@ -1043,7 +1067,7 @@ function ChatRoom() {
 
                 <a href="https://vk.com/ruletka" className="social-link vk">
                   <div className="social-icon">
-                    <BsPeopleFill />
+                    <BsVimeo />
                   </div>
                   <div className="social-info">
                     <h3>VK Group</h3>
