@@ -409,14 +409,23 @@ function ChatRoom() {
             )}
           </div>
           <div className="control-buttons-secondary">
-            <button
-              className="control-button-secondary mode"
-              onClick={() => changeChatMode(chatMode === 'video' ? 'audio' : 'video')}
-              disabled={isSearching}
+            <div className="mode-toggle"
+              onClick={() => !isSearching && changeChatMode(chatMode === 'video' ? 'audio' : 'video')}
             >
-              {chatMode === 'video' ? <BsCameraVideo /> : <BsMic />}
-              <span className="mode-label">{chatMode === 'video' ? 'Видео' : 'Аудио'}</span>
-            </button>
+              <div className={`toggle-slider ${chatMode === 'video' ? 'video' : 'audio'}`}>
+                <div className="toggle-icons">
+                  <div className="toggle-icon video">
+                    <BsCameraVideoFill />
+                    <span>Видео</span>
+                  </div>
+                  <div className="toggle-icon audio">
+                    <BsMicFill />
+                    <span>Аудио</span>
+                  </div>
+                </div>
+                <div className="toggle-thumb"></div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -435,31 +444,36 @@ function ChatRoom() {
                 </div>
               </div>
             )}
-            {isSearching && chatMode === 'video' && (
+            {isSearching && (
               <div className="waiting-message">
-                <div className="radar-animation">
-                  <div className="radar-circle"></div>
-                  <div className="radar-circle"></div>
-                  <div className="radar-circle"></div>
-                  <div className="radar-sweep"></div>
-                  <div className="detection-point" style={{top: '30%', left: '70%'}}></div>
-                  <div className="detection-point" style={{top: '60%', left: '40%'}}></div>
-                  <div className="detection-point" style={{top: '20%', left: '20%'}}></div>
-                </div>
+                {chatMode === 'video' ? (
+                  <div className="search-animation">
+                    <div className="search-circle"></div>
+                    <div className="search-circle"></div>
+                    <div className="search-circle"></div>
+                    <div className="search-icon">
+                      <BsCameraVideoFill />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="audio-search">
+                    <div className="audio-wave"></div>
+                    <div className="audio-wave"></div>
+                    <div className="audio-wave"></div>
+                    <div className="audio-icon">
+                      <BsMicFill />
+                    </div>
+                  </div>
+                )}
                 <div className="search-text">
-                  <span className="connecting-text">Ищем нового</span>
-                  <div className="wave-text">
-                    <span>с</span>
-                    <span>о</span>
-                    <span>б</span>
-                    <span>е</span>
-                    <span>с</span>
-                    <span>е</span>
-                    <span>д</span>
-                    <span>н</span>
-                    <span>и</span>
-                    <span>к</span>
-                    <span>а</span>
+                  <div className="search-status">Поиск собеседника</div>
+                  <div className="search-description">
+                    Мы ищем для вас самого интересного собеседника
+                  </div>
+                  <div className="search-dots">
+                    <div className="search-dot"></div>
+                    <div className="search-dot"></div>
+                    <div className="search-dot"></div>
                   </div>
                 </div>
               </div>
