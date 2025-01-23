@@ -516,6 +516,9 @@ function ChatRoom() {
                 }}
                 className="remote-volume-slider"
               />
+              <div className="volume-percentage">
+                {remoteVolume}%
+              </div>
             </div>
           </div>
           <div className="remote-controls">

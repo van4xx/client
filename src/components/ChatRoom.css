@@ -2980,14 +2980,14 @@ select option:hover {
 
 .remote-volume-control {
   position: absolute;
-  bottom: 20px;
+  bottom: 10px;
   left: 50%;
   transform: translateX(-50%);
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 15px;
   background: rgba(0, 0, 0, 0.7);
-  padding: 8px 15px;
+  padding: 10px 20px;
   border-radius: 20px;
   opacity: 0;
   transition: opacity 0.3s ease;
@@ -3003,9 +3003,16 @@ select option:hover {
   font-size: 1.2rem;
 }
 
+.volume-percentage {
+  color: var(--yellow);
+  font-size: 0.9rem;
+  min-width: 40px;
+  text-align: right;
+}
+
 .remote-volume-slider {
   -webkit-appearance: none;
-  width: 100px;
+  width: 200px;
   height: 4px;
   background: rgba(255, 255, 255, 0.2);
   border-radius: 2px;
