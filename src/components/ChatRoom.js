@@ -396,7 +396,7 @@ function ChatRoom() {
                   onClick={nextPartner}
                 >
                   <BsSkipEndFill />
-                  <span>Следующий</span>
+                  <span>Далее</span>
                 </button>
                 <button
                   className="control-button-large stop"
