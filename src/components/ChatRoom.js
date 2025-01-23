@@ -51,8 +51,8 @@ function ChatRoom() {
   const [showMasksMenu, setShowMasksMenu] = useState(false);
   const [activeMask, setActiveMask] = useState(null);
   const [screenStream, setScreenStream] = useState(null);
-  const [showFaceCheckModal, setShowFaceCheckModal] = useState(true);
-  const [faceDetected, setFaceDetected] = useState(false);
+  const [showFaceCheckModal, setShowFaceCheckModal] = useState(false);
+  const [faceDetected, setFaceDetected] = useState(true);
   const [videoDevices, setVideoDevices] = useState([]);
   const [audioDevices, setAudioDevices] = useState([]);
   const [audioOutputDevices, setAudioOutputDevices] = useState([]);
@@ -145,36 +145,6 @@ function ChatRoom() {
       FaceDetectionService.destroy();
     };
   }, []);
-
-  useEffect(() => {
-    if (!localVideoRef.current || chatMode !== 'video') return;
-
-    const initialCheck = async () => {
-      const hasFace = await FaceDetectionService.detectFace(localVideoRef.current);
-      if (hasFace) {
-        setFaceDetected(true);
-        setShowFaceCheckModal(false);
-      } else {
-        setFaceDetected(false);
-        setShowFaceCheckModal(true);
-      }
-    };
-
-    // Первая проверка при загрузке
-    initialCheck();
-
-    // Проверяем каждые 2 секунды
-    const checkInterval = setInterval(async () => {
-      const hasFace = await FaceDetectionService.detectFace(localVideoRef.current);
-      if (hasFace) {
-        setFaceDetected(true);
-        setShowFaceCheckModal(false);
-        clearInterval(checkInterval); // Останавливаем проверку после успешного обнаружения
-      }
-    }, 2000);
-
-    return () => clearInterval(checkInterval);
-  }, [localVideoRef, chatMode]);
 
   // Get available devices
   useEffect(() => {
