@@ -81,6 +81,41 @@ function ChatRoom() {
   const chatMessagesRef = useRef(null);
   const previewVideoRef = useRef(null);
 
+  const searchMessages = [
+    "Ищу собеседника. Условия: чувство юмора и запас шуток!",
+    "На охоте за собеседником! Ловите меня, если сможете!",
+    "SOS! Собеседник, где ты? Без тебя скучно!",
+    "Заблудился в чате, ищу спутника! Поделитесь шуткой?",
+    "Ищу собеседника, который не боится моих шуток!",
+    "Запускаю поиск собеседника! Условия: только не скучные!",
+    "Ищу собеседника! Тот, кто найдёт, получает приз — шутку!",
+    "Кто готов пообщаться? Я уже заскучал, SOS!",
+    "В поисках собеседника! Готов делиться мемами!",
+    "Кто-нибудь, отзовитесь! Я здесь и жду общения!",
+    "Ищу собеседника, срочно! У меня есть шутки и печенье!",
+    "Запускаю операцию 'Находка собеседника'! Кто на борту?",
+    "Озвучиваю SOS: 'Собеседник, где ты?'",
+    "Ищу собеседника! Условия: чувство юмора и терпимость к моей бесконечной болтовне!",
+    "На охоте за собеседником! Ставлю лайк на общение!",
+    "Ищу собеседника! Условия: только без скучных историй!",
+    "Запускаю поиск собеседника! Бонус — хорошее настроение!",
+    "В поисках собеседника, готового на шутки и приключения!",
+    "SOS! Собеседник в бегах! Помогите!",
+    "Ищу собеседника, у которого есть зарядка для общения!",
+    "Внимание! Разыскивается весёлый собеседник! Награда гарантирована!",
+    "Космический поиск собеседника! Есть кто из нашей галактики?",
+    "Ищу человека, который умеет смеяться! Это важно!",
+    "Внимание! Активирован протокол поиска интересного собеседника!",
+    "Разыскивается: собеседник с отличным чувством юмора!",
+    "Запускаю поиск! Нужен кто-то с суперспособностью общения!",
+    "Ищу того, кто готов к интересной беседе! Скучать запрещено!",
+    "Внимание всем постам! Разыскивается весёлый человек для общения!",
+    "Миссия 'Найти собеседника' активирована! Кто со мной?",
+    "Ищу напарника для словесных приключений! Готовы?",
+  ];
+
+  const [currentSearchMessage, setCurrentSearchMessage] = useState(searchMessages[Math.floor(Math.random() * searchMessages.length)]);
+
   useEffect(() => {
     const initializeMedia = async () => {
       try {
@@ -262,9 +297,22 @@ function ChatRoom() {
   };
 
   const nextPartner = () => {
+    // Сначала разрываем текущее соединение
+    WebRTCService.disconnect();
+    
+    // Очищаем состояния
     setIsConnected(false);
-    WebRTCService.nextPartner(chatMode);
-    startChat();
+    if (remoteVideoRef.current) {
+      remoteVideoRef.current.srcObject = null;
+    }
+    
+    // Устанавливаем состояние поиска
+    setIsSearching(true);
+    
+    // Небольшая задержка перед началом нового поиска
+    setTimeout(() => {
+      WebRTCService.startSearch(chatMode);
+    }, 500);
   };
 
   const toggleMic = () => {
@@ -455,6 +503,20 @@ function ChatRoom() {
     );
   };
 
+  useEffect(() => {
+    let messageInterval;
+    if (isSearching) {
+      messageInterval = setInterval(() => {
+        setCurrentSearchMessage(searchMessages[Math.floor(Math.random() * searchMessages.length)]);
+      }, 3500);
+    }
+    return () => {
+      if (messageInterval) {
+        clearInterval(messageInterval);
+      }
+    };
+  }, [isSearching]);
+
   return (
     <div className="chat-room">
       <div className="video-grid">
@@ -462,8 +524,41 @@ function ChatRoom() {
           <div className="remote-video" data-mode={chatMode}>
             {!isSearching && !isConnected && (
               <div className="start-screen">
-                <div className="bouncing-logo" data-text="RULETKA.TOP">
-                  <span>RULETKA</span><span>.</span><span>TOP</span>
+                <div className="cyber-grid"></div>
+                <div className="gradient-orbs">
+                  <div className="orb"></div>
+                  <div className="orb"></div>
+                  <div className="orb"></div>
+                </div>
+                <div className="pulse-lines">
+                  <div className="line"></div>
+                  <div className="line"></div>
+                  <div className="line"></div>
+                  <div className="line"></div>
+                </div>
+                <div className="particle-grid">
+                  {[...Array(30)].map((_, i) => (
+                    <div
+                      key={i}
+                      className="particle"
+                      style={{
+                        '--x': `${Math.random() * 100}%`,
+                        '--drift': `${(Math.random() - 0.5) * 200}px`,
+                        animationDelay: `${Math.random() * 10}s`,
+                        left: `${Math.random() * 100}%`
+                      }}
+                    ></div>
+                  ))}
+                </div>
+                <div className="start-screen-content">
+                  <div className="logo-3d">
+                    {['R', 'U', 'L', 'E', 'T', 'K', 'A', '.', 'T', 'O', 'P'].map((letter, i) => (
+                      <span key={i} style={{ animationDelay: `${i * 0.1}s` }}>{letter}</span>
+                    ))}
+                  </div>
+                  <div className="start-message">
+                    {currentSearchMessage}
+                  </div>
                 </div>
               </div>
             )}
@@ -486,12 +581,18 @@ function ChatRoom() {
                     <div className="audio-icon">
                       <BsMicFill />
                     </div>
+                    <div className="audio-bars">
+                      <span></span>
+                      <span></span>
+                      <span></span>
+                      <span></span>
+                      <span></span>
+                    </div>
                   </div>
                 )}
                 <div className="search-text">
-                  <div className="search-status">Поиск собеседника</div>
-                  <div className="search-description">
-                    Мы ищем для вас самого интересного собеседника
+                  <div className="search-status">
+                    {currentSearchMessage}
                   </div>
                   <div className="search-dots">
                     <div className="search-dot"></div>
@@ -501,31 +602,20 @@ function ChatRoom() {
                 </div>
               </div>
             )}
-            {(chatMode === 'audio' && (isSearching || isConnected)) && (
-              <div className="audio-visualization">
-                <div className="audio-wave-container">
-                  <div className="audio-circle"></div>
-                  <div className="audio-bars">
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                  </div>
+            {(chatMode === 'audio' && isConnected) && (
+              <div className="audio-search connected">
+                <div className="audio-wave"></div>
+                <div className="audio-wave"></div>
+                <div className="audio-wave"></div>
+                <div className="audio-icon">
+                  <BsMicFill />
                 </div>
-                <div className="audio-status">
-                  {isSearching ? (
-                    <span className="status-text">Ищем интересного собеседника</span>
-                  ) : isMuted ? (
-                    <span className="status-text warning">Включите микрофон для общения</span>
-                  ) : (
-                    <span className="status-text success">Идет разговор</span>
-                  )}
+                <div className="audio-bars">
+                  <span></span>
+                  <span></span>
+                  <span></span>
+                  <span></span>
+                  <span></span>
                 </div>
               </div>
             )}
@@ -572,28 +662,43 @@ function ChatRoom() {
               className="video-element"
             />
             {chatMode === 'audio' && (
-              <div className="audio-visualization local">
-                <div className="audio-wave-container">
-                  <div className="audio-circle"></div>
-                  <div className="audio-bars">
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                    <span></span>
+              <div className="local-audio-visualization">
+                <div className="audio-rings">
+                  <div className="ring"></div>
+                  <div className="ring"></div>
+                  <div className="ring"></div>
+                </div>
+                <div className="center-circle">
+                  <div className="inner-circle">
+                    <BsMicFill />
+                  </div>
+                  <div className="pulse-rings">
+                    <div className="pulse-ring"></div>
+                    <div className="pulse-ring"></div>
+                    <div className="pulse-ring"></div>
                   </div>
                 </div>
-                <div className="audio-status">
-                  {isMuted ? (
-                    <span className="status-text warning">🎤 Микрофон отключен</span>
-                  ) : (
-                    <span className="status-text success">🎵 Ваш голос передается</span>
-                  )}
+                <div className="spectrum-bars">
+                  {[...Array(16)].map((_, i) => (
+                    <div key={i} className="spectrum-bar">
+                      <div className="bar-fill"></div>
+                    </div>
+                  ))}
+                </div>
+                <div className="particle-field">
+                  {[...Array(20)].map((_, i) => (
+                    <div 
+                      key={i} 
+                      className="particle"
+                      style={{
+                        '--delay': `${Math.random() * 2}s`,
+                        '--duration': `${2 + Math.random() * 2}s`,
+                        '--x': `${Math.random() * 200 - 100}px`,
+                        '--y': `${Math.random() * 200 - 100}px`,
+                        '--scale': `${0.5 + Math.random()}`
+                      }}
+                    ></div>
+                  ))}
                 </div>
               </div>
             )}
@@ -1038,7 +1143,7 @@ function ChatRoom() {
             <div className="telegram-content">
               <div className="telegram-icon">
                 <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.74-.55 2.92-1.27 4.86-2.11 5.83-2.51 2.78-1.16 3.35-1.36 3.73-1.36.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06-.01.13-.02.2z" fill="#FFB700"/>
+                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.74-.55 2.92-1.27 4.86-2.11 5.83-2.51 2.78-1.16 3.35-1.36 3.73-1.36.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06-.01.13-.02.2z" fill="#FFB700"/>
                 </svg>
               </div>
               <div className="telegram-description">
