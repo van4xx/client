@@ -3931,24 +3931,27 @@ select option:hover {
   left: 50%;
   border: 2px solid rgba(0, 243, 255, 0.2);
   border-radius: 50%;
-  transition: transform 0.1s ease-out;
+  animation: ringPulse 3s ease-out infinite;
 }
 
 .ring:nth-child(1) {
   width: 60%;
   height: 60%;
+  animation-delay: 0s;
   border-color: rgba(0, 243, 255, 0.3);
 }
 
 .ring:nth-child(2) {
   width: 80%;
   height: 80%;
+  animation-delay: 0.5s;
   border-color: rgba(0, 243, 255, 0.2);
 }
 
 .ring:nth-child(3) {
   width: 100%;
   height: 100%;
+  animation-delay: 1s;
   border-color: rgba(0, 243, 255, 0.1);
 }
 
@@ -3979,7 +3982,7 @@ select option:hover {
   justify-content: center;
   font-size: 2rem;
   color: #00f3ff;
-  transition: all 0.1s ease-out;
+  animation: glowPulse 2s ease-in-out infinite;
   box-shadow: 
     0 0 20px rgba(0, 243, 255, 0.2),
     inset 0 0 20px rgba(0, 243, 255, 0.2);
@@ -3995,24 +3998,28 @@ select option:hover {
   position: absolute;
   top: 50%;
   left: 50%;
+  transform: translate(-50%, -50%);
   border: 2px solid rgba(0, 243, 255, 0.2);
   border-radius: 50%;
-  transition: transform 0.1s ease-out;
+  animation: pulseRingScale 3s ease-out infinite;
 }
 
 .pulse-ring:nth-child(1) {
   width: 120%;
   height: 120%;
+  animation-delay: 0s;
 }
 
 .pulse-ring:nth-child(2) {
   width: 140%;
   height: 140%;
+  animation-delay: 0.5s;
 }
 
 .pulse-ring:nth-child(3) {
   width: 160%;
   height: 160%;
+  animation-delay: 1s;
 }
 
 .spectrum-bars {
@@ -4025,10 +4032,6 @@ select option:hover {
   height: 40px;
   align-items: flex-end;
   z-index: 2;
-  padding: 10px;
-  background: rgba(0, 0, 0, 0.2);
-  border-radius: 20px;
-  backdrop-filter: blur(5px);
 }
 
 .spectrum-bar {
@@ -4043,9 +4046,16 @@ select option:hover {
   width: 100%;
   height: 100%;
   background: #00f3ff;
+  animation: barAnimation 1s ease-in-out infinite;
   transform-origin: bottom;
-  transition: transform 0.1s ease-out;
-  box-shadow: 0 0 10px rgba(0, 243, 255, 0.5);
+}
+
+.spectrum-bar:nth-child(odd) .bar-fill {
+  animation-duration: 0.8s;
+}
+
+.spectrum-bar:nth-child(even) .bar-fill {
+  animation-duration: 1.2s;
 }
 
 .particle-field {
@@ -4063,9 +4073,54 @@ select option:hover {
   border-radius: 50%;
   top: 50%;
   left: 50%;
-  transition: opacity 0.2s ease-out;
   animation: particleFloat var(--duration) ease-in-out infinite;
   animation-delay: var(--delay);
+}
+
+@keyframes ringPulse {
+  0% {
+    transform: translate(-50%, -50%) scale(0.8);
+    opacity: 0.8;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1.5);
+    opacity: 0;
+  }
+}
+
+@keyframes glowPulse {
+  0%, 100% {
+    box-shadow: 
+      0 0 20px rgba(0, 243, 255, 0.2),
+      inset 0 0 20px rgba(0, 243, 255, 0.2);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 
+      0 0 30px rgba(0, 243, 255, 0.4),
+      inset 0 0 30px rgba(0, 243, 255, 0.4);
+    transform: scale(1.05);
+  }
+}
+
+@keyframes pulseRingScale {
+  0% {
+    transform: translate(-50%, -50%) scale(0.8);
+    opacity: 0.8;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1.2);
+    opacity: 0;
+  }
+}
+
+@keyframes barAnimation {
+  0%, 100% {
+    transform: scaleY(0.3);
+  }
+  50% {
+    transform: scaleY(1);
+  }
 }
 
 @keyframes particleFloat {
@@ -4074,13 +4129,80 @@ select option:hover {
     opacity: 0;
   }
   25% {
-    opacity: var(--opacity, 1);
+    opacity: 1;
   }
   75% {
-    opacity: var(--opacity, 1);
+    opacity: 1;
   }
   100% {
     transform: translate(var(--x), var(--y)) scale(var(--scale));
     opacity: 0;
   }
 }
+
+/* Добавляем эффект свечения при наведении */
+.local-audio-visualization:hover .inner-circle {
+  animation: glowPulseHover 1.5s ease-in-out infinite;
+}
+
+@keyframes glowPulseHover {
+  0%, 100% {
+    box-shadow: 
+      0 0 30px rgba(0, 243, 255, 0.4),
+      inset 0 0 30px rgba(0, 243, 255, 0.4);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 
+      0 0 50px rgba(0, 243, 255, 0.6),
+      inset 0 0 50px rgba(0, 243, 255, 0.6);
+    transform: scale(1.1);
+  }
+}
+
+.local-audio-visualization {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 300px;
+  height: 300px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 50%;
+  overflow: hidden;
+  backdrop-filter: blur(10px);
+}
+
+.local-spectrum {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 4px;
+  height: 40px;
+  align-items: flex-end;
+  z-index: 2;
+}
+
+.local-spectrum-bar {
+  width: 4px;
+  height: 100%;
+  background: rgba(0, 243, 255, 0.1);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.local-bar-fill {
+  width: 100%;
+  height: 100%;
+  background: #00f3ff;
+  transform-origin: bottom;
+  transform: scaleY(0.3);
+  transition: transform 0.1s ease;
+}
+
+/* Остальные стили для колец и частиц остаются прежними */
