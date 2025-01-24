@@ -75,6 +75,10 @@ function ChatRoom() {
   const [remoteVolume, setRemoteVolume] = useState(50);
   const [noFaceTimeout, setNoFaceTimeout] = useState(null);
   const [showNoFaceModal, setShowNoFaceModal] = useState(false);
+  const [audioContext, setAudioContext] = useState(null);
+  const [audioAnalyser, setAudioAnalyser] = useState(null);
+  const [audioData, setAudioData] = useState(new Uint8Array(128));
+  const animationFrameRef = useRef();
   
   const localVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
@@ -517,6 +521,37 @@ function ChatRoom() {
     };
   }, [isSearching]);
 
+  useEffect(() => {
+    if (localStream && chatMode === 'audio') {
+      const context = new (window.AudioContext || window.webkitAudioContext)();
+      const analyser = context.createAnalyser();
+      analyser.fftSize = 256;
+      const source = context.createMediaStreamSource(localStream);
+      source.connect(analyser);
+      
+      setAudioContext(context);
+      setAudioAnalyser(analyser);
+
+      const analyzeAudio = () => {
+        const dataArray = new Uint8Array(analyser.frequencyBinCount);
+        analyser.getByteFrequencyData(dataArray);
+        setAudioData(dataArray);
+        animationFrameRef.current = requestAnimationFrame(analyzeAudio);
+      };
+
+      analyzeAudio();
+
+      return () => {
+        if (animationFrameRef.current) {
+          cancelAnimationFrame(animationFrameRef.current);
+        }
+        if (context.state !== 'closed') {
+          context.close();
+        }
+      };
+    }
+  }, [localStream, chatMode]);
+
   return (
     <div className="chat-room">
       <div className="video-grid">
@@ -664,24 +699,46 @@ function ChatRoom() {
             {chatMode === 'audio' && (
               <div className="local-audio-visualization">
                 <div className="audio-rings">
-                  <div className="ring"></div>
-                  <div className="ring"></div>
-                  <div className="ring"></div>
+                  {[...Array(3)].map((_, i) => (
+                    <div 
+                      key={i} 
+                      className="ring"
+                      style={{
+                        transform: `translate(-50%, -50%) scale(${1 + (audioData[i * 10] / 512)})`
+                      }}
+                    ></div>
+                  ))}
                 </div>
                 <div className="center-circle">
-                  <div className="inner-circle">
+                  <div 
+                    className="inner-circle"
+                    style={{
+                      transform: `scale(${1 + (audioData[0] / 512)})`
+                    }}
+                  >
                     <BsMicFill />
                   </div>
                   <div className="pulse-rings">
-                    <div className="pulse-ring"></div>
-                    <div className="pulse-ring"></div>
-                    <div className="pulse-ring"></div>
+                    {[...Array(3)].map((_, i) => (
+                      <div 
+                        key={i} 
+                        className="pulse-ring"
+                        style={{
+                          transform: `translate(-50%, -50%) scale(${1 + (audioData[i * 15] / 512)})`
+                        }}
+                      ></div>
+                    ))}
                   </div>
                 </div>
                 <div className="spectrum-bars">
                   {[...Array(16)].map((_, i) => (
                     <div key={i} className="spectrum-bar">
-                      <div className="bar-fill"></div>
+                      <div 
+                        className="bar-fill"
+                        style={{
+                          transform: `scaleY(${(audioData[i * 4] / 255) * 0.8 + 0.2})`
+                        }}
+                      ></div>
                     </div>
                   ))}
                 </div>
@@ -695,7 +752,8 @@ function ChatRoom() {
                         '--duration': `${2 + Math.random() * 2}s`,
                         '--x': `${Math.random() * 200 - 100}px`,
                         '--y': `${Math.random() * 200 - 100}px`,
-                        '--scale': `${0.5 + Math.random()}`
+                        '--scale': `${0.5 + Math.random()}`,
+                        opacity: audioData[i] / 512
                       }}
                     ></div>
                   ))}
