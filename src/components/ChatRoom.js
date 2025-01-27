@@ -27,11 +27,13 @@ import {
   BsTelegram,
   BsVimeo,
   BsVolumeUpFill,
-  BsLockFill
+  BsLockFill,
+  BsController
 } from 'react-icons/bs';
 import './ChatRoom.css';
 import FaceDetectionService from '../services/FaceDetectionService';
 import WebRTCService from '../services/WebRTCService';
+import GamesModal from '../games/GamesModal';
 
 function ChatRoom() {
   const [isConnected, setIsConnected] = useState(false);
@@ -78,6 +80,7 @@ function ChatRoom() {
   const [audioContext, setAudioContext] = useState(null);
   const [audioAnalyser, setAudioAnalyser] = useState(null);
   const animationFrameRef = useRef(null);
+  const [showGamesModal, setShowGamesModal] = useState(false);
   
   const localVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
@@ -812,6 +815,9 @@ function ChatRoom() {
       </div>
 
       <div className="bottom-menus">
+        <button className="menu-item games-button" onClick={() => setShowGamesModal(true)}>
+          <BsController /> Игры
+        </button>
         <button className="menu-item premium-button" onClick={() => setShowPremiumModal(true)}>
           <BsStars /> Премиум
         </button>
@@ -1301,6 +1307,12 @@ function ChatRoom() {
             </div>
           </div>
         </div>
+      )}
+
+      {showGamesModal && (
+        <GamesModal 
+          onClose={() => setShowGamesModal(false)}
+        />
       )}
     </div>
   );
