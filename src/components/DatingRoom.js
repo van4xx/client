@@ -269,12 +269,15 @@ function DatingRoom({ onSiteTypeChange }) {
       </div>
 
       <div className="dating-header">
+        <div className="site-name">
+          Знакомства<span>.TOP</span>
+        </div>
         <div className="dating-filters">
           <button className="filter-button" onClick={() => setShowSearchModal(true)}>
-            <BsFilterCircleFill /> Фильтры
+            <BsFilterCircleFill /> <span>Фильтры</span>
           </button>
           <button className="location-button">
-            <BsGeoAltFill /> Местоположение
+            <BsGeoAltFill /> <span>Местоположение</span>
           </button>
         </div>
       </div>
