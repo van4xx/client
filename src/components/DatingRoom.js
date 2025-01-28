@@ -23,7 +23,11 @@ import {
   BsGenderMale,
   BsCalendarEvent,
   BsGeoAlt,
-  BsFilter
+  BsFilter,
+  BsX,
+  BsHeart,
+  BsArrowRight,
+  BsArrowLeft
 } from 'react-icons/bs';
 import ProfilePage from './ProfilePage';
 import MessagesPage from './MessagesPage';
@@ -87,10 +91,29 @@ function DatingRoom({ onSiteTypeChange }) {
     }
   });
 
+  const [currentProfileIndex, setCurrentProfileIndex] = useState(0);
+  const [mutualLikes, setMutualLikes] = useState([]);
+  const [showMutualLikes, setShowMutualLikes] = useState(false);
+
   // Функции для работы с профилями
-  const handleLike = (profileId) => {
-    // Логика лайка профиля
-    console.log('Liked profile:', profileId);
+  const handleLike = () => {
+    const currentProfile = profiles[currentProfileIndex];
+    // В реальном приложении здесь был бы API запрос
+    console.log('Liked profile:', currentProfile.id);
+    showNextProfile();
+  };
+
+  const handleSkip = () => {
+    showNextProfile();
+  };
+
+  const showNextProfile = () => {
+    if (currentProfileIndex < profiles.length - 1) {
+      setCurrentProfileIndex(prev => prev + 1);
+    } else {
+      // Если профили закончились, можно начать сначала или показать сообщение
+      setCurrentProfileIndex(0);
+    }
   };
 
   const handleMessage = (profileId) => {
@@ -135,11 +158,11 @@ function DatingRoom({ onSiteTypeChange }) {
   };
 
   // Модальные окна
-  const renderModal = (title, content, isOpen, onClose) => {
+  const renderModal = (title, content, isOpen, onClose, className) => {
     if (!isOpen) return null;
 
     return (
-      <div className="modal-overlay" onClick={onClose}>
+      <div className={`modal-overlay ${className}`} onClick={onClose}>
         <div className="modal" onClick={e => e.stopPropagation()}>
           <div className="modal-header">
             <h2>{title}</h2>
@@ -183,6 +206,43 @@ function DatingRoom({ onSiteTypeChange }) {
     return <MessagesPage onBack={() => setCurrentPage('main')} />;
   }
 
+  if (showMutualLikes) {
+    return (
+      <div className="mutual-likes-page">
+        <div className="mutual-likes-header">
+          <button className="back-button" onClick={() => setShowMutualLikes(false)}>
+            <BsArrowLeft /> Назад
+          </button>
+          <h1>Взаимные симпатии</h1>
+        </div>
+        <div className="mutual-likes-grid">
+          {mutualLikes.map(profile => (
+            <div key={profile.id} className="profile-card">
+              <div className="profile-photo">
+                <img src={profile.photo} alt={profile.name} />
+                {profile.isOnline && <div className="online-status" />}
+              </div>
+              <div className="profile-info">
+                <h3>{profile.name}, {profile.age}</h3>
+                <p><BsGeoAltFill /> {profile.location}</p>
+                <div className="profile-interests">
+                  {profile.interests.map((interest, index) => (
+                    <span key={index} className="interest-tag">{interest}</span>
+                  ))}
+                </div>
+              </div>
+              <div className="profile-actions">
+                <button className="chat-button" onClick={() => handleMessage(profile.id)}>
+                  <BsCameraVideoFill /> Начать чат
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="dating-room">
       <div className={`site-type-dropdown ${showSearchModal ? 'hidden' : ''}`}>
@@ -219,41 +279,50 @@ function DatingRoom({ onSiteTypeChange }) {
         </div>
       </div>
       
-      <div className="profiles-grid">
-        {profiles.map(profile => (
-          <div key={profile.id} className="profile-card">
-            <div className="profile-photo">
-              <img src={profile.photo} alt={profile.name} />
-              {profile.isOnline && <div className="online-status" />}
-            </div>
-            <div className="profile-info">
-              <h3>{profile.name}, {profile.age}</h3>
-              <p><BsGeoAltFill /> {profile.location}</p>
-              <div className="profile-interests">
-                {profile.interests.map((interest, index) => (
-                  <span key={index} className="interest-tag">{interest}</span>
-                ))}
+      <div className="profile-carousel">
+        <div className="current-profile">
+          {profiles[currentProfileIndex] && (
+            <div className="profile-card large">
+              <div className="profile-photo">
+                <img src={profiles[currentProfileIndex].photo} alt={profiles[currentProfileIndex].name} />
+                {profiles[currentProfileIndex].isOnline && <div className="online-status" />}
+              </div>
+              <div className="profile-info">
+                <h3>{profiles[currentProfileIndex].name}, {profiles[currentProfileIndex].age}</h3>
+                <p><BsGeoAltFill /> {profiles[currentProfileIndex].location}</p>
+                <div className="profile-about">
+                  <p>{profiles[currentProfileIndex].about}</p>
+                </div>
+                <div className="profile-interests">
+                  {profiles[currentProfileIndex].interests.map((interest, index) => (
+                    <span key={index} className="interest-tag">{interest}</span>
+                  ))}
+                </div>
               </div>
             </div>
-            <div className="profile-actions">
-              <button className="like-button" onClick={() => handleLike(profile.id)}>
-                <BsHeartFill />
-              </button>
-              <button className="chat-button" onClick={() => handleMessage(profile.id)}>
-                <BsCameraVideoFill />
-              </button>
-            </div>
-          </div>
-        ))}
+          )}
+        </div>
+
+        <div className="profile-controls">
+          <button className="control-button skip" onClick={handleSkip}>
+            <BsX />
+          </button>
+          <button 
+            className="control-button mutual-likes"
+            onClick={() => setShowMutualLikes(true)}
+          >
+            <BsPeopleFill />
+            {mutualLikes.length > 0 && (
+              <span className="mutual-likes-count">{mutualLikes.length}</span>
+            )}
+          </button>
+          <button className="control-button like" onClick={handleLike}>
+            <BsHeart />
+          </button>
+        </div>
       </div>
 
       <div className="bottom-menus">
-        <button 
-          className="menu-item search-button"
-          onClick={() => setShowSearchModal(true)}
-        >
-          <BsSearch /> <span>Поиск</span>
-        </button>
         <button 
           className={`menu-item messages-button ${hasUnreadMessages ? 'has-unread' : ''}`}
           onClick={() => setCurrentPage('messages')}
@@ -265,12 +334,6 @@ function DatingRoom({ onSiteTypeChange }) {
           onClick={() => setCurrentPage('profile')}
         >
           <BsPersonFill /> <span>Мой профиль</span>
-        </button>
-        <button 
-          className="menu-item photos-button"
-          onClick={() => setShowPhotosModal(true)}
-        >
-          <BsImageFill /> <span>Фото</span>
         </button>
         <button 
           className={`menu-item notifications-button ${hasUnreadNotifications ? 'has-unread' : ''}`}
@@ -294,63 +357,67 @@ function DatingRoom({ onSiteTypeChange }) {
 
       {/* Модальные окна */}
       {renderModal(
-        'Поиск',
+        'Фильтры поиска',
         <div className="search-content">
-          <div className="search-filters">
-            <div className="filter-group">
-              <label>Возраст</label>
-              <div className="age-range">
-                <input 
-                  type="number" 
-                  value={searchFilters.ageRange[0]}
-                  onChange={(e) => setSearchFilters(prev => ({
-                    ...prev,
-                    ageRange: [parseInt(e.target.value), prev.ageRange[1]]
-                  }))}
-                  min="18"
-                  max="100"
-                />
-                <span>-</span>
-                <input 
-                  type="number"
-                  value={searchFilters.ageRange[1]}
-                  onChange={(e) => setSearchFilters(prev => ({
-                    ...prev,
-                    ageRange: [prev.ageRange[0], parseInt(e.target.value)]
-                  }))}
-                  min="18"
-                  max="100"
-                />
-              </div>
-            </div>
-            <div className="filter-group">
-              <label>Расстояние</label>
+          <div className="filter-group">
+            <label>Возраст</label>
+            <div className="age-range">
               <input 
-                type="range"
-                min="1"
+                type="number" 
+                value={searchFilters.ageRange[0]}
+                onChange={(e) => setSearchFilters(prev => ({
+                  ...prev,
+                  ageRange: [parseInt(e.target.value), prev.ageRange[1]]
+                }))}
+                min="18"
                 max="100"
-                value={searchFilters.distance}
-                onChange={(e) => setSearchFilters(prev => ({
-                  ...prev,
-                  distance: parseInt(e.target.value)
-                }))}
               />
-              <span>{searchFilters.distance} км</span>
-            </div>
-            <div className="filter-group">
-              <label>Пол</label>
-              <select
-                value={searchFilters.gender}
+              <span>—</span>
+              <input 
+                type="number"
+                value={searchFilters.ageRange[1]}
                 onChange={(e) => setSearchFilters(prev => ({
                   ...prev,
-                  gender: e.target.value
+                  ageRange: [prev.ageRange[0], parseInt(e.target.value)]
                 }))}
-              >
-                <option value="all">Все</option>
-                <option value="female">Женский</option>
-                <option value="male">Мужской</option>
-              </select>
+                min="18"
+                max="100"
+              />
             </div>
+          </div>
+
+          <div className="filter-group">
+            <label>Расстояние</label>
+            <input 
+              type="range"
+              min="1"
+              max="100"
+              value={searchFilters.distance}
+              onChange={(e) => setSearchFilters(prev => ({
+                ...prev,
+                distance: parseInt(e.target.value)
+              }))}
+            />
+            <div className="distance-value">{searchFilters.distance} км</div>
+          </div>
+
+          <div className="filter-group">
+            <label>Пол</label>
+            <select
+              value={searchFilters.gender}
+              onChange={(e) => setSearchFilters(prev => ({
+                ...prev,
+                gender: e.target.value
+              }))}
+            >
+              <option value="all">Все</option>
+              <option value="female">Женский</option>
+              <option value="male">Мужской</option>
+            </select>
+          </div>
+
+          <div className="filter-group">
+            <label>Дополнительно</label>
             <div className="filter-options">
               <label>
                 <input 
@@ -378,7 +445,8 @@ function DatingRoom({ onSiteTypeChange }) {
           </div>
         </div>,
         showSearchModal,
-        () => setShowSearchModal(false)
+        () => setShowSearchModal(false),
+        'search-modal'
       )}
 
       {renderModal(
