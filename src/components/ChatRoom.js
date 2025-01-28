@@ -54,7 +54,7 @@ function ChatRoom() {
   const [showMasksMenu, setShowMasksMenu] = useState(false);
   const [activeMask, setActiveMask] = useState(null);
   const [screenStream, setScreenStream] = useState(null);
-  const [showFaceCheckModal, setShowFaceCheckModal] = useState(true);
+  const [showFaceCheckModal, setShowFaceCheckModal] = useState(false);
   const [faceDetected, setFaceDetected] = useState(false);
   const [videoDevices, setVideoDevices] = useState([]);
   const [audioDevices, setAudioDevices] = useState([]);
@@ -291,6 +291,12 @@ function ChatRoom() {
   };
 
   const startChat = () => {
+    // Проверяем, нужна ли проверка лица
+    if (chatMode === 'video' && !faceDetected) {
+      setShowFaceCheckModal(true);
+      return;
+    }
+
     setIsSearching(true);
     setIsConnected(true);
     WebRTCService.startSearch(chatMode);
@@ -343,8 +349,9 @@ function ChatRoom() {
 
   const changeChatMode = (mode) => {
     setChatMode(mode);
+    // Скрываем модальное окно проверки лица при переключении в аудио режим
     if (mode === 'audio') {
-      setShowFaceCheckModal(false); // Скрываем модальное окно в аудио режиме
+      setShowFaceCheckModal(false);
     }
   };
 
