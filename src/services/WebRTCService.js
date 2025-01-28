@@ -867,6 +867,38 @@ class WebRTCService {
       this.onSearchStatusCallback(false);
     }
   }
+
+  handleMessage(message) {
+    if (typeof message === 'string') {
+      try {
+        const parsedMessage = JSON.parse(message);
+        if (parsedMessage.type === 'deleteMessage') {
+          // Вызываем callback с информацией об удалении
+          if (this.onChatMessageCallback) {
+            this.onChatMessageCallback({
+              type: 'deleteMessage',
+              messageId: parsedMessage.messageId
+            });
+          }
+        } else {
+          // Обрабатываем другие типы сообщений
+          if (this.onChatMessageCallback) {
+            this.onChatMessageCallback(message);
+          }
+        }
+      } catch (e) {
+        // Если не удалось распарсить JSON, обрабатываем как обычное текстовое сообщение
+        if (this.onChatMessageCallback) {
+          this.onChatMessageCallback(message);
+        }
+      }
+    } else {
+      // Если сообщение уже является объектом
+      if (this.onChatMessageCallback) {
+        this.onChatMessageCallback(message);
+      }
+    }
+  }
 }
 
 export default new WebRTCService(); 

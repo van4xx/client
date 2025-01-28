@@ -62,7 +62,6 @@
   width: 100%;
   height: 100%;
   background: var(--dark-gray);
-  border-radius: 10px;
   overflow: hidden;
 }
 
@@ -558,16 +557,15 @@
   margin-bottom: 4px;
   font-weight: 500;
   opacity: 0.8;
+  text-align: left;
 }
 
 .message.sent .message-sender {
   color: var(--dark-gray);
-  text-align: right;
 }
 
 .message.received .message-sender {
   color: rgba(255, 255, 255, 0.9);
-  text-align: left;
 }
 
 .message-content {

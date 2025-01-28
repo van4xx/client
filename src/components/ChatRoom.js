@@ -136,6 +136,9 @@ function ChatRoom() {
               sender: 'Собеседник',
               timestamp: message.timestamp || new Date().toISOString()
             }]);
+          } else if (message.type === 'deleteMessage') {
+            // Обработка удаления сообщения
+            setMessages(prev => prev.filter(msg => msg.id !== message.messageId));
           }
         });
 
