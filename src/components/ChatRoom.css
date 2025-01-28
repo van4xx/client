@@ -700,6 +700,41 @@
   left: 0;
   margin-bottom: 8px;
   z-index: 1000;
+  background: var(--dark-gray);
+  border-radius: 15px;
+  border: 1px solid var(--medium-gray);
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+}
+
+.emoji-picker-container .EmojiPickerReact {
+  --epr-bg-color: var(--dark-gray) !important;
+  --epr-category-label-bg-color: var(--dark-gray) !important;
+  --epr-hover-bg-color: var(--medium-gray) !important;
+  --epr-focus-bg-color: var(--medium-gray) !important;
+  --epr-highlight-color: var(--yellow) !important;
+  --epr-search-input-bg-color: var(--medium-gray) !important;
+  --epr-search-input-placeholder-color: rgba(255, 255, 255, 0.5) !important;
+  --epr-text-color: #ffffff !important;
+  --epr-search-border-color: var(--medium-gray) !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.emoji-picker-container .EmojiPickerReact .epr-search-container input {
+  background: var(--medium-gray) !important;
+  border: 1px solid var(--gray) !important;
+  color: white !important;
+}
+
+.emoji-picker-container .EmojiPickerReact .epr-category-nav {
+  padding: 5px !important;
+}
+
+.emoji-picker-container .EmojiPickerReact .epr-emoji-category-label {
+  background: var(--dark-gray) !important;
+  color: var(--yellow) !important;
+  font-weight: 600 !important;
 }
 
 @keyframes messageSlide {
@@ -4447,4 +4482,101 @@ select option:hover {
   transform-origin: bottom;
   transform: scaleY(0.3);
   transition: transform 0.1s ease;
+}
+
+/* Стили для файлов в чате */
+.file-preview {
+  margin: 10px 0;
+  padding: 15px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.file-preview-icon {
+  font-size: 24px;
+  color: var(--yellow);
+}
+
+.file-preview-info {
+  flex: 1;
+}
+
+.file-preview-name {
+  font-size: 14px;
+  color: white;
+  margin-bottom: 5px;
+  word-break: break-all;
+}
+
+.file-preview-size {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.file-preview-remove {
+  background: none;
+  border: none;
+  color: var(--red);
+  cursor: pointer;
+  padding: 5px;
+  font-size: 18px;
+  transition: all 0.3s ease;
+}
+
+.file-preview-remove:hover {
+  transform: scale(1.1);
+}
+
+.file-preview-image {
+  max-width: 200px;
+  max-height: 200px;
+  border-radius: 10px;
+  object-fit: cover;
+}
+
+.message .file-attachment {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+  margin-top: 5px;
+}
+
+.file-attachment-icon {
+  font-size: 24px;
+  color: var(--yellow);
+}
+
+.file-attachment-info {
+  flex: 1;
+}
+
+.file-attachment-name {
+  font-size: 14px;
+  color: white;
+  margin-bottom: 3px;
+}
+
+.file-attachment-size {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.file-attachment-download {
+  background: none;
+  border: none;
+  color: var(--yellow);
+  cursor: pointer;
+  padding: 5px;
+  font-size: 18px;
+  transition: all 0.3s ease;
+}
+
+.file-attachment-download:hover {
+  transform: scale(1.1);
 }

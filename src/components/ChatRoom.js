@@ -31,7 +31,9 @@ import {
   BsController,
   BsThreeDotsVertical,
   BsPaperclip,
-  BsFileEarmark
+  BsFileEarmark,
+  BsX,
+  BsDownload
 } from 'react-icons/bs';
 import './ChatRoom.css';
 import FaceDetectionService from '../services/FaceDetectionService';
@@ -94,6 +96,10 @@ function ChatRoom() {
   const remoteVideoRef = useRef(null);
   const chatMessagesRef = useRef(null);
   const previewVideoRef = useRef(null);
+
+  // Добавляем новые состояния после существующих
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [filePreview, setFilePreview] = useState(null);
 
   useEffect(() => {
     const initializeMedia = async () => {
@@ -347,22 +353,95 @@ function ChatRoom() {
     }
   };
 
+  // Добавляем функцию для форматирования размера файла
+  const formatFileSize = (bytes) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
+  // Обновляем функцию handleFileUpload
+  const handleFileUpload = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      // Проверяем размер файла (5MB максимум)
+      if (file.size > 5 * 1024 * 1024) {
+        alert('Файл слишком большой. Максимальный размер: 5MB');
+        return;
+      }
+
+      setSelectedFile(file);
+
+      // Создаем превью для изображений
+      if (file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          setFilePreview(e.target.result);
+        };
+        reader.readAsDataURL(file);
+      } else {
+        setFilePreview(null);
+      }
+    }
+  };
+
+  // Добавляем функцию для удаления выбранного файла
+  const removeSelectedFile = () => {
+    setSelectedFile(null);
+    setFilePreview(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  // Обновляем функцию sendMessage
   const sendMessage = () => {
-    if (messageInput.trim()) {
+    if (messageInput.trim() || selectedFile) {
       const newMessage = {
         id: Date.now(),
-        text: messageInput,
         type: 'sent',
         sender: 'Вы',
         timestamp: new Date().toISOString()
       };
-      setMessages([...messages, newMessage]);
-      WebRTCService.sendMessage({
-        type: 'message',
-        text: messageInput,
-        timestamp: newMessage.timestamp
-      });
-      setMessageInput('');
+
+      if (selectedFile) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          newMessage.file = {
+            name: selectedFile.name,
+            size: selectedFile.size,
+            type: selectedFile.type,
+            data: e.target.result
+          };
+          
+          if (selectedFile.type.startsWith('image/')) {
+            newMessage.isImage = true;
+          }
+          
+          setMessages([...messages, newMessage]);
+          WebRTCService.sendMessage({
+            type: 'file',
+            file: newMessage.file
+          });
+          
+          // Очищаем выбранный файл
+          removeSelectedFile();
+        };
+        reader.readAsDataURL(selectedFile);
+      }
+
+      if (messageInput.trim()) {
+        newMessage.text = messageInput.trim();
+        setMessages([...messages, newMessage]);
+        WebRTCService.sendMessage({
+          type: 'message',
+          text: messageInput.trim(),
+          timestamp: newMessage.timestamp
+        });
+        setMessageInput('');
+      }
     }
   };
 
@@ -591,38 +670,58 @@ function ChatRoom() {
     setSelectedMessage(null);
   };
 
-  const handleFileUpload = (event) => {
-    const file = event.target.files[0];
-    if (file) {
-      if (file.size > 1024 * 1024) { // 1MB
-        alert('Файл слишком большой. Максимальный размер: 1MB');
-        return;
-      }
-
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const message = {
-          id: Date.now(),
-          type: 'sent',
-          content: e.target.result,
-          fileType: file.type,
-          fileName: file.name,
-          timestamp: new Date().toISOString()
-        };
-        setMessages([...messages, message]);
-        WebRTCService.sendMessage({
-          type: 'file',
-          content: e.target.result,
-          fileType: file.type,
-          fileName: file.name
-        });
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
   const onEmojiClick = (emojiData) => {
     setMessageInput(prev => prev + emojiData.emoji);
+  };
+
+  // Обновляем рендер сообщений в чате
+  const renderMessage = (message) => {
+    return (
+      <div key={message.id} className={`message ${message.type}`}>
+        <div className="message-sender">{message.sender}</div>
+        <div className="message-content">
+          {message.text && <div className="message-text">{message.text}</div>}
+          {message.file && (
+            message.isImage ? (
+              <img 
+                src={message.file.data} 
+                alt={message.file.name} 
+                className="file-preview-image"
+              />
+            ) : (
+              <div className="file-attachment">
+                <div className="file-attachment-icon">
+                  <BsFileEarmark />
+                </div>
+                <div className="file-attachment-info">
+                  <div className="file-attachment-name">{message.file.name}</div>
+                  <div className="file-attachment-size">
+                    {formatFileSize(message.file.size)}
+                  </div>
+                </div>
+                <button 
+                  className="file-attachment-download"
+                  onClick={() => {
+                    const link = document.createElement('a');
+                    link.href = message.file.data;
+                    link.download = message.file.name;
+                    link.click();
+                  }}
+                >
+                  <BsDownload />
+                </button>
+              </div>
+            )
+          )}
+        </div>
+        <div className="message-time">
+          {new Date(message.timestamp).toLocaleTimeString([], { 
+            hour: '2-digit', 
+            minute: '2-digit'
+          })}
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -847,49 +946,7 @@ function ChatRoom() {
           </div>
           <div className="chat-container">
             <div className="chat-messages" ref={chatMessagesRef}>
-              {messages.map((message, index) => (
-                <div key={message.id || index} className={`message ${message.type}`}>
-                  <div className="message-sender">{message.sender}</div>
-                  <div className="message-content">
-                    {message.fileType?.startsWith('image/') ? (
-                      <img src={message.content} alt={message.fileName} className="message-image" />
-                    ) : message.fileType ? (
-                      <div className="message-file">
-                        <BsFileEarmark className="file-icon" />
-                        <span className="file-name">{message.fileName}</span>
-                      </div>
-                    ) : (
-                      message.text
-                    )}
-                  </div>
-                  {message.type === 'sent' && (
-                    <div className="message-options">
-                      <button 
-                        className="options-button"
-                        onClick={() => setSelectedMessage(selectedMessage === message.id ? null : message.id)}
-                      >
-                        <BsThreeDotsVertical />
-                      </button>
-                      {selectedMessage === message.id && (
-                        <div className="options-menu">
-                          <button onClick={() => handleDeleteMessage(message.id, false)}>
-                            Удалить у меня
-                          </button>
-                          <button onClick={() => handleDeleteMessage(message.id, true)}>
-                            Удалить у всех
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                  <div className="message-time">
-                    {message.timestamp ? new Date(message.timestamp).toLocaleTimeString([], { 
-                      hour: '2-digit', 
-                      minute: '2-digit'
-                    }) : ''}
-                  </div>
-                </div>
-              ))}
+              {messages.map(renderMessage)}
             </div>
             <div className="chat-input-container">
               {showEmojiPicker && (
@@ -897,16 +954,49 @@ function ChatRoom() {
                   <EmojiPicker
                     onEmojiClick={onEmojiClick}
                     searchPlaceholder="Поиск эмодзи..."
-                    width={300}
+                    width={350}
                     height={400}
+                    previewConfig={{
+                      showPreview: false
+                    }}
+                    lazyLoadEmojis={true}
+                    theme="dark"
                   />
                 </div>
               )}
+              {selectedFile && (
+                <div className="file-preview">
+                  {filePreview ? (
+                    <img src={filePreview} alt="preview" className="file-preview-image" />
+                  ) : (
+                    <>
+                      <div className="file-preview-icon">
+                        <BsFileEarmark />
+                      </div>
+                      <div className="file-preview-info">
+                        <div className="file-preview-name">{selectedFile.name}</div>
+                        <div className="file-preview-size">
+                          {formatFileSize(selectedFile.size)}
+                        </div>
+                      </div>
+                    </>
+                  )}
+                  <button className="file-preview-remove" onClick={removeSelectedFile}>
+                    <BsX />
+                  </button>
+                </div>
+              )}
               <div className="chat-controls">
-                <button className="control-button" onClick={() => setShowEmojiPicker(!showEmojiPicker)}>
+                <button 
+                  className="control-button"
+                  onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                >
                   <BsEmojiSmile />
                 </button>
-                <button className="control-button" onClick={() => fileInputRef.current.click()}>
+                <button 
+                  className="control-button" 
+                  onClick={() => fileInputRef.current.click()}
+                >
                   <BsPaperclip />
                 </button>
                 <input
