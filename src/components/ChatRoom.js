@@ -36,7 +36,8 @@ import {
   BsHeart,
   BsLightningFill,
   BsGift,
-  BsCoin
+  BsCoin,
+  BsPersonCircle
 } from 'react-icons/bs';
 import './ChatRoom.css';
 import FaceDetectionService from '../services/FaceDetectionService';
@@ -47,6 +48,7 @@ import IcebreakerModal from './IcebreakerModal';
 import GiftsModal from './GiftsModal';
 import CurrencyService from '../services/CurrencyService';
 import BalanceModal from './BalanceModal';
+import { useNavigate } from 'react-router-dom';
 
 function ChatRoom({ onSiteTypeChange }) {
   const [isConnected, setIsConnected] = useState(false);
@@ -110,6 +112,7 @@ function ChatRoom({ onSiteTypeChange }) {
   const [showGiftsModal, setShowGiftsModal] = useState(false);
   const [userBalance, setUserBalance] = useState(CurrencyService.getBalance());
   const [showBalanceModal, setShowBalanceModal] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const initializeMedia = async () => {
@@ -698,6 +701,12 @@ function ChatRoom({ onSiteTypeChange }) {
           onClick={() => setShowBalanceModal(true)}
         >
           <BsCoin /> {userBalance} RC
+        </button>
+        <button 
+          className="profile-button"
+          onClick={() => navigate('/profile')}
+        >
+          <BsPersonCircle /> Профиль
         </button>
         {showSiteTypeDropdown && (
           <div className="dropdown-menu">

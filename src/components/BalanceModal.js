@@ -67,7 +67,7 @@ function BalanceModal({ onClose, currentBalance, onBalanceUpdate }) {
                             </div>
                             <div className="exchange-text">
                                 <div className="exchange-title">Курс обмена</div>
-                                <div className="exchange-rate">1₽ = 2 RC</div>
+                                <div className="exchange-rate">1₽ = 2 RC(RuletCoin)</div>
                             </div>
                         </div>
                     </div>
