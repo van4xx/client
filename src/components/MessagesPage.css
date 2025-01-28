@@ -1,0 +1,374 @@
+.messages-page {
+  height: 100vh;
+  background: var(--dark-gray);
+  color: white;
+  display: flex;
+  flex-direction: column;
+}
+
+.messages-header {
+  padding: 20px;
+  background: var(--medium-gray);
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  border-bottom: 1px solid var(--gray);
+}
+
+.back-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: none;
+  border: none;
+  color: white;
+  font-size: 1rem;
+  cursor: pointer;
+  padding: 8px 16px;
+  border-radius: 20px;
+  transition: all 0.3s ease;
+}
+
+.back-button:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.search-messages {
+  flex: 1;
+  max-width: 400px;
+  position: relative;
+}
+
+.search-messages svg {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--gray);
+}
+
+.search-messages input {
+  width: 100%;
+  padding: 10px 10px 10px 40px;
+  background: var(--dark-gray);
+  border: 1px solid var(--gray);
+  border-radius: 20px;
+  color: white;
+  font-size: 1rem;
+}
+
+.messages-container {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+}
+
+.conversations-list {
+  width: 350px;
+  background: var(--medium-gray);
+  border-right: 1px solid var(--gray);
+  overflow-y: auto;
+}
+
+.conversation-item {
+  display: flex;
+  padding: 15px;
+  gap: 15px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.conversation-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.conversation-item.active {
+  background: rgba(255, 183, 0, 0.1);
+}
+
+.conversation-photo {
+  position: relative;
+  width: 50px;
+  height: 50px;
+}
+
+.conversation-photo img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.online-status {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 12px;
+  height: 12px;
+  background: #4CAF50;
+  border: 2px solid var(--medium-gray);
+  border-radius: 50%;
+}
+
+.conversation-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.conversation-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 5px;
+}
+
+.conversation-header h3 {
+  font-size: 1rem;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.last-message-time {
+  font-size: 0.8rem;
+  color: var(--gray);
+}
+
+.conversation-preview {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
+.conversation-preview p {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--gray);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.unread-badge {
+  width: 8px;
+  height: 8px;
+  background: var(--yellow);
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.chat-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: var(--dark-gray);
+}
+
+.chat-header {
+  padding: 15px;
+  background: var(--medium-gray);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--gray);
+}
+
+.chat-user-info {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.chat-user-info img {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.chat-user-info h3 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.user-status {
+  font-size: 0.8rem;
+  color: var(--gray);
+}
+
+.user-status.online {
+  color: #4CAF50;
+}
+
+.more-options {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 50%;
+  transition: all 0.3s ease;
+}
+
+.more-options:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.messages-list {
+  flex: 1;
+  padding: 20px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.message {
+  max-width: 70%;
+  display: flex;
+}
+
+.message.sent {
+  margin-left: auto;
+}
+
+.message.received {
+  margin-right: auto;
+}
+
+.message-content {
+  background: var(--medium-gray);
+  padding: 12px 15px;
+  border-radius: 15px;
+  position: relative;
+}
+
+.message.sent .message-content {
+  background: var(--yellow);
+  color: var(--dark-gray);
+}
+
+.message-content p {
+  margin: 0;
+  margin-bottom: 5px;
+}
+
+.message-info {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.8rem;
+  color: var(--gray);
+}
+
+.message.sent .message-info {
+  justify-content: flex-end;
+  color: rgba(0, 0, 0, 0.5);
+}
+
+.message-status {
+  display: flex;
+  align-items: center;
+}
+
+.message-input {
+  padding: 15px;
+  background: var(--medium-gray);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.emoji-button,
+.attach-button {
+  background: none;
+  border: none;
+  color: var(--gray);
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 50%;
+  transition: all 0.3s ease;
+}
+
+.emoji-button:hover,
+.attach-button:hover {
+  color: var(--yellow);
+  background: rgba(255, 183, 0, 0.1);
+}
+
+.message-input input {
+  flex: 1;
+  padding: 12px;
+  background: var(--dark-gray);
+  border: 1px solid var(--gray);
+  border-radius: 20px;
+  color: white;
+  font-size: 1rem;
+}
+
+.send-button {
+  background: var(--yellow);
+  border: none;
+  color: var(--dark-gray);
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.send-button:hover {
+  transform: scale(1.1);
+}
+
+.send-button:disabled {
+  background: var(--gray);
+  cursor: not-allowed;
+  transform: none;
+}
+
+.no-chat-selected {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: var(--gray);
+  gap: 15px;
+}
+
+.no-chat-selected svg {
+  font-size: 3rem;
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+  .conversations-list {
+    width: 100%;
+    display: none;
+  }
+
+  .conversations-list.active {
+    display: block;
+  }
+
+  .chat-area {
+    width: 100%;
+  }
+
+  .chat-area.hidden {
+    display: none;
+  }
+
+  .back-to-list {
+    display: block;
+  }
+} 

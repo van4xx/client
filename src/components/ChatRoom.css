@@ -700,41 +700,6 @@
   left: 0;
   margin-bottom: 8px;
   z-index: 1000;
-  background: var(--dark-gray);
-  border-radius: 15px;
-  border: 1px solid var(--medium-gray);
-  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
-  overflow: hidden;
-}
-
-.emoji-picker-container .EmojiPickerReact {
-  --epr-bg-color: var(--dark-gray) !important;
-  --epr-category-label-bg-color: var(--dark-gray) !important;
-  --epr-hover-bg-color: var(--medium-gray) !important;
-  --epr-focus-bg-color: var(--medium-gray) !important;
-  --epr-highlight-color: var(--yellow) !important;
-  --epr-search-input-bg-color: var(--medium-gray) !important;
-  --epr-search-input-placeholder-color: rgba(255, 255, 255, 0.5) !important;
-  --epr-text-color: #ffffff !important;
-  --epr-search-border-color: var(--medium-gray) !important;
-  border: none !important;
-  box-shadow: none !important;
-}
-
-.emoji-picker-container .EmojiPickerReact .epr-search-container input {
-  background: var(--medium-gray) !important;
-  border: 1px solid var(--gray) !important;
-  color: white !important;
-}
-
-.emoji-picker-container .EmojiPickerReact .epr-category-nav {
-  padding: 5px !important;
-}
-
-.emoji-picker-container .EmojiPickerReact .epr-emoji-category-label {
-  background: var(--dark-gray) !important;
-  color: var(--yellow) !important;
-  font-weight: 600 !important;
 }
 
 @keyframes messageSlide {
@@ -4484,99 +4449,95 @@ select option:hover {
   transition: transform 0.1s ease;
 }
 
-/* Стили для файлов в чате */
-.file-preview {
-  margin: 10px 0;
-  padding: 15px;
-  background: rgba(0, 0, 0, 0.2);
-  border-radius: 10px;
+.site-type-dropdown {
+  position: absolute;
+  top: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.site-type-dropdown.hidden {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.dropdown-button {
   display: flex;
   align-items: center;
-  gap: 15px;
-}
-
-.file-preview-icon {
-  font-size: 24px;
-  color: var(--yellow);
-}
-
-.file-preview-info {
-  flex: 1;
-}
-
-.file-preview-name {
-  font-size: 14px;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  background: rgba(42, 42, 42, 0.9);
+  border: 1px solid #333;
+  border-radius: 25px;
   color: white;
-  margin-bottom: 5px;
-  word-break: break-all;
-}
-
-.file-preview-size {
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.6);
-}
-
-.file-preview-remove {
-  background: none;
-  border: none;
-  color: var(--red);
+  font-size: 1rem;
   cursor: pointer;
-  padding: 5px;
-  font-size: 18px;
   transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
 }
 
-.file-preview-remove:hover {
-  transform: scale(1.1);
+.dropdown-button:hover {
+  background: rgba(52, 52, 52, 0.9);
+  transform: translateY(-2px);
 }
 
-.file-preview-image {
-  max-width: 200px;
-  max-height: 200px;
-  border-radius: 10px;
-  object-fit: cover;
+.dropdown-button .chevron {
+  transition: transform 0.3s ease;
 }
 
-.message .file-attachment {
+.dropdown-button .chevron.open {
+  transform: rotate(180deg);
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(42, 42, 42, 0.95);
+  border: 1px solid #333;
+  border-radius: 15px;
+  overflow: hidden;
+  min-width: 200px;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  animation: dropdownFade 0.2s ease;
+}
+
+@keyframes dropdownFade {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.dropdown-item {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 10px;
-  background: rgba(0, 0, 0, 0.2);
-  border-radius: 8px;
-  margin-top: 5px;
-}
-
-.file-attachment-icon {
-  font-size: 24px;
-  color: var(--yellow);
-}
-
-.file-attachment-info {
-  flex: 1;
-}
-
-.file-attachment-name {
-  font-size: 14px;
-  color: white;
-  margin-bottom: 3px;
-}
-
-.file-attachment-size {
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.6);
-}
-
-.file-attachment-download {
-  background: none;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  width: 100%;
   border: none;
-  color: var(--yellow);
+  background: none;
+  color: white;
+  font-size: 1rem;
+  text-align: left;
   cursor: pointer;
-  padding: 5px;
-  font-size: 18px;
-  transition: all 0.3s ease;
+  transition: background-color 0.2s ease;
 }
 
-.file-attachment-download:hover {
-  transform: scale(1.1);
+.dropdown-item:hover {
+  background: rgba(75, 123, 255, 0.1);
+}
+
+.dropdown-item.active {
+  background: rgba(75, 123, 255, 0.2);
+  pointer-events: none;
 }

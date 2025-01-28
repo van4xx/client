@@ -1,0 +1,306 @@
+.profile-page {
+  min-height: 100vh;
+  background: var(--dark-gray);
+  color: white;
+  padding: 20px;
+}
+
+.profile-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 30px;
+}
+
+.back-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: none;
+  border: none;
+  color: white;
+  font-size: 1rem;
+  cursor: pointer;
+  padding: 8px 16px;
+  border-radius: 20px;
+  transition: all 0.3s ease;
+}
+
+.back-button:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.edit-button {
+  background: none;
+  border: none;
+  color: var(--yellow);
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 50%;
+  transition: all 0.3s ease;
+}
+
+.edit-button:hover {
+  background: rgba(255, 183, 0, 0.1);
+  transform: rotate(15deg);
+}
+
+.profile-content {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.profile-main {
+  background: var(--medium-gray);
+  border-radius: 20px;
+  padding: 30px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+.profile-photos {
+  margin-bottom: 30px;
+}
+
+.main-photo {
+  position: relative;
+  width: 200px;
+  height: 200px;
+  margin: 0 auto 20px;
+}
+
+.main-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+  border: 4px solid var(--yellow);
+}
+
+.change-photo-btn {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--yellow);
+  color: var(--dark-gray);
+  border: none;
+  padding: 8px 16px;
+  border-radius: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.change-photo-btn:hover {
+  transform: translateX(-50%) translateY(-2px);
+  box-shadow: 0 4px 15px rgba(255, 183, 0, 0.3);
+}
+
+.photo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 15px;
+  margin-top: 20px;
+}
+
+.photo-slot {
+  aspect-ratio: 1;
+  background: var(--dark-gray);
+  border-radius: 10px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.photo-upload-label {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  color: var(--gray);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.photo-slot:hover .photo-upload-label {
+  color: var(--yellow);
+  background: rgba(255, 183, 0, 0.1);
+}
+
+.profile-info {
+  text-align: center;
+}
+
+.profile-info h2 {
+  font-size: 2rem;
+  margin-bottom: 10px;
+}
+
+.location {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--gray);
+  margin-bottom: 20px;
+}
+
+.profile-stats {
+  display: flex;
+  justify-content: center;
+  gap: 30px;
+  margin-bottom: 30px;
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+}
+
+.stat-item svg {
+  font-size: 1.5rem;
+  color: var(--yellow);
+}
+
+.profile-about,
+.profile-interests {
+  text-align: left;
+  margin-bottom: 30px;
+}
+
+.profile-about h3,
+.profile-interests h3 {
+  color: var(--yellow);
+  margin-bottom: 15px;
+}
+
+.interests-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.interest-tag {
+  background: var(--dark-gray);
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 0.9rem;
+}
+
+/* Стили для формы редактирования */
+.edit-profile-form {
+  max-width: 600px;
+  margin: 0 auto;
+  background: var(--medium-gray);
+  padding: 30px;
+  border-radius: 20px;
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--yellow);
+}
+
+.form-group input,
+.form-group textarea {
+  width: 100%;
+  padding: 12px;
+  background: var(--dark-gray);
+  border: 1px solid var(--gray);
+  border-radius: 10px;
+  color: white;
+  font-size: 1rem;
+}
+
+.form-group textarea {
+  min-height: 100px;
+  resize: vertical;
+}
+
+.interests-input {
+  margin-top: 10px;
+}
+
+.interests-input .interests-list {
+  margin-top: 10px;
+}
+
+.interests-input .interest-tag {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.interests-input .interest-tag button {
+  background: none;
+  border: none;
+  color: var(--gray);
+  cursor: pointer;
+  padding: 0;
+  font-size: 1.2rem;
+  line-height: 1;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 15px;
+  margin-top: 30px;
+}
+
+.form-actions button {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.form-actions button[type="button"] {
+  background: var(--dark-gray);
+  color: white;
+}
+
+.form-actions button[type="submit"] {
+  background: var(--yellow);
+  color: var(--dark-gray);
+}
+
+.form-actions button:hover {
+  transform: translateY(-2px);
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+  .profile-main {
+    padding: 20px;
+  }
+
+  .profile-stats {
+    flex-wrap: wrap;
+    gap: 20px;
+  }
+
+  .photo-grid {
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  }
+
+  .main-photo {
+    width: 150px;
+    height: 150px;
+  }
+} 
