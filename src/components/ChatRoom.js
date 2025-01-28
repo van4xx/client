@@ -28,12 +28,16 @@ import {
   BsVimeo,
   BsVolumeUpFill,
   BsLockFill,
-  BsController
+  BsController,
+  BsThreeDotsVertical,
+  BsPaperclip,
+  BsFileEarmark
 } from 'react-icons/bs';
 import './ChatRoom.css';
 import FaceDetectionService from '../services/FaceDetectionService';
 import WebRTCService from '../services/WebRTCService';
 import GamesModal from '../games/GamesModal';
+import EmojiPicker from 'emoji-picker-react';
 
 function ChatRoom() {
   const [isConnected, setIsConnected] = useState(false);
@@ -82,6 +86,9 @@ function ChatRoom() {
   const animationFrameRef = useRef(null);
   const [showGamesModal, setShowGamesModal] = useState(false);
   const [searchTime, setSearchTime] = useState(0);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [selectedMessage, setSelectedMessage] = useState(null);
+  const fileInputRef = useRef(null);
   
   const localVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
@@ -113,7 +120,23 @@ function ChatRoom() {
         });
 
         WebRTCService.onChatMessage((message) => {
-          setMessages(prev => [...prev, { text: message, type: 'received' }]);
+          if (typeof message === 'string') {
+            setMessages(prev => [...prev, {
+              id: Date.now(),
+              text: message,
+              type: 'received',
+              sender: 'Собеседник',
+              timestamp: new Date().toISOString()
+            }]);
+          } else if (message.type === 'message') {
+            setMessages(prev => [...prev, {
+              id: Date.now(),
+              text: message.text,
+              type: 'received',
+              sender: 'Собеседник',
+              timestamp: message.timestamp || new Date().toISOString()
+            }]);
+          }
         });
 
         WebRTCService.onConnectionClosed(() => {
@@ -323,8 +346,19 @@ function ChatRoom() {
 
   const sendMessage = () => {
     if (messageInput.trim()) {
-      setMessages([...messages, { text: messageInput, type: 'sent' }]);
-      WebRTCService.sendMessage(messageInput);
+      const newMessage = {
+        id: Date.now(),
+        text: messageInput,
+        type: 'sent',
+        sender: 'Вы',
+        timestamp: new Date().toISOString()
+      };
+      setMessages([...messages, newMessage]);
+      WebRTCService.sendMessage({
+        type: 'message',
+        text: messageInput,
+        timestamp: newMessage.timestamp
+      });
       setMessageInput('');
     }
   };
@@ -542,6 +576,51 @@ function ChatRoom() {
       };
     }
   }, [localStream, chatMode]);
+
+  const handleDeleteMessage = (messageId, deleteForAll = false) => {
+    if (deleteForAll) {
+      WebRTCService.sendMessage({
+        type: 'deleteMessage',
+        messageId: messageId
+      });
+    }
+    setMessages(messages.filter(msg => msg.id !== messageId));
+    setSelectedMessage(null);
+  };
+
+  const handleFileUpload = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      if (file.size > 1024 * 1024) { // 1MB
+        alert('Файл слишком большой. Максимальный размер: 1MB');
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const message = {
+          id: Date.now(),
+          type: 'sent',
+          content: e.target.result,
+          fileType: file.type,
+          fileName: file.name,
+          timestamp: new Date().toISOString()
+        };
+        setMessages([...messages, message]);
+        WebRTCService.sendMessage({
+          type: 'file',
+          content: e.target.result,
+          fileType: file.type,
+          fileName: file.name
+        });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const onEmojiClick = (emojiData) => {
+    setMessageInput(prev => prev + emojiData.emoji);
+  };
 
   return (
     <div className="chat-room">
@@ -766,12 +845,75 @@ function ChatRoom() {
           <div className="chat-container">
             <div className="chat-messages" ref={chatMessagesRef}>
               {messages.map((message, index) => (
-                <div key={index} className={`message ${message.type}`}>
-                  {message.text}
+                <div key={message.id || index} className={`message ${message.type}`}>
+                  <div className="message-sender">{message.sender}</div>
+                  <div className="message-content">
+                    {message.fileType?.startsWith('image/') ? (
+                      <img src={message.content} alt={message.fileName} className="message-image" />
+                    ) : message.fileType ? (
+                      <div className="message-file">
+                        <BsFileEarmark className="file-icon" />
+                        <span className="file-name">{message.fileName}</span>
+                      </div>
+                    ) : (
+                      message.text
+                    )}
+                  </div>
+                  {message.type === 'sent' && (
+                    <div className="message-options">
+                      <button 
+                        className="options-button"
+                        onClick={() => setSelectedMessage(selectedMessage === message.id ? null : message.id)}
+                      >
+                        <BsThreeDotsVertical />
+                      </button>
+                      {selectedMessage === message.id && (
+                        <div className="options-menu">
+                          <button onClick={() => handleDeleteMessage(message.id, false)}>
+                            Удалить у меня
+                          </button>
+                          <button onClick={() => handleDeleteMessage(message.id, true)}>
+                            Удалить у всех
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  <div className="message-time">
+                    {message.timestamp ? new Date(message.timestamp).toLocaleTimeString([], { 
+                      hour: '2-digit', 
+                      minute: '2-digit'
+                    }) : ''}
+                  </div>
                 </div>
               ))}
             </div>
             <div className="chat-input-container">
+              {showEmojiPicker && (
+                <div className="emoji-picker-container">
+                  <EmojiPicker
+                    onEmojiClick={onEmojiClick}
+                    searchPlaceholder="Поиск эмодзи..."
+                    width={300}
+                    height={400}
+                  />
+                </div>
+              )}
+              <div className="chat-controls">
+                <button className="control-button" onClick={() => setShowEmojiPicker(!showEmojiPicker)}>
+                  <BsEmojiSmile />
+                </button>
+                <button className="control-button" onClick={() => fileInputRef.current.click()}>
+                  <BsPaperclip />
+                </button>
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleFileUpload}
+                  accept="image/*,.pdf,.doc,.docx,.txt"
+                  style={{ display: 'none' }}
+                />
+              </div>
               <input
                 type="text"
                 className="chat-input"
