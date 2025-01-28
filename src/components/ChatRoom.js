@@ -81,46 +81,12 @@ function ChatRoom() {
   const [audioAnalyser, setAudioAnalyser] = useState(null);
   const animationFrameRef = useRef(null);
   const [showGamesModal, setShowGamesModal] = useState(false);
+  const [searchTime, setSearchTime] = useState(0);
   
   const localVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
   const chatMessagesRef = useRef(null);
   const previewVideoRef = useRef(null);
-
-  const searchMessages = [
-    "Ищу собеседника. Условия: чувство юмора и запас шуток!",
-    "На охоте за собеседником! Ловите меня, если сможете!",
-    "SOS! Собеседник, где ты? Без тебя скучно!",
-    "Заблудился в чате, ищу спутника! Поделитесь шуткой?",
-    "Ищу собеседника, который не боится моих шуток!",
-    "Запускаю поиск собеседника! Условия: только не скучные!",
-    "Ищу собеседника! Тот, кто найдёт, получает приз — шутку!",
-    "Кто готов пообщаться? Я уже заскучал, SOS!",
-    "В поисках собеседника! Готов делиться мемами!",
-    "Кто-нибудь, отзовитесь! Я здесь и жду общения!",
-    "Ищу собеседника, срочно! У меня есть шутки и печенье!",
-    "Запускаю операцию 'Находка собеседника'! Кто на борту?",
-    "Озвучиваю SOS: 'Собеседник, где ты?'",
-    "Ищу собеседника! Условия: чувство юмора и терпимость к моей бесконечной болтовне!",
-    "На охоте за собеседником! Ставлю лайк на общение!",
-    "Ищу собеседника! Условия: только без скучных историй!",
-    "Запускаю поиск собеседника! Бонус — хорошее настроение!",
-    "В поисках собеседника, готового на шутки и приключения!",
-    "SOS! Собеседник в бегах! Помогите!",
-    "Ищу собеседника, у которого есть зарядка для общения!",
-    "Внимание! Разыскивается весёлый собеседник! Награда гарантирована!",
-    "Космический поиск собеседника! Есть кто из нашей галактики?",
-    "Ищу человека, который умеет смеяться! Это важно!",
-    "Внимание! Активирован протокол поиска интересного собеседника!",
-    "Разыскивается: собеседник с отличным чувством юмора!",
-    "Запускаю поиск! Нужен кто-то с суперспособностью общения!",
-    "Ищу того, кто готов к интересной беседе! Скучать запрещено!",
-    "Внимание всем постам! Разыскивается весёлый человек для общения!",
-    "Миссия 'Найти собеседника' активирована! Кто со мной?",
-    "Ищу напарника для словесных приключений! Готовы?",
-  ];
-
-  const [currentSearchMessage, setCurrentSearchMessage] = useState(searchMessages[Math.floor(Math.random() * searchMessages.length)]);
 
   useEffect(() => {
     const initializeMedia = async () => {
@@ -517,18 +483,26 @@ function ChatRoom() {
   };
 
   useEffect(() => {
-    let messageInterval;
+    let searchTimer;
     if (isSearching) {
-      messageInterval = setInterval(() => {
-        setCurrentSearchMessage(searchMessages[Math.floor(Math.random() * searchMessages.length)]);
-      }, 3500);
+      setSearchTime(0); // Сбрасываем время при начале поиска
+      searchTimer = setInterval(() => {
+        setSearchTime(prev => prev + 1);
+      }, 1000);
     }
     return () => {
-      if (messageInterval) {
-        clearInterval(messageInterval);
+      if (searchTimer) {
+        clearInterval(searchTimer);
       }
     };
   }, [isSearching]);
+
+  // Форматирование времени
+  const formatSearchTime = (seconds) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
 
   useEffect(() => {
     if (localStream && chatMode === 'audio') {
@@ -608,9 +582,7 @@ function ChatRoom() {
                       <span key={i} style={{ animationDelay: `${i * 0.1}s` }}>{letter}</span>
                     ))}
                   </div>
-                  <div className="start-message">
-                    {currentSearchMessage}
-                  </div>
+                  
                 </div>
               </div>
             )}
@@ -644,12 +616,7 @@ function ChatRoom() {
                 )}
                 <div className="search-text">
                   <div className="search-status">
-                    {currentSearchMessage}
-                  </div>
-                  <div className="search-dots">
-                    <div className="search-dot"></div>
-                    <div className="search-dot"></div>
-                    <div className="search-dot"></div>
+                    Поиск собеседника: {formatSearchTime(searchTime)}
                   </div>
                 </div>
               </div>
