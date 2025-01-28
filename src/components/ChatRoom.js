@@ -463,7 +463,7 @@ function ChatRoom() {
                   </button>
                   {!faceDetected && chatMode === 'video' && (
                     <div className="tooltip-custom">
-                      Пожалуйста, покажите лицо в веб-камеру
+                      Покажите себя в камере, чтобы начать видеочат
                     </div>
                   )}
                   <div className="blur-overlay"></div>
