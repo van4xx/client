@@ -1,0 +1,275 @@
+.gifts-modal {
+    max-width: 800px !important;
+}
+
+.gifts-modal .modal-header {
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    align-items: center;
+    gap: 20px;
+}
+
+.balance {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background: rgba(255, 183, 0, 0.1);
+    border-radius: 20px;
+    color: var(--yellow);
+    font-weight: 600;
+    font-size: 1.1rem;
+    border: 1px solid rgba(255, 183, 0, 0.2);
+}
+
+.balance svg {
+    color: var(--yellow);
+    animation: coinRotate 3s linear infinite;
+}
+
+.gifts-content {
+    padding: 30px;
+    position: relative;
+}
+
+.gifts-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+.gift-item {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 15px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.gift-item::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, 
+        rgba(255, 183, 0, 0.1) 0%, 
+        rgba(255, 183, 0, 0.05) 50%, 
+        transparent 100%
+    );
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.gift-item:hover::before {
+    opacity: 1;
+}
+
+.gift-item:hover {
+    transform: translateY(-5px);
+    border-color: rgba(255, 183, 0, 0.3);
+    box-shadow: 
+        0 10px 20px rgba(0, 0, 0, 0.2),
+        0 0 0 1px rgba(255, 183, 0, 0.1);
+}
+
+.gift-item.selected {
+    background: rgba(255, 183, 0, 0.1);
+    border-color: var(--yellow);
+    box-shadow: 0 0 20px rgba(255, 183, 0, 0.2);
+}
+
+.gift-item.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    filter: grayscale(0.5);
+}
+
+.gift-item.disabled:hover {
+    transform: none;
+    border-color: rgba(255, 255, 255, 0.1);
+    box-shadow: none;
+}
+
+.gift-icon {
+    font-size: 2.5rem;
+    color: var(--yellow);
+    height: 60px;
+    width: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 183, 0, 0.1);
+    border-radius: 50%;
+    transition: all 0.3s ease;
+}
+
+.gift-item:hover .gift-icon {
+    transform: scale(1.1);
+    background: rgba(255, 183, 0, 0.2);
+}
+
+.gift-name {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: white;
+}
+
+.gift-price {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    color: var(--yellow);
+    font-weight: 500;
+}
+
+.gift-price svg {
+    font-size: 0.9rem;
+}
+
+.gift-description {
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.7);
+    text-align: center;
+}
+
+.gift-confirmation {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1100;
+    animation: fadeIn 0.3s ease-out;
+}
+
+.confirmation-content {
+    background: var(--dark-gray);
+    border-radius: 20px;
+    padding: 30px;
+    width: 90%;
+    max-width: 400px;
+    border: 1px solid rgba(255, 183, 0, 0.2);
+    animation: slideUp 0.3s ease-out;
+}
+
+.selected-gift {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.gift-icon.large {
+    font-size: 3rem;
+    height: 80px;
+    width: 80px;
+}
+
+.gift-details {
+    flex: 1;
+}
+
+.confirmation-buttons {
+    display: flex;
+    gap: 15px;
+}
+
+.confirm-button,
+.cancel-button {
+    flex: 1;
+    padding: 12px;
+    border: none;
+    border-radius: 10px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.confirm-button {
+    background: var(--yellow);
+    color: var(--dark-gray);
+}
+
+.confirm-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(255, 183, 0, 0.3);
+}
+
+.cancel-button {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+}
+
+.cancel-button:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+@keyframes coinRotate {
+    from {
+        transform: rotateY(0deg);
+    }
+    to {
+        transform: rotateY(360deg);
+    }
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(20px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+@media (max-width: 768px) {
+    .gifts-modal {
+        width: 95% !important;
+        margin: 10px;
+    }
+
+    .gifts-grid {
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: 15px;
+    }
+
+    .gift-icon {
+        font-size: 2rem;
+        height: 50px;
+        width: 50px;
+    }
+
+    .gift-name {
+        font-size: 1rem;
+    }
+
+    .gift-description {
+        font-size: 0.8rem;
+    }
+} 

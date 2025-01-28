@@ -33,13 +33,20 @@ import {
   BsPaperclip,
   BsFileEarmark,
   BsChat,
-  BsHeart
+  BsHeart,
+  BsLightningFill,
+  BsGift,
+  BsCoin
 } from 'react-icons/bs';
 import './ChatRoom.css';
 import FaceDetectionService from '../services/FaceDetectionService';
 import WebRTCService from '../services/WebRTCService';
 import GamesModal from '../games/GamesModal';
 import EmojiPicker from 'emoji-picker-react';
+import IcebreakerModal from './IcebreakerModal';
+import GiftsModal from './GiftsModal';
+import CurrencyService from '../services/CurrencyService';
+import BalanceModal from './BalanceModal';
 
 function ChatRoom({ onSiteTypeChange }) {
   const [isConnected, setIsConnected] = useState(false);
@@ -99,6 +106,10 @@ function ChatRoom({ onSiteTypeChange }) {
   const [showSiteTypeDropdown, setShowSiteTypeDropdown] = useState(false);
   const [isSelectorVisible, setIsSelectorVisible] = useState(true);
   const [isWebRTCInitialized, setIsWebRTCInitialized] = useState(false);
+  const [showIcebreakerModal, setShowIcebreakerModal] = useState(false);
+  const [showGiftsModal, setShowGiftsModal] = useState(false);
+  const [userBalance, setUserBalance] = useState(CurrencyService.getBalance());
+  const [showBalanceModal, setShowBalanceModal] = useState(false);
 
   useEffect(() => {
     const initializeMedia = async () => {
@@ -645,6 +656,33 @@ function ChatRoom({ onSiteTypeChange }) {
     setMessageInput(prev => prev + emojiData.emoji);
   };
 
+  const handleSendGift = (gift) => {
+    try {
+      const newBalance = CurrencyService.spendCoins(gift.price);
+      setUserBalance(newBalance);
+      CurrencyService.addTransaction('gift', gift.price, `Отправлен подарок: ${gift.name}`);
+      
+      // Отправляем сообщение о подарке в чат
+      const giftMessage = {
+        id: Date.now(),
+        type: 'gift',
+        gift: gift,
+        sender: 'Вы',
+        timestamp: new Date().toISOString()
+      };
+      setMessages([...messages, giftMessage]);
+      
+      // Отправляем уведомление собеседнику через WebRTC
+      WebRTCService.sendMessage({
+        type: 'gift',
+        gift: gift,
+        timestamp: giftMessage.timestamp
+      });
+    } catch (error) {
+      console.error('Ошибка при отправке подарка:', error);
+    }
+  };
+
   return (
     <div className="chat-room">
       <div className={`site-type-dropdown ${!isSelectorVisible ? 'hidden' : ''}`}>
@@ -654,6 +692,12 @@ function ChatRoom({ onSiteTypeChange }) {
         >
           <BsChat /> Рулетка
           <BsChevronDown className={`chevron ${showSiteTypeDropdown ? 'open' : ''}`} />
+        </button>
+        <button 
+          className="balance-button"
+          onClick={() => setShowBalanceModal(true)}
+        >
+          <BsCoin /> {userBalance} RC
         </button>
         {showSiteTypeDropdown && (
           <div className="dropdown-menu">
@@ -893,7 +937,21 @@ function ChatRoom({ onSiteTypeChange }) {
                 <div key={message.id || index} className={`message ${message.type}`}>
                   <div className="message-sender">{message.sender}</div>
                   <div className="message-content">
-                    {message.fileType?.startsWith('image/') ? (
+                    {message.type === 'gift' ? (
+                      <div className="gift-message-content">
+                        <div className="gift-message-icon">
+                          {message.gift.icon}
+                        </div>
+                        <div className="gift-message-details">
+                          <div className="gift-message-name">
+                            {message.gift.name}
+                          </div>
+                          <div className="gift-message-price">
+                            <BsCoin /> {message.gift.price} RC
+                          </div>
+                        </div>
+                      </div>
+                    ) : message.fileType?.startsWith('image/') ? (
                       <img src={message.content} alt={message.fileName} className="message-image" />
                     ) : message.fileType ? (
                       <div className="message-file">
@@ -978,6 +1036,12 @@ function ChatRoom({ onSiteTypeChange }) {
       <div className="bottom-menus">
         <button className="menu-item games-button" onClick={() => setShowGamesModal(true)}>
           <BsController /> Игры
+        </button>
+        <button className="menu-item icebreaker-button" onClick={() => setShowIcebreakerModal(true)}>
+          <BsLightningFill /> Ледокол
+        </button>
+        <button className="menu-item gifts-button" onClick={() => setShowGiftsModal(true)}>
+          <BsGift /> Подарки
         </button>
         <button className="menu-item premium-button" onClick={() => setShowPremiumModal(true)}>
           <BsStars /> Премиум
@@ -1473,6 +1537,26 @@ function ChatRoom({ onSiteTypeChange }) {
       {showGamesModal && (
         <GamesModal 
           onClose={() => setShowGamesModal(false)}
+        />
+      )}
+
+      {showIcebreakerModal && (
+        <IcebreakerModal onClose={() => setShowIcebreakerModal(false)} />
+      )}
+
+      {showGiftsModal && (
+        <GiftsModal 
+          onClose={() => setShowGiftsModal(false)}
+          userBalance={userBalance}
+          onSendGift={handleSendGift}
+        />
+      )}
+
+      {showBalanceModal && (
+        <BalanceModal 
+          onClose={() => setShowBalanceModal(false)}
+          currentBalance={userBalance}
+          onBalanceUpdate={setUserBalance}
         />
       )}
     </div>

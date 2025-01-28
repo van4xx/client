@@ -4541,3 +4541,133 @@ select option:hover {
   background: rgba(75, 123, 255, 0.2);
   pointer-events: none;
 }
+
+.message.gift {
+    background: linear-gradient(135deg, rgba(255, 183, 0, 0.1) 0%, rgba(255, 183, 0, 0.05) 100%);
+    border: 1px solid rgba(255, 183, 0, 0.2);
+    padding: 15px;
+}
+
+.gift-message-content {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 10px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 10px;
+    margin: 10px 0;
+}
+
+.gift-message-icon {
+    width: 50px;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 183, 0, 0.1);
+    border-radius: 50%;
+    font-size: 1.5rem;
+    color: var(--yellow);
+    animation: giftIconPulse 2s infinite;
+}
+
+.gift-message-details {
+    flex: 1;
+}
+
+.gift-message-name {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--yellow);
+    margin-bottom: 5px;
+}
+
+.gift-message-price {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    color: rgba(255, 183, 0, 0.8);
+    font-size: 0.9rem;
+}
+
+@keyframes giftIconPulse {
+    0%, 100% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(255, 183, 0, 0.4);
+    }
+    50% {
+        transform: scale(1.1);
+        box-shadow: 0 0 20px rgba(255, 183, 0, 0.2);
+    }
+}
+
+/* Добавляем стили для кнопок Ледокол и Подарки */
+.menu-item.icebreaker-button,
+.menu-item.gifts-button {
+    background: linear-gradient(45deg, var(--yellow) 0%, var(--yellow) 100%);
+    color: var(--dark-gray);
+    border: none;
+    box-shadow: 
+        0 5px 15px rgba(255, 183, 0, 0.3),
+        0 0 0 1px rgba(255, 183, 0, 0.3),
+        inset 0 0 20px rgba(255, 255, 255, 0.2);
+}
+
+.menu-item.icebreaker-button:hover,
+.menu-item.gifts-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 
+        0 8px 20px rgba(255, 183, 0, 0.4),
+        0 0 0 1px rgba(255, 183, 0, 0.4),
+        inset 0 0 25px rgba(255, 255, 255, 0.3);
+}
+
+.balance-button {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background: rgba(255, 183, 0, 0.1);
+    border: 1px solid rgba(255, 183, 0, 0.2);
+    border-radius: 20px;
+    color: var(--yellow);
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-left: 15px;
+}
+
+.balance-button:hover {
+    background: rgba(255, 183, 0, 0.2);
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(255, 183, 0, 0.2);
+}
+
+.balance-button svg {
+    font-size: 1.2rem;
+    animation: coinRotate 3s linear infinite;
+}
+
+@keyframes coinRotate {
+    from {
+        transform: rotateY(0deg);
+    }
+    to {
+        transform: rotateY(360deg);
+    }
+}
+
+/* Обновляем стили для контейнера, чтобы кнопки располагались в ряд */
+.site-type-dropdown {
+    position: absolute;
+    top: 1rem;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+/* ... остальные стили ... */
