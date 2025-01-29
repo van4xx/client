@@ -37,7 +37,8 @@ import {
   BsLightningFill,
   BsGift,
   BsCoin,
-  BsPersonCircle
+  BsPersonCircle,
+  BsPeople
 } from 'react-icons/bs';
 import './ChatRoom.css';
 import FaceDetectionService from '../services/FaceDetectionService';
@@ -49,6 +50,7 @@ import GiftsModal from './GiftsModal';
 import CurrencyService from '../services/CurrencyService';
 import BalanceModal from './BalanceModal';
 import { useNavigate } from 'react-router-dom';
+import FriendsModal from './FriendsModal';
 
 function ChatRoom({ onSiteTypeChange }) {
   const [isConnected, setIsConnected] = useState(false);
@@ -112,6 +114,7 @@ function ChatRoom({ onSiteTypeChange }) {
   const [showGiftsModal, setShowGiftsModal] = useState(false);
   const [userBalance, setUserBalance] = useState(CurrencyService.getBalance());
   const [showBalanceModal, setShowBalanceModal] = useState(false);
+  const [showFriendsModal, setShowFriendsModal] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -1049,6 +1052,9 @@ function ChatRoom({ onSiteTypeChange }) {
         <button className="menu-item icebreaker-button" onClick={() => setShowIcebreakerModal(true)}>
           <BsLightningFill /> Ледокол
         </button>
+        <button className="menu-item friends-button" onClick={() => setShowFriendsModal(true)}>
+          <BsPeople /> Друзья
+        </button>
         <button className="menu-item gifts-button" onClick={() => setShowGiftsModal(true)}>
           <BsGift /> Подарки
         </button>
@@ -1058,7 +1064,7 @@ function ChatRoom({ onSiteTypeChange }) {
         <button className="menu-item stats-button" onClick={() => setShowStatsModal(true)}>
           <BsBarChartLineFill /> Статистика
         </button>
-        <button className="menu-item help-button" onClick={() => setShowHelpModal(true)}>
+        <button className="menu-item help-button" onClick={() => setShowHelpModal(false)}>
           <BsQuestionCircle /> Помощь
         </button>
         <button className="menu-item about-button" onClick={() => setShowAboutModal(true)}>
@@ -1566,6 +1572,16 @@ function ChatRoom({ onSiteTypeChange }) {
           onClose={() => setShowBalanceModal(false)}
           currentBalance={userBalance}
           onBalanceUpdate={setUserBalance}
+        />
+      )}
+
+      {showFriendsModal && (
+        <FriendsModal 
+          onClose={() => setShowFriendsModal(false)}
+          onStartChat={(friend) => {
+            // Здесь будет логика для начала чата с другом
+            setShowFriendsModal(false);
+          }}
         />
       )}
     </div>

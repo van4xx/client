@@ -4701,3 +4701,37 @@ select option:hover {
 .profile-button:hover svg {
     transform: scale(1.1);
 }
+
+.menu-item.friends-button {
+    background: linear-gradient(45deg, var(--medium-gray) 0%, var(--gray) 100%);
+    color: white;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+.menu-item.friends-button:hover {
+    background: linear-gradient(45deg, var(--gray) 0%, var(--medium-gray) 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+}
+
+.menu-item.friends-button svg {
+    color: var(--yellow);
+    font-size: 1.3rem;
+}
+
+.menu-item.friends-button:hover svg {
+    transform: scale(1.2);
+    animation: friendsIconPulse 1s infinite;
+}
+
+@keyframes friendsIconPulse {
+    0% {
+        transform: scale(1.2);
+    }
+    50% {
+        transform: scale(1.4);
+    }
+    100% {
+        transform: scale(1.2);
+    }
+}
