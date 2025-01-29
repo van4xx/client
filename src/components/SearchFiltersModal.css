@@ -1,0 +1,164 @@
+.search-filters-modal {
+  max-width: 500px !important;
+  width: 90% !important;
+}
+
+.filters-content {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
+}
+
+.filter-group {
+  background: rgba(255, 255, 255, 0.05);
+  padding: 20px;
+  border-radius: 12px;
+}
+
+.filter-group h3 {
+  margin: 0 0 15px 0;
+  font-size: 1.1rem;
+  color: var(--yellow);
+}
+
+.gender-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+.gender-button {
+  flex: 1;
+  padding: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.05);
+  color: white;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.gender-button:hover {
+  background: rgba(255, 255, 255, 0.1);
+  transform: translateY(-2px);
+}
+
+.gender-button.active {
+  background: var(--yellow);
+  color: var(--dark-gray);
+  border-color: var(--yellow);
+}
+
+.gender-button svg {
+  font-size: 1.2rem;
+}
+
+.age-range {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.age-range input {
+  width: 80px;
+  padding: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  color: white;
+  text-align: center;
+}
+
+.age-range span {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+select {
+  width: 100%;
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: white;
+  cursor: pointer;
+}
+
+select:focus {
+  outline: none;
+  border-color: var(--yellow);
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+  cursor: pointer;
+}
+
+.checkbox-label:last-child {
+  margin-bottom: 0;
+}
+
+.checkbox-label input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.modal-footer {
+  padding: 20px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 15px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.reset-button,
+.apply-button {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.reset-button {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+}
+
+.reset-button:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.apply-button {
+  background: var(--yellow);
+  color: var(--dark-gray);
+}
+
+.apply-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(255, 183, 0, 0.3);
+}
+
+@media (max-width: 480px) {
+  .gender-buttons {
+    flex-direction: column;
+  }
+  
+  .age-range {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .age-range input {
+    width: 100%;
+  }
+} 

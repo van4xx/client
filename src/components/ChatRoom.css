@@ -252,9 +252,8 @@
 
 .control-buttons-secondary {
   display: flex;
-  flex-direction: column;
+  align-items: center;
   gap: 15px;
-  margin-left: 15px;
 }
 
 .control-button-large {
@@ -591,59 +590,67 @@
 }
 
 .message-options {
+  position: relative;
+}
+
+.message-options-menu {
   position: absolute;
-  top: 8px;
-  right: 8px;
-  z-index: 2;
+  bottom: 100%;
+  right: 0;
+  background: var(--dark-gray);
+  border-radius: 12px;
+  padding: 8px;
+  margin-bottom: 10px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 120px;
+}
+
+.message-options-menu button {
+  background: none;
+  border: none;
+  color: white;
+  padding: 8px 12px;
+  text-align: left;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.message-options-menu button:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--yellow);
 }
 
 .options-button {
   background: none;
   border: none;
-  padding: 4px;
-  color: inherit;
+  color: rgba(255, 255, 255, 0.7);
+  padding: 8px;
   cursor: pointer;
-  opacity: 0;
-  transition: opacity 0.3s ease;
-}
-
-.message:hover .options-button {
-  opacity: 0.7;
-}
-
-.options-button:hover {
-  opacity: 1 !important;
-}
-
-.options-menu {
-  position: absolute;
-  top: 100%;
-  right: 0;
-  background: var(--dark-gray);
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-  padding: 4px;
-  min-width: 150px;
-  z-index: 3;
-  animation: fadeIn 0.2s ease-out;
-}
-
-.options-menu button {
-  display: block;
-  width: 100%;
-  padding: 8px 12px;
-  text-align: left;
-  background: none;
-  border: none;
-  color: white;
-  cursor: pointer;
-  font-size: 14px;
-  border-radius: 4px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   transition: all 0.2s ease;
 }
 
-.options-menu button:hover {
+.options-button:hover {
+  color: var(--yellow);
   background: rgba(255, 255, 255, 0.1);
+}
+
+.message.disappearing {
+  animation: fadeOut 0.5s ease forwards;
+}
+
+@keyframes fadeOut {
+  to {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
 }
 
 .message-image {
@@ -4734,4 +4741,143 @@ select option:hover {
     100% {
         transform: scale(1.2);
     }
+}
+
+.chat-timer {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  background: rgba(0, 0, 0, 0.7);
+  padding: 8px 15px;
+  border-radius: 20px;
+  color: white;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: 10;
+}
+
+.remote-video:hover .chat-timer {
+  opacity: 1;
+}
+
+.chat-timer svg {
+  color: var(--yellow);
+  font-size: 1rem;
+}
+
+.message-reactions {
+  display: flex;
+  gap: 5px;
+  margin-top: 5px;
+}
+
+.reaction-badge {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 4px 8px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.9rem;
+}
+
+.reaction-badge svg {
+  color: var(--yellow);
+  font-size: 1rem;
+}
+
+.quick-reactions {
+  position: absolute;
+  top: -40px;
+  right: 0;
+  background: var(--dark-gray);
+  padding: 8px;
+  border-radius: 20px;
+  display: flex;
+  gap: 8px;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+.message:hover .quick-reactions {
+  opacity: 1;
+  visibility: visible;
+}
+
+.reaction-button {
+  background: none;
+  border: none;
+  color: white;
+  padding: 5px;
+  cursor: pointer;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.reaction-button:hover {
+  background: rgba(255, 255, 255, 0.1);
+  transform: scale(1.2);
+}
+
+.reaction-button svg {
+  font-size: 1.2rem;
+}
+
+.reaction-button:hover svg {
+  color: var(--yellow);
+}
+
+.filter-button {
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.filter-button:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateY(-2px);
+}
+
+.filter-button.active {
+  background: var(--yellow);
+  color: var(--dark-gray);
+}
+
+.filter-button svg {
+  font-size: 1.2rem;
+}
+
+.filter-indicator {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 8px;
+  height: 8px;
+  background: var(--yellow);
+  border-radius: 50%;
+  border: 2px solid var(--dark-gray);
+}
+
+.control-buttons-secondary {
+  display: flex;
+  align-items: center;
+  gap: 15px;
 }

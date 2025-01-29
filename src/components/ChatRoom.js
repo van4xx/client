@@ -38,7 +38,14 @@ import {
   BsGift,
   BsCoin,
   BsPersonCircle,
-  BsPeople
+  BsPeople,
+  BsClock,
+  BsEmojiSmileFill,
+  BsHeartFill,
+  BsHandThumbsUpFill,
+  BsStarFill,
+  BsEmojiLaughingFill,
+  BsSliders
 } from 'react-icons/bs';
 import './ChatRoom.css';
 import FaceDetectionService from '../services/FaceDetectionService';
@@ -51,6 +58,7 @@ import CurrencyService from '../services/CurrencyService';
 import BalanceModal from './BalanceModal';
 import { useNavigate } from 'react-router-dom';
 import FriendsModal from './FriendsModal';
+import SearchFiltersModal from './SearchFiltersModal';
 
 function ChatRoom({ onSiteTypeChange }) {
   const [isConnected, setIsConnected] = useState(false);
@@ -116,6 +124,26 @@ function ChatRoom({ onSiteTypeChange }) {
   const [showBalanceModal, setShowBalanceModal] = useState(false);
   const [showFriendsModal, setShowFriendsModal] = useState(false);
   const navigate = useNavigate();
+  const [chatStartTime, setChatStartTime] = useState(null);
+  const [chatDuration, setChatDuration] = useState(0);
+  const [messageReactions, setMessageReactions] = useState({});
+  const [messageExpiryTimes] = useState({
+    once: 0,
+    '5sec': 5,
+    '30sec': 30,
+    '1min': 60
+  });
+  const [showSearchFilters, setShowSearchFilters] = useState(false);
+  const [activeFilters, setActiveFilters] = useState(null);
+  const [showMessageOptions, setShowMessageOptions] = useState(false);
+
+  const quickReactions = [
+    { emoji: <BsEmojiSmileFill />, name: 'smile' },
+    { emoji: <BsHeartFill />, name: 'heart' },
+    { emoji: <BsHandThumbsUpFill />, name: 'thumbsup' },
+    { emoji: <BsStarFill />, name: 'star' },
+    { emoji: <BsEmojiLaughingFill />, name: 'laugh' }
+  ];
 
   useEffect(() => {
     const initializeMedia = async () => {
@@ -384,29 +412,38 @@ function ChatRoom({ onSiteTypeChange }) {
     }
   };
 
-  const sendMessage = () => {
-    if (messageInput.trim()) {
-      const newMessage = {
-        id: Date.now(),
-        text: messageInput,
-        type: 'sent',
-        sender: 'Вы',
-        timestamp: new Date().toISOString()
-      };
-      setMessages([...messages, newMessage]);
-      WebRTCService.sendMessage({
-        type: 'message',
-        text: messageInput,
-        timestamp: newMessage.timestamp
-      });
-      setMessageInput('');
+  const handleSendMessage = (text, expiryType = null) => {
+    const newMessage = {
+      id: Date.now(),
+      text,
+      type: 'sent',
+      sender: 'Вы',
+      timestamp: new Date().toISOString(),
+      expiryType
+    };
+    
+    setMessages(prev => [...prev, newMessage]);
+    
+    if (expiryType) {
+      const expiryTime = messageExpiryTimes[expiryType];
+      if (expiryType === 'once') {
+        // Сообщение исчезнет после первого просмотра
+        setTimeout(() => {
+          setMessages(prev => prev.filter(msg => msg.id !== newMessage.id));
+        }, 100);
+      } else {
+        // Сообщение исчезнет через указанное время
+        setTimeout(() => {
+          setMessages(prev => prev.filter(msg => msg.id !== newMessage.id));
+        }, expiryTime * 1000);
+      }
     }
   };
 
   const handleKeyPress = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      sendMessage();
+      handleSendMessage(messageInput);
     }
   };
 
@@ -550,6 +587,14 @@ function ChatRoom({ onSiteTypeChange }) {
                 <div className="toggle-thumb"></div>
               </div>
             </div>
+            <button 
+              className={`filter-button ${activeFilters ? 'active' : ''}`}
+              onClick={() => setShowSearchFilters(true)}
+              title="Фильтры поиска"
+            >
+              <BsSliders />
+              {activeFilters && <div className="filter-indicator" />}
+            </button>
           </div>
         </div>
       </div>
@@ -688,6 +733,68 @@ function ChatRoom({ onSiteTypeChange }) {
       console.error('Ошибка при отправке подарка:', error);
     }
   };
+
+  useEffect(() => {
+    if (isConnected && !chatStartTime) {
+      setChatStartTime(new Date());
+    } else if (!isConnected) {
+      setChatStartTime(null);
+      setChatDuration(0);
+    }
+  }, [isConnected]);
+
+  useEffect(() => {
+    let timer;
+    if (chatStartTime) {
+      timer = setInterval(() => {
+        const duration = Math.floor((new Date() - chatStartTime) / 1000);
+        setChatDuration(duration);
+      }, 1000);
+    }
+    return () => clearInterval(timer);
+  }, [chatStartTime]);
+
+  const formatDuration = (seconds) => {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    return `${hours ? hours + ':' : ''}${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const handleReaction = (messageId, reaction) => {
+    setMessageReactions(prev => ({
+      ...prev,
+      [messageId]: reaction
+    }));
+    // В реальном приложении здесь будет отправка реакции собеседнику
+  };
+
+  const handleApplyFilters = (filters) => {
+    setActiveFilters(filters);
+    // В реальном приложении здесь будет логика применения фильтров
+    console.log('Applied filters:', filters);
+  };
+
+  // Add cleanup in useEffect to close message options when component unmounts
+  useEffect(() => {
+    return () => {
+      setShowMessageOptions(false);
+    };
+  }, []);
+
+  // Add handler to close message options when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (!event.target.closest('.message-options')) {
+        setShowMessageOptions(false);
+      }
+    };
+
+    document.addEventListener('click', handleClickOutside);
+    return () => {
+      document.removeEventListener('click', handleClickOutside);
+    };
+  }, []);
 
   return (
     <div className="chat-room">
@@ -846,6 +953,11 @@ function ChatRoom({ onSiteTypeChange }) {
                 {remoteVolume}%
               </div>
             </div>
+            {isConnected && (
+              <div className="chat-timer">
+                <BsClock /> {formatDuration(chatDuration)}
+              </div>
+            )}
           </div>
           <div className="remote-controls">
             {renderControls()}
@@ -973,6 +1085,24 @@ function ChatRoom({ onSiteTypeChange }) {
                     ) : (
                       message.text
                     )}
+                    <div className="message-reactions">
+                      {messageReactions[message.id] && (
+                        <div className="reaction-badge">
+                          {quickReactions.find(r => r.name === messageReactions[message.id])?.emoji}
+                        </div>
+                      )}
+                    </div>
+                    <div className="quick-reactions">
+                      {quickReactions.map(reaction => (
+                        <button
+                          key={reaction.name}
+                          className="reaction-button"
+                          onClick={() => handleReaction(message.id, reaction.name)}
+                        >
+                          {reaction.emoji}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                   {message.type === 'sent' && (
                     <div className="message-options">
@@ -1029,6 +1159,30 @@ function ChatRoom({ onSiteTypeChange }) {
                   style={{ display: 'none' }}
                 />
               </div>
+              <div className="message-options">
+                <button 
+                  className="options-button"
+                  onClick={() => setShowMessageOptions(!showMessageOptions)}
+                >
+                  <BsClock />
+                </button>
+                {showMessageOptions && (
+                  <div className="message-options-menu">
+                    <button onClick={() => handleSendMessage(messageInput, 'once')}>
+                      1 просмотр
+                    </button>
+                    <button onClick={() => handleSendMessage(messageInput, '5sec')}>
+                      5 секунд
+                    </button>
+                    <button onClick={() => handleSendMessage(messageInput, '30sec')}>
+                      30 секунд
+                    </button>
+                    <button onClick={() => handleSendMessage(messageInput, '1min')}>
+                      1 минута
+                    </button>
+                  </div>
+                )}
+              </div>
               <input
                 type="text"
                 className="chat-input"
@@ -1037,7 +1191,7 @@ function ChatRoom({ onSiteTypeChange }) {
                 onChange={(e) => setMessageInput(e.target.value)}
                 onKeyPress={handleKeyPress}
               />
-              <button className="send-button" onClick={sendMessage}>
+              <button className="send-button" onClick={() => handleSendMessage(messageInput)}>
                 <BsSend />
               </button>
             </div>
@@ -1582,6 +1736,13 @@ function ChatRoom({ onSiteTypeChange }) {
             // Здесь будет логика для начала чата с другом
             setShowFriendsModal(false);
           }}
+        />
+      )}
+
+      {showSearchFilters && (
+        <SearchFiltersModal
+          onClose={() => setShowSearchFilters(false)}
+          onApply={handleApplyFilters}
         />
       )}
     </div>
