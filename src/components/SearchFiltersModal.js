@@ -18,6 +18,57 @@ function SearchFiltersModal({ onClose, onApply }) {
     verified: false
   });
 
+  const countries = {
+    popular: [
+      { code: 'all', name: 'Все страны' },
+      { code: 'nearby', name: 'Поблизости' }
+    ],
+    cis: [
+      { code: 'ru', name: 'Россия' },
+      { code: 'by', name: 'Беларусь' },
+      { code: 'kz', name: 'Казахстан' },
+      { code: 'ua', name: 'Украина' },
+      { code: 'uz', name: 'Узбекистан' },
+      { code: 'kg', name: 'Киргизия' },
+      { code: 'am', name: 'Армения' },
+      { code: 'az', name: 'Азербайджан' },
+      { code: 'md', name: 'Молдова' },
+      { code: 'tj', name: 'Таджикистан' }
+    ],
+    europe: [
+      { code: 'gb', name: 'Великобритания' },
+      { code: 'de', name: 'Германия' },
+      { code: 'fr', name: 'Франция' },
+      { code: 'it', name: 'Италия' },
+      { code: 'es', name: 'Испания' },
+      { code: 'pl', name: 'Польша' },
+      { code: 'ro', name: 'Румыния' },
+      { code: 'nl', name: 'Нидерланды' },
+      { code: 'hu', name: 'Венгрия' },
+      { code: 'se', name: 'Швеция' }
+    ],
+    asia: [
+      { code: 'cn', name: 'Китай' },
+      { code: 'jp', name: 'Япония' },
+      { code: 'kr', name: 'Южная Корея' },
+      { code: 'in', name: 'Индия' },
+      { code: 'id', name: 'Индонезия' },
+      { code: 'th', name: 'Таиланд' },
+      { code: 'vn', name: 'Вьетнам' },
+      { code: 'my', name: 'Малайзия' },
+      { code: 'ph', name: 'Филиппины' }
+    ],
+    americas: [
+      { code: 'us', name: 'США' },
+      { code: 'ca', name: 'Канада' },
+      { code: 'br', name: 'Бразилия' },
+      { code: 'mx', name: 'Мексика' },
+      { code: 'ar', name: 'Аргентина' },
+      { code: 'co', name: 'Колумбия' },
+      { code: 'cl', name: 'Чили' }
+    ]
+  };
+
   const handleChange = (field, value) => {
     setFilters(prev => ({
       ...prev,
@@ -97,12 +148,43 @@ function SearchFiltersModal({ onClose, onApply }) {
             <select
               value={filters.location}
               onChange={e => handleChange('location', e.target.value)}
+              className="country-select"
             >
-              <option value="all">Все страны</option>
-              <option value="nearby">Поблизости</option>
-              <option value="russia">Россия</option>
-              <option value="usa">США</option>
-              <option value="europe">Европа</option>
+              <optgroup label="Популярные">
+                {countries.popular.map(country => (
+                  <option key={country.code} value={country.code}>
+                    {country.name}
+                  </option>
+                ))}
+              </optgroup>
+              <optgroup label="СНГ">
+                {countries.cis.map(country => (
+                  <option key={country.code} value={country.code}>
+                    {country.name}
+                  </option>
+                ))}
+              </optgroup>
+              <optgroup label="Европа">
+                {countries.europe.map(country => (
+                  <option key={country.code} value={country.code}>
+                    {country.name}
+                  </option>
+                ))}
+              </optgroup>
+              <optgroup label="Азия">
+                {countries.asia.map(country => (
+                  <option key={country.code} value={country.code}>
+                    {country.name}
+                  </option>
+                ))}
+              </optgroup>
+              <optgroup label="Америка">
+                {countries.americas.map(country => (
+                  <option key={country.code} value={country.code}>
+                    {country.name}
+                  </option>
+                ))}
+              </optgroup>
             </select>
           </div>
 

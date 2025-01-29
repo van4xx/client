@@ -1,6 +1,13 @@
 .search-filters-modal {
   max-width: 500px !important;
   width: 90% !important;
+  max-height: 90vh !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.modal-header {
+  flex-shrink: 0;
 }
 
 .filters-content {
@@ -8,6 +15,26 @@
   display: flex;
   flex-direction: column;
   gap: 25px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.filters-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.filters-content::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+}
+
+.filters-content::-webkit-scrollbar-thumb {
+  background: var(--yellow);
+  border-radius: 4px;
+}
+
+.filters-content::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(45deg, var(--yellow) 0%, #FFD700 100%);
 }
 
 .filter-group {
@@ -112,11 +139,13 @@ select:focus {
 }
 
 .modal-footer {
+  flex-shrink: 0;
   padding: 20px;
   display: flex;
   justify-content: flex-end;
   gap: 15px;
   border-top: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--dark-gray);
 }
 
 .reset-button,
@@ -161,4 +190,57 @@ select:focus {
   .age-range input {
     width: 100%;
   }
+}
+
+.country-select {
+  width: 100%;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: white;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+}
+
+.country-select:focus {
+  outline: none;
+  border-color: var(--yellow);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.country-select optgroup {
+  background: var(--dark-gray);
+  color: var(--yellow);
+  font-weight: 600;
+  padding: 8px;
+}
+
+.country-select option {
+  background: var(--dark-gray);
+  color: white;
+  padding: 8px;
+}
+
+.country-select option:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.country-select::-webkit-scrollbar {
+  width: 8px;
+}
+
+.country-select::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+}
+
+.country-select::-webkit-scrollbar-thumb {
+  background: var(--yellow);
+  border-radius: 4px;
+}
+
+.country-select::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(45deg, var(--yellow) 0%, #FFD700 100%);
 } 
