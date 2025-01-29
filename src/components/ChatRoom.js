@@ -590,7 +590,7 @@ function ChatRoom({ onSiteTypeChange }) {
             <button 
               className={`filter-button ${activeFilters ? 'active' : ''}`}
               onClick={() => setShowSearchFilters(true)}
-              title="Фильтры поиска"
+              title={activeFilters ? 'Активны фильтры поиска' : 'Настроить параметры поиска собеседника'}
             >
               <BsSliders />
               {activeFilters && <div className="filter-indicator" />}
