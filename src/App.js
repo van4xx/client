@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
 import ChatRoom from './components/ChatRoom';
 import DatingRoom from './components/DatingRoom';
 import Profile from './components/Profile';
@@ -9,6 +9,8 @@ function App() {
   const handleSiteTypeChange = (type) => {
     if (type === 'dating') {
       window.location.href = '/dating';
+    } else if (type === 'chat') {
+      window.location.href = '/';
     }
   };
 
@@ -17,7 +19,7 @@ function App() {
       <div className="App">
         <Routes>
           <Route path="/" element={<ChatRoom onSiteTypeChange={handleSiteTypeChange} />} />
-          <Route path="/dating" element={<DatingRoom />} />
+          <Route path="/dating" element={<DatingRoom onSiteTypeChange={handleSiteTypeChange} />} />
           <Route path="/profile" element={<Profile />} />
         </Routes>
       </div>

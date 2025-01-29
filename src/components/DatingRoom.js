@@ -257,7 +257,12 @@ function DatingRoom({ onSiteTypeChange }) {
           <div className="dropdown-menu">
             <button 
               className="dropdown-item"
-              onClick={() => onSiteTypeChange('chat')}
+              onClick={() => {
+                if (typeof onSiteTypeChange === 'function') {
+                  onSiteTypeChange('chat');
+                }
+                setShowSiteTypeDropdown(false);
+              }}
             >
               <BsChat /> Рулетка
             </button>
