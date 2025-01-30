@@ -34,7 +34,7 @@ class WebRTCService {
     this.isSearching = false;
   }
 
-  init(serverUrl = window.location.protocol === 'https:' ? 'https://ruletka.top' : 'http://localhost:5000') {
+  init(serverUrl = window.location.protocol === 'https:' ? 'https://ruletka.top' : 'http://localhost:5001') {
     console.log('Initializing WebRTC service with server:', serverUrl);
     
     if (this.socket) {

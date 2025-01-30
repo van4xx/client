@@ -27,10 +27,17 @@ import {
   BsX,
   BsHeart,
   BsArrowRight,
-  BsArrowLeft
+  BsArrowLeft,
+  BsLightningFill,
+  BsPersonCircle
 } from 'react-icons/bs';
 import ProfilePage from './ProfilePage';
 import MessagesPage from './MessagesPage';
+import QuestRoom from './QuestRoom';
+import QuestService from '../services/QuestService';
+import Stories from './Stories';
+import { storiesData } from '../data/storiesData';
+import UserIcon from './UserIcon';
 
 function DatingRoom({ onSiteTypeChange }) {
   // Основные состояния
@@ -94,6 +101,14 @@ function DatingRoom({ onSiteTypeChange }) {
   const [currentProfileIndex, setCurrentProfileIndex] = useState(0);
   const [mutualLikes, setMutualLikes] = useState([]);
   const [showMutualLikes, setShowMutualLikes] = useState(false);
+
+  // Новые состояния для квеста
+  const [showQuestRoom, setShowQuestRoom] = useState(false);
+  const [currentQuest, setCurrentQuest] = useState(null);
+  const [selectedPartner, setSelectedPartner] = useState(null);
+
+  // Новые состояния для фотопревью
+  const [showPhotoPreview, setShowPhotoPreview] = useState(false);
 
   // Функции для работы с профилями
   const handleLike = () => {
@@ -198,6 +213,13 @@ function DatingRoom({ onSiteTypeChange }) {
     setHasUnreadNotifications(notifications.some(notif => !notif.read));
   }, [messages, notifications]);
 
+  const handleStartQuest = (partner) => {
+    setSelectedPartner(partner);
+    const availableQuests = QuestService.getQuests();
+    setCurrentQuest(availableQuests[0]); // Для демо берем первый квест
+    setShowQuestRoom(true);
+  };
+
   if (currentPage === 'profile') {
     return <ProfilePage onBack={() => setCurrentPage('main')} />;
   }
@@ -243,124 +265,148 @@ function DatingRoom({ onSiteTypeChange }) {
     );
   }
 
+  if (showQuestRoom) {
+    return (
+      <QuestRoom 
+        onBack={() => setShowQuestRoom(false)}
+        partner={selectedPartner}
+        quest={currentQuest}
+      />
+    );
+  }
+
   return (
     <div className="dating-room">
-      <div className={`site-type-dropdown ${showSearchModal ? 'hidden' : ''}`}>
-        <button 
-          className="dropdown-button"
-          onClick={() => setShowSiteTypeDropdown(!showSiteTypeDropdown)}
-        >
-          <BsHeartFill /> Знакомства
-          <BsChevronDown className={`chevron ${showSiteTypeDropdown ? 'open' : ''}`} />
-        </button>
-        {showSiteTypeDropdown && (
-          <div className="dropdown-menu">
-            <button 
-              className="dropdown-item"
-              onClick={() => {
-                if (typeof onSiteTypeChange === 'function') {
-                  onSiteTypeChange('chat');
-                }
-                setShowSiteTypeDropdown(false);
-              }}
-            >
-              <BsChat /> Рулетка
-            </button>
-            <button className="dropdown-item active">
-              <BsHeartFill /> Знакомства
-            </button>
-          </div>
-        )}
-      </div>
-
-      <div className="dating-header">
-        <div className="site-name">
-          Знакомства<span>.TOP</span>
-        </div>
-        <div className="dating-filters">
-          <button className="filter-button" onClick={() => setShowSearchModal(true)}>
-            <BsFilterCircleFill /> <span>Фильтры</span>
+      <div className="dating-content">
+        <div className={`site-type-dropdown ${showSearchModal ? 'hidden' : ''}`}>
+          <button 
+            className="dropdown-button"
+            onClick={() => setShowSiteTypeDropdown(!showSiteTypeDropdown)}
+          >
+            <BsHeartFill /> Знакомства
+            <BsChevronDown className={`chevron ${showSiteTypeDropdown ? 'open' : ''}`} />
           </button>
-          <button className="location-button">
-            <BsGeoAltFill /> <span>Местоположение</span>
-          </button>
-        </div>
-      </div>
-      
-      <div className="profile-carousel">
-        <div className="current-profile">
-          {profiles[currentProfileIndex] && (
-            <div className="profile-card large">
-              <div className="profile-photo">
-                <img src={profiles[currentProfileIndex].photo} alt={profiles[currentProfileIndex].name} />
-                {profiles[currentProfileIndex].isOnline && <div className="online-status" />}
-              </div>
-              <div className="profile-info">
-                <h3>{profiles[currentProfileIndex].name}, {profiles[currentProfileIndex].age}</h3>
-                <p><BsGeoAltFill /> {profiles[currentProfileIndex].location}</p>
-                <div className="profile-about">
-                  <p>{profiles[currentProfileIndex].about}</p>
-                </div>
-                <div className="profile-interests">
-                  {profiles[currentProfileIndex].interests.map((interest, index) => (
-                    <span key={index} className="interest-tag">{interest}</span>
-                  ))}
-                </div>
-              </div>
+          {showSiteTypeDropdown && (
+            <div className="dropdown-menu">
+              <button 
+                className="dropdown-item"
+                onClick={() => {
+                  if (typeof onSiteTypeChange === 'function') {
+                    onSiteTypeChange('chat');
+                  }
+                  setShowSiteTypeDropdown(false);
+                }}
+              >
+                <BsChat /> Рулетка
+              </button>
+              <button className="dropdown-item active">
+                <BsHeartFill /> Знакомства
+              </button>
             </div>
           )}
         </div>
 
-        <div className="profile-controls">
-          <button className="control-button skip" onClick={handleSkip}>
-            <BsX />
+        <div className="dating-header">
+          <div className="site-name">
+            Знакомства<span>.TOP</span>
+          </div>
+          <div className="dating-filters">
+            <button className="filter-button" onClick={() => setShowSearchModal(true)}>
+              <BsFilterCircleFill /> <span>Фильтры</span>
+            </button>
+            <button className="location-button">
+              <BsGeoAltFill /> <span>Местоположение</span>
+            </button>
+          </div>
+        </div>
+        
+        <div className="profile-carousel">
+          <Stories stories={storiesData} currentUser={currentUser} />
+          
+          <div className="current-profile">
+            {profiles[currentProfileIndex] && (
+              <div className="profile-card large">
+                <div className="profile-photo-container" onClick={() => setShowPhotoPreview(true)}>
+                  <div className="profile-photo">
+                    {profiles[currentProfileIndex].photo ? (
+                      <img src={profiles[currentProfileIndex].photo} alt={profiles[currentProfileIndex].name} />
+                    ) : (
+                      <UserIcon size={150} color="#666" />
+                    )}
+                    {profiles[currentProfileIndex].isOnline && <div className="online-status" />}
+                  </div>
+                </div>
+                
+                <div className="profile-info">
+                  <h3>{profiles[currentProfileIndex].name}, {profiles[currentProfileIndex].age}</h3>
+                  <p><BsGeoAltFill /> {profiles[currentProfileIndex].location}</p>
+                  <div className="profile-about">
+                    <p>{profiles[currentProfileIndex].about}</p>
+                  </div>
+                  <div className="profile-interests">
+                    {profiles[currentProfileIndex].interests.map((interest, index) => (
+                      <span key={index} className="interest-tag">{interest}</span>
+                    ))}
+                  </div>
+                  <button 
+                    className="start-quest-button"
+                    onClick={() => handleStartQuest(profiles[currentProfileIndex])}
+                  >
+                    <BsLightningFill /> Начать квест
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="profile-controls">
+            <button className="control-button mutual-likes" onClick={() => setShowMutualLikes(true)}>
+              <BsPeopleFill />
+              {mutualLikes.length > 0 && (
+                <span className="mutual-likes-count">{mutualLikes.length}</span>
+              )}
+            </button>
+            <button className="control-button like" onClick={handleLike}>
+              <BsHeart />
+            </button>
+            <button className="control-button skip" onClick={handleSkip}>
+              <BsX />
+            </button>
+          </div>
+        </div>
+
+        <div className="bottom-menus">
+          <button 
+            className={`menu-item messages-button ${hasUnreadMessages ? 'has-unread' : ''}`}
+            onClick={() => setCurrentPage('messages')}
+          >
+            <BsEnvelopeFill /> <span>Сообщения</span>
           </button>
           <button 
-            className="control-button mutual-likes"
-            onClick={() => setShowMutualLikes(true)}
+            className="menu-item profile-button"
+            onClick={() => setCurrentPage('profile')}
           >
-            <BsPeopleFill />
-            {mutualLikes.length > 0 && (
-              <span className="mutual-likes-count">{mutualLikes.length}</span>
-            )}
+            <BsPersonFill /> <span>Мой профиль</span>
           </button>
-          <button className="control-button like" onClick={handleLike}>
-            <BsHeart />
+          <button 
+            className={`menu-item notifications-button ${hasUnreadNotifications ? 'has-unread' : ''}`}
+            onClick={() => setShowNotificationsModal(true)}
+          >
+            <BsBellFill /> <span>Уведомления</span>
+          </button>
+          <button 
+            className="menu-item settings-button"
+            onClick={() => setShowSettingsModal(true)}
+          >
+            <BsSliders /> <span>Настройки</span>
+          </button>
+          <button 
+            className="menu-item premium-button"
+            onClick={() => setShowPremiumModal(true)}
+          >
+            <BsStars /> <span>Premium</span>
           </button>
         </div>
-      </div>
-
-      <div className="bottom-menus">
-        <button 
-          className={`menu-item messages-button ${hasUnreadMessages ? 'has-unread' : ''}`}
-          onClick={() => setCurrentPage('messages')}
-        >
-          <BsEnvelopeFill /> <span>Сообщения</span>
-        </button>
-        <button 
-          className="menu-item profile-button"
-          onClick={() => setCurrentPage('profile')}
-        >
-          <BsPersonFill /> <span>Мой профиль</span>
-        </button>
-        <button 
-          className={`menu-item notifications-button ${hasUnreadNotifications ? 'has-unread' : ''}`}
-          onClick={() => setShowNotificationsModal(true)}
-        >
-          <BsBellFill /> <span>Уведомления</span>
-        </button>
-        <button 
-          className="menu-item settings-button"
-          onClick={() => setShowSettingsModal(true)}
-        >
-          <BsSliders /> <span>Настройки</span>
-        </button>
-        <button 
-          className="menu-item premium-button"
-          onClick={() => setShowPremiumModal(true)}
-        >
-          <BsStars /> <span>Premium</span>
-        </button>
       </div>
 
       {/* Модальные окна */}
@@ -618,6 +664,26 @@ function DatingRoom({ onSiteTypeChange }) {
         </div>,
         showPremiumModal,
         () => setShowPremiumModal(false)
+      )}
+
+      {/* Photo Preview Modal */}
+      {showPhotoPreview && (
+        <div className="profile-photo-preview" onClick={() => setShowPhotoPreview(false)}>
+          <button className="close-preview" onClick={() => setShowPhotoPreview(false)}>
+            <BsX />
+          </button>
+          {profiles[currentProfileIndex].photo ? (
+            <img 
+              src={profiles[currentProfileIndex].photo} 
+              alt={profiles[currentProfileIndex].name}
+              onClick={(e) => e.stopPropagation()}
+            />
+          ) : (
+            <div onClick={(e) => e.stopPropagation()}>
+              <UserIcon size={300} color="#666" />
+            </div>
+          )}
+        </div>
       )}
     </div>
   );

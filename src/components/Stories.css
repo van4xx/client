@@ -1,0 +1,349 @@
+.stories-container {
+  width: 100%;
+  position: relative;
+  margin-bottom: 20px;
+}
+
+.stories-list {
+  display: flex;
+  gap: 15px;
+  padding: 15px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  background: linear-gradient(to right, rgba(33, 33, 33, 0.9), rgba(33, 33, 33, 0.7));
+  border-radius: 15px;
+  margin: 0;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+}
+
+.stories-list::-webkit-scrollbar {
+  display: none;
+}
+
+.story-avatar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: transform 0.3s ease;
+  min-width: 70px;
+}
+
+.story-avatar img {
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  padding: 3px;
+  background: linear-gradient(45deg, #FFD700, #FFA500);
+  object-fit: cover;
+  transition: all 0.3s ease;
+}
+
+.story-avatar.viewed img {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.story-avatar span {
+  font-size: 0.9rem;
+  color: white;
+  text-align: center;
+  max-width: 80px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.story-avatar:hover {
+  transform: scale(1.05);
+}
+
+.add-story {
+  position: relative;
+}
+
+.add-story-icon {
+  width: 70px;
+  height: 70px;
+  font-size: 1.8rem;
+}
+
+.add-story:hover .add-story-icon {
+  background: var(--yellow);
+  color: var(--dark-gray);
+}
+
+/* Просмотр истории */
+.story-view {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.95);
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  animation: storyFadeIn 0.3s ease;
+}
+
+.story-header {
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent);
+  position: relative;
+  z-index: 2;
+}
+
+.progress-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  gap: 5px;
+  padding: 10px 20px;
+}
+
+.progress-bar {
+  height: 3px;
+  background: rgba(255, 255, 255, 0.3);
+  flex: 1;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.progress-bar .progress {
+  height: 100%;
+  background: var(--yellow);
+  transition: width 0.1s linear;
+}
+
+.progress-bar.completed .progress {
+  width: 100%;
+}
+
+.story-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.story-info img {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 2px solid var(--yellow);
+}
+
+.story-time {
+  font-size: 0.9rem;
+  opacity: 0.7;
+}
+
+.story-controls {
+  display: flex;
+  gap: 15px;
+}
+
+.story-controls button {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 5px;
+  transition: all 0.3s ease;
+}
+
+.story-controls button:hover {
+  color: var(--yellow);
+  transform: scale(1.1);
+}
+
+.story-content {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.story-media {
+  max-width: 100%;
+  max-height: calc(100vh - 200px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.story-media img,
+.story-media video {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  border-radius: 10px;
+}
+
+.nav-button {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  color: white;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.nav-button:hover {
+  background: var(--yellow);
+  color: var(--dark-gray);
+}
+
+.nav-button.prev {
+  left: 20px;
+}
+
+.nav-button.next {
+  right: 20px;
+}
+
+.story-footer {
+  padding: 20px;
+  background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
+  display: flex;
+  gap: 20px;
+  align-items: center;
+}
+
+.story-input {
+  flex: 1;
+}
+
+.story-input input {
+  width: 100%;
+  padding: 12px 20px;
+  border: none;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  font-size: 1rem;
+}
+
+.story-input input::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.story-reactions {
+  display: flex;
+  gap: 15px;
+}
+
+.story-reactions button {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 1.3rem;
+  cursor: pointer;
+  padding: 8px;
+  transition: all 0.3s ease;
+}
+
+.story-reactions button:hover {
+  color: var(--yellow);
+  transform: scale(1.1);
+}
+
+.reaction-animation {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: var(--yellow);
+  font-size: 5rem;
+  animation: reactionPop 1.5s ease-out;
+  pointer-events: none;
+}
+
+@keyframes storyFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes reactionPop {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0);
+  }
+  50% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.2);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+  .stories-container {
+    margin-bottom: 15px;
+  }
+
+  .stories-list {
+    padding: 10px;
+  }
+
+  .story-avatar {
+    min-width: 50px;
+  }
+
+  .story-avatar img,
+  .add-story-icon {
+    width: 50px;
+    height: 50px;
+  }
+
+  .story-avatar span {
+    font-size: 0.8rem;
+  }
+
+  .story-media {
+    max-height: calc(100vh - 150px);
+  }
+
+  .nav-button {
+    width: 30px;
+    height: 30px;
+  }
+}
+
+/* Дополнительные эффекты */
+.story-avatar img {
+  box-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
+}
+
+.story-media img,
+.story-media video {
+  box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
+}
+
+.story-input input:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--yellow);
+} 

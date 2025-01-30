@@ -864,23 +864,25 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: space-between;
-  padding: 1rem;
-  gap: 1rem;
-  margin-bottom: 6vh;
-  height: calc(94vh - 60px); /* 94vh минус высота header */
-  overflow: hidden;
+  padding: 20px;
+  background: var(--dark-gray);
+  border-radius: 20px;
+  position: relative;
+  height: calc(100vh - 12vh);
 }
 
 .current-profile {
-  width: 100%;
-  max-width: 600px;
-  height: calc(100% - 100px); /* Высота минус место для кнопок */
-  perspective: 1000px;
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  padding-bottom: 100px;
 }
 
 .profile-card.large {
+  width: 100%;
+  max-width: 500px;
   height: 100%;
   background: var(--medium-gray);
   border-radius: 20px;
@@ -890,84 +892,133 @@
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
   display: flex;
   flex-direction: column;
+  position: relative;
+}
+
+.profile-photo-container {
+  width: 150px;
+  height: 150px;
+  margin: 30px auto;
+  position: relative;
+  cursor: pointer;
+  transition: transform 0.3s ease;
+  border-radius: 50%;
+  background: linear-gradient(45deg, var(--yellow), #ff9d00);
+  padding: 3px;
+}
+
+.profile-photo-container:hover {
+  transform: scale(1.05);
 }
 
 .profile-card.large .profile-photo {
   width: 100%;
-  height: 60%;
+  height: 100%;
+  border-radius: 50%;
+  overflow: hidden;
+  background: var(--dark-gray);
+  display: flex;
+  align-items: center;
+  justify-content: center;
   position: relative;
-  flex-shrink: 0;
+}
+
+.profile-card.large .profile-photo img,
+.profile-card.large .profile-photo svg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.profile-photo-preview {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.3s ease;
+}
+
+.profile-photo-preview img,
+.profile-photo-preview svg {
+  max-width: 90%;
+  max-height: 90vh;
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  animation: zoomIn 0.3s ease;
+  background: var(--dark-gray);
+  padding: 20px;
+}
+
+.close-preview {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: white;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.close-preview:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: scale(1.1);
 }
 
 .profile-card.large .profile-info {
-  padding: 1rem;
+  padding: 0 1.5rem 1.5rem 1.5rem;
   overflow-y: auto;
   flex: 1;
+  background: linear-gradient(to bottom, var(--medium-gray), var(--dark-gray));
 }
 
-.profile-controls {
-  display: flex;
-  justify-content: space-between;
-  width: 100%;
-  max-width: 400px;
-  padding: 0 1rem;
-  margin-top: auto;
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
-.control-button {
-  width: 60px;
-  height: 60px;
-  border-radius: 50%;
-  border: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.8rem;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  background: var(--medium-gray);
-  color: white;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-  position: relative;
+@keyframes zoomIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
-/* Изменяем порядок кнопок */
-.control-button.mutual-likes {
-  order: 1;
-  background: var(--yellow);
-  color: var(--dark-gray);
+/* Адаптивность */
+@media (max-width: 768px) {
+  .profile-photo-container {
+    width: 120px;
+    height: 120px;
+    margin: 20px auto;
+  }
 }
 
-.control-button.like {
-  order: 2;
-  background: #4CAF50;
-  transform: scale(1.2); /* Делаем кнопку "нравится" немного больше */
-}
-
-.control-button.skip {
-  order: 3;
-  background: #ff4444;
-}
-
-.control-button:hover {
-  transform: translateY(-5px);
-}
-
-.mutual-likes-count {
-  position: absolute;
-  top: -5px;
-  right: -5px;
-  background: #ff4444;
-  color: white;
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.9rem;
-  font-weight: bold;
-  border: 2px solid var(--dark-gray);
+@media (max-width: 480px) {
+  .profile-photo-container {
+    width: 100px;
+    height: 100px;
+    margin: 15px auto;
+  }
 }
 
 /* Страница взаимных симпатий */
@@ -1015,47 +1066,6 @@
 
 /* Адаптивность */
 @media (max-width: 768px) {
-  .profile-carousel {
-    padding: 1rem;
-  }
-
-  .profile-card.large .profile-photo {
-    height: 400px;
-  }
-
-  .profile-controls {
-    gap: 1rem;
-  }
-
-  .control-button {
-    width: 60px;
-    height: 60px;
-    font-size: 1.5rem;
-  }
-}
-
-@media (max-width: 480px) {
-  .profile-card.large .profile-photo {
-    height: 300px;
-  }
-
-  .profile-card.large .profile-info {
-    padding: 1rem;
-  }
-
-  .profile-card.large h3 {
-    font-size: 1.5rem;
-  }
-
-  .control-button {
-    width: 50px;
-    height: 50px;
-    font-size: 1.2rem;
-  }
-}
-
-/* Адаптивность */
-@media (max-width: 768px) {
   .dating-header {
     padding: 1rem;
   }
@@ -1072,5 +1082,284 @@
   .filter-button span,
   .location-button span {
     display: none;
+  }
+}
+
+.start-quest-button {
+  margin-top: 20px;
+  width: 100%;
+  padding: 15px;
+  background: linear-gradient(45deg, var(--yellow) 0%, #ff9d00 100%);
+  border: none;
+  border-radius: 15px;
+  color: var(--dark-gray);
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 
+    0 4px 15px rgba(255, 183, 0, 0.3),
+    0 0 0 1px rgba(255, 183, 0, 0.3),
+    inset 0 0 20px rgba(255, 255, 255, 0.2);
+  position: relative;
+  overflow: hidden;
+}
+
+.start-quest-button::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle at center, rgba(255,255,255,0.8) 0%, transparent 60%);
+  transform: scale(0);
+  opacity: 0;
+  transition: transform 0.5s ease-out, opacity 0.5s ease-out;
+}
+
+.start-quest-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 
+    0 8px 25px rgba(255, 183, 0, 0.4),
+    0 0 0 1px rgba(255, 183, 0, 0.4),
+    inset 0 0 25px rgba(255, 255, 255, 0.3);
+}
+
+.start-quest-button:hover::before {
+  transform: scale(1);
+  opacity: 0.3;
+}
+
+.start-quest-button:active {
+  transform: translateY(0);
+  box-shadow: 
+    0 4px 15px rgba(255, 183, 0, 0.3),
+    0 0 0 1px rgba(255, 183, 0, 0.3),
+    inset 0 0 20px rgba(255, 255, 255, 0.2);
+}
+
+.start-quest-button svg {
+  font-size: 1.3rem;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+}
+
+/* Анимация для иконки молнии */
+@keyframes lightningPulse {
+  0%, 100% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 5px rgba(255, 183, 0, 0.5));
+  }
+  50% {
+    transform: scale(1.2);
+    filter: drop-shadow(0 0 10px rgba(255, 183, 0, 0.8));
+  }
+}
+
+.start-quest-button:hover svg {
+  animation: lightningPulse 1s infinite;
+}
+
+/* Добавляем эффект пульсации для привлечения внимания */
+@keyframes questButtonPulse {
+  0% {
+    box-shadow: 
+      0 4px 15px rgba(255, 183, 0, 0.3),
+      0 0 0 0 rgba(255, 183, 0, 0.6);
+  }
+  70% {
+    box-shadow: 
+      0 4px 15px rgba(255, 183, 0, 0.3),
+      0 0 0 15px rgba(255, 183, 0, 0);
+  }
+  100% {
+    box-shadow: 
+      0 4px 15px rgba(255, 183, 0, 0.3),
+      0 0 0 0 rgba(255, 183, 0, 0);
+  }
+}
+
+.start-quest-button {
+  animation: questButtonPulse 2s infinite;
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+  .start-quest-button {
+    padding: 12px;
+    font-size: 1rem;
+  }
+  
+  .start-quest-button svg {
+    font-size: 1.1rem;
+  }
+}
+
+.profile-controls {
+  position: absolute;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 20px;
+  width: 100%;
+  max-width: 400px;
+  z-index: 10;
+}
+
+.control-button {
+  width: 65px;
+  height: 65px;
+  border-radius: 50%;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.8rem;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  position: relative;
+  overflow: hidden;
+}
+
+.control-button::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle at center, rgba(255,255,255,0.2) 0%, transparent 60%);
+  transform: scale(0);
+  opacity: 0;
+  transition: transform 0.5s ease-out, opacity 0.5s ease-out;
+}
+
+.control-button:hover::before {
+  transform: scale(1);
+  opacity: 1;
+}
+
+/* Кнопка "Взаимная симпатия" */
+.control-button.mutual-likes {
+  background: var(--yellow);
+  color: var(--dark-gray);
+  width: 70px;
+  height: 70px;
+}
+
+.control-button.mutual-likes:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 25px rgba(255, 183, 0, 0.4);
+}
+
+/* Кнопка "Нравится" */
+.control-button.like {
+  background: #4CAF50;
+  width: 80px;
+  height: 80px;
+  font-size: 2.2rem;
+}
+
+.control-button.like:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 25px rgba(76, 175, 80, 0.4);
+}
+
+/* Кнопка "Пропустить" */
+.control-button.skip {
+  background: #ff4444;
+  width: 70px;
+  height: 70px;
+}
+
+.control-button.skip:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 25px rgba(255, 68, 68, 0.4);
+}
+
+/* Индикатор количества взаимных симпатий */
+.mutual-likes-count {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  background: #ff4444;
+  color: white;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+  font-weight: bold;
+  border: 2px solid var(--dark-gray);
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+  .profile-controls {
+    bottom: 20px;
+    gap: 15px;
+  }
+
+  .control-button {
+    width: 55px;
+    height: 55px;
+    font-size: 1.5rem;
+  }
+
+  .control-button.mutual-likes {
+    width: 60px;
+    height: 60px;
+  }
+
+  .control-button.like {
+    width: 70px;
+    height: 70px;
+    font-size: 1.8rem;
+  }
+
+  .control-button.skip {
+    width: 60px;
+    height: 60px;
+  }
+}
+
+@media (max-width: 480px) {
+  .profile-controls {
+    bottom: 15px;
+    gap: 10px;
+  }
+
+  .control-button {
+    width: 50px;
+    height: 50px;
+    font-size: 1.3rem;
+  }
+
+  .control-button.mutual-likes {
+    width: 55px;
+    height: 55px;
+  }
+
+  .control-button.like {
+    width: 65px;
+    height: 65px;
+    font-size: 1.6rem;
+  }
+
+  .control-button.skip {
+    width: 55px;
+    height: 55px;
   }
 } 

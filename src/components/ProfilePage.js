@@ -1,62 +1,182 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import './ProfilePage.css';
 import { 
-  BsGearFill,
-  BsPersonFill,
-  BsGeoAltFill,
-  BsCalendarEvent,
-  BsHeartFill,
-  BsImageFill,
-  BsPencilFill,
-  BsArrowLeft
+  BsArrowLeft, 
+  BsCamera, 
+  BsPencil, 
+  BsSpotify, 
+  BsInstagram,
+  BsTrophy,
+  BsCalendar3,
+  BsGeoAlt,
+  BsHeart,
+  BsChatDots,
+  BsEye,
+  BsStar,
+  BsMusicNote,
+  BsLink45Deg,
+  BsImage,
+  BsMic
 } from 'react-icons/bs';
+import UserIcon from './UserIcon';
 
-function ProfilePage({ onBack }) {
-  const [currentUser, setCurrentUser] = useState(null);
+const ProfilePage = ({ onBack }) => {
+  const [activeTab, setActiveTab] = useState('photos');
   const [isEditing, setIsEditing] = useState(false);
-  const [editForm, setEditForm] = useState({
-    name: '',
-    age: '',
-    location: '',
-    about: '',
-    interests: []
+  
+  const [profile, setProfile] = useState({
+    name: 'Александр',
+    age: 28,
+    location: 'Москва',
+    bio: 'Люблю путешествия, музыку и активный отдых. Ищу человека со схожими интересами.',
+    photos: ['https://source.unsplash.com/random/400x400?portrait'],
+    interests: ['Путешествия', 'Музыка', 'Спорт', 'Кино', 'Фотография'],
+    achievements: [
+      { id: 1, title: 'Популярный профиль', icon: '🌟', description: '1000+ просмотров' },
+      { id: 2, title: 'Верифицирован', icon: '✓', description: 'Подтвержденный профиль' },
+      { id: 3, title: 'Активный пользователь', icon: '🔥', description: '30 дней подряд' }
+    ],
+    stats: {
+      views: 1234,
+      likes: 89,
+      matches: 12
+    },
+    spotify: {
+      connected: true,
+      topArtists: ['The Weeknd', 'Drake', 'Ed Sheeran'],
+      favoriteTrack: 'Blinding Lights - The Weeknd'
+    },
+    schedule: {
+      availability: [
+        { day: 'ПН', time: '19:00-22:00' },
+        { day: 'СБ', time: '12:00-20:00' },
+        { day: 'ВС', time: '12:00-20:00' }
+      ]
+    },
+    verification: {
+      photo: true,
+      phone: true,
+      social: true
+    }
   });
 
-  useEffect(() => {
-    // Загрузка данных пользователя
-    setCurrentUser({
-      id: 'user1',
-      name: 'Александр',
-      age: 28,
-      location: 'Москва',
-      photos: [],
-      interests: ['Спорт', 'Музыка', 'Путешествия'],
-      about: 'Привет! Я люблю путешествовать и открывать новые места.',
-      stats: {
-        likes: 150,
-        matches: 45,
-        views: 320
-      }
-    });
-  }, []);
+  const renderPhotoGallery = () => (
+    <div className="profile-photos">
+      <div className="photo-grid">
+        {profile.photos.map((photo, index) => (
+          <div key={index} className="photo-item">
+            <img src={photo} alt={`Фото ${index + 1}`} />
+            {isEditing && (
+              <div className="photo-actions">
+                <button className="delete-photo"><BsCamera /></button>
+              </div>
+            )}
+          </div>
+        ))}
+        {isEditing && (
+          <div className="add-photo">
+            <BsCamera />
+            <span>Добавить фото</span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
 
-  const handlePhotoUpload = (event) => {
-    const file = event.target.files[0];
-    if (file) {
-      // Логика загрузки фото
-      console.log('Uploading photo:', file);
-    }
-  };
+  const renderAchievements = () => (
+    <div className="profile-achievements">
+      <h3>Достижения</h3>
+      <div className="achievements-grid">
+        {profile.achievements.map(achievement => (
+          <div key={achievement.id} className="achievement-card">
+            <div className="achievement-icon">{achievement.icon}</div>
+            <h4>{achievement.title}</h4>
+            <p>{achievement.description}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 
-  const handleEditSubmit = (e) => {
-    e.preventDefault();
-    // Сохранение изменений профиля
-    setCurrentUser(prev => ({
-      ...prev,
-      ...editForm
-    }));
-    setIsEditing(false);
-  };
+  const renderStats = () => (
+    <div className="profile-stats">
+      <div className="stat-item">
+        <BsEye />
+        <span className="stat-value">{profile.stats.views}</span>
+        <span className="stat-label">просмотров</span>
+      </div>
+      <div className="stat-item">
+        <BsHeart />
+        <span className="stat-value">{profile.stats.likes}</span>
+        <span className="stat-label">лайков</span>
+      </div>
+      <div className="stat-item">
+        <BsChatDots />
+        <span className="stat-value">{profile.stats.matches}</span>
+        <span className="stat-label">мэтчей</span>
+      </div>
+    </div>
+  );
+
+  const renderSpotify = () => (
+    <div className="spotify-integration">
+      <div className="section-header">
+        <BsSpotify />
+        <h3>Музыкальные предпочтения</h3>
+      </div>
+      <div className="spotify-content">
+        <div className="current-track">
+          <BsMusicNote />
+          <span>{profile.spotify.favoriteTrack}</span>
+        </div>
+        <div className="top-artists">
+          <h4>Любимые исполнители:</h4>
+          <ul>
+            {profile.spotify.topArtists.map((artist, index) => (
+              <li key={index}>{artist}</li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderSchedule = () => (
+    <div className="availability-schedule">
+      <div className="section-header">
+        <BsCalendar3 />
+        <h3>Расписание для встреч</h3>
+      </div>
+      <div className="schedule-grid">
+        {profile.schedule.availability.map((slot, index) => (
+          <div key={index} className="schedule-slot">
+            <span className="day">{slot.day}</span>
+            <span className="time">{slot.time}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
+  const renderVerification = () => (
+    <div className="verification-status">
+      <h3>Верификация</h3>
+      <div className="verification-items">
+        <div className={`verification-item ${profile.verification.photo ? 'verified' : ''}`}>
+          <BsCamera />
+          <span>Фото</span>
+        </div>
+        <div className={`verification-item ${profile.verification.phone ? 'verified' : ''}`}>
+          <BsLink45Deg />
+          <span>Телефон</span>
+        </div>
+        <div className={`verification-item ${profile.verification.social ? 'verified' : ''}`}>
+          <BsInstagram />
+          <span>Соцсети</span>
+        </div>
+      </div>
+    </div>
+  );
 
   return (
     <div className="profile-page">
@@ -64,153 +184,101 @@ function ProfilePage({ onBack }) {
         <button className="back-button" onClick={onBack}>
           <BsArrowLeft /> Назад
         </button>
-        <h1>Мой профиль</h1>
-        <button className="edit-button" onClick={() => setIsEditing(!isEditing)}>
-          <BsPencilFill />
+        <button 
+          className="edit-button"
+          onClick={() => setIsEditing(!isEditing)}
+        >
+          <BsPencil /> {isEditing ? 'Сохранить' : 'Редактировать'}
         </button>
       </div>
 
-      {currentUser && !isEditing ? (
-        <div className="profile-content">
-          <div className="profile-main">
-            <div className="profile-photos">
-              <div className="main-photo">
-                <img src={currentUser.photos[0] || 'default-avatar.jpg'} alt="Profile" />
-                <button className="change-photo-btn">
-                  <BsImageFill /> Изменить фото
-                </button>
-              </div>
-              <div className="photo-grid">
-                {[...Array(5)].map((_, index) => (
-                  <div key={index} className="photo-slot">
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handlePhotoUpload}
-                      id={`photo-upload-${index}`}
-                      style={{ display: 'none' }}
-                    />
-                    <label htmlFor={`photo-upload-${index}`} className="photo-upload-label">
-                      <BsImageFill />
-                    </label>
-                  </div>
-                ))}
-              </div>
-            </div>
+      <div className="profile-content">
+        <div className="profile-main">
+          <div className="profile-photo-large">
+            {profile.photos[0] ? (
+              <img src={profile.photos[0]} alt={profile.name} />
+            ) : (
+              <UserIcon size={200} />
+            )}
+            {isEditing && (
+              <button className="change-photo">
+                <BsCamera />
+              </button>
+            )}
+          </div>
 
-            <div className="profile-info">
-              <h2>{currentUser.name}, {currentUser.age}</h2>
-              <p className="location">
-                <BsGeoAltFill /> {currentUser.location}
-              </p>
-              <div className="profile-stats">
-                <div className="stat-item">
-                  <BsHeartFill />
-                  <span>{currentUser.stats.likes} лайков</span>
-                </div>
-                <div className="stat-item">
-                  <BsPersonFill />
-                  <span>{currentUser.stats.matches} совпадений</span>
-                </div>
-                <div className="stat-item">
-                  <BsGearFill />
-                  <span>{currentUser.stats.views} просмотров</span>
-                </div>
-              </div>
-              <div className="profile-about">
-                <h3>О себе</h3>
-                <p>{currentUser.about}</p>
-              </div>
-              <div className="profile-interests">
-                <h3>Интересы</h3>
-                <div className="interests-list">
-                  {currentUser.interests.map((interest, index) => (
-                    <span key={index} className="interest-tag">{interest}</span>
-                  ))}
-                </div>
-              </div>
+          <div className="profile-info-main">
+            <h1>{profile.name}, {profile.age}</h1>
+            <p className="location"><BsGeoAlt /> {profile.location}</p>
+            <div className="profile-bio">
+              {isEditing ? (
+                <textarea 
+                  value={profile.bio}
+                  onChange={(e) => setProfile({...profile, bio: e.target.value})}
+                />
+              ) : (
+                <p>{profile.bio}</p>
+              )}
             </div>
+          </div>
+
+          {renderStats()}
+          {renderVerification()}
+
+          <div className="profile-tabs">
+            <button 
+              className={`tab ${activeTab === 'photos' ? 'active' : ''}`}
+              onClick={() => setActiveTab('photos')}
+            >
+              <BsImage /> Фото
+            </button>
+            <button 
+              className={`tab ${activeTab === 'achievements' ? 'active' : ''}`}
+              onClick={() => setActiveTab('achievements')}
+            >
+              <BsTrophy /> Достижения
+            </button>
+            <button 
+              className={`tab ${activeTab === 'interests' ? 'active' : ''}`}
+              onClick={() => setActiveTab('interests')}
+            >
+              <BsStar /> Интересы
+            </button>
+          </div>
+
+          <div className="tab-content">
+            {activeTab === 'photos' && renderPhotoGallery()}
+            {activeTab === 'achievements' && renderAchievements()}
+            {activeTab === 'interests' && (
+              <div className="profile-interests">
+                {profile.interests.map((interest, index) => (
+                  <span key={index} className="interest-tag">{interest}</span>
+                ))}
+                {isEditing && (
+                  <button className="add-interest">+ Добавить</button>
+                )}
+              </div>
+            )}
           </div>
         </div>
-      ) : (
-        <form className="edit-profile-form" onSubmit={handleEditSubmit}>
-          <div className="form-group">
-            <label>Имя</label>
-            <input
-              type="text"
-              value={editForm.name}
-              onChange={(e) => setEditForm(prev => ({ ...prev, name: e.target.value }))}
-            />
-          </div>
-          <div className="form-group">
-            <label>Возраст</label>
-            <input
-              type="number"
-              value={editForm.age}
-              onChange={(e) => setEditForm(prev => ({ ...prev, age: e.target.value }))}
-            />
-          </div>
-          <div className="form-group">
-            <label>Город</label>
-            <input
-              type="text"
-              value={editForm.location}
-              onChange={(e) => setEditForm(prev => ({ ...prev, location: e.target.value }))}
-            />
-          </div>
-          <div className="form-group">
-            <label>О себе</label>
-            <textarea
-              value={editForm.about}
-              onChange={(e) => setEditForm(prev => ({ ...prev, about: e.target.value }))}
-            />
-          </div>
-          <div className="form-group">
-            <label>Интересы</label>
-            <div className="interests-input">
-              <input
-                type="text"
-                placeholder="Добавьте интерес и нажмите Enter"
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    const newInterest = e.target.value.trim();
-                    if (newInterest) {
-                      setEditForm(prev => ({
-                        ...prev,
-                        interests: [...prev.interests, newInterest]
-                      }));
-                      e.target.value = '';
-                    }
-                  }
-                }}
-              />
-              <div className="interests-list">
-                {editForm.interests.map((interest, index) => (
-                  <span key={index} className="interest-tag">
-                    {interest}
-                    <button
-                      type="button"
-                      onClick={() => setEditForm(prev => ({
-                        ...prev,
-                        interests: prev.interests.filter((_, i) => i !== index)
-                      }))}
-                    >
-                      ×
-                    </button>
-                  </span>
-                ))}
-              </div>
+
+        <div className="profile-sidebar">
+          {renderSpotify()}
+          {renderSchedule()}
+          
+          <div className="voice-greeting">
+            <div className="section-header">
+              <BsMic />
+              <h3>Голосовое приветствие</h3>
             </div>
+            <button className="record-voice">
+              {isEditing ? 'Записать приветствие' : 'Прослушать'}
+            </button>
           </div>
-          <div className="form-actions">
-            <button type="button" onClick={() => setIsEditing(false)}>Отмена</button>
-            <button type="submit">Сохранить</button>
-          </div>
-        </form>
-      )}
+        </div>
+      </div>
     </div>
   );
-}
+};
 
 export default ProfilePage; 
