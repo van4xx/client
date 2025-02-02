@@ -31,7 +31,9 @@ import {
   BsLightningFill,
   BsPersonCircle,
   BsJournalText,
-  BsBriefcaseFill
+  BsBriefcaseFill,
+  BsBook,
+  BsController
 } from 'react-icons/bs';
 import ProfilePage from './ProfilePage';
 import MessagesPage from './MessagesPage';
@@ -328,6 +330,28 @@ function DatingRoom({ onSiteTypeChange }) {
                 }}
               >
                 <BsBriefcaseFill /> ProConnect
+              </button>
+              <button 
+                className="dropdown-item"
+                onClick={() => {
+                  if (typeof onSiteTypeChange === 'function') {
+                    onSiteTypeChange('eduhub');
+                  }
+                  setShowSiteTypeDropdown(false);
+                }}
+              >
+                <BsBook /> EduHub
+              </button>
+              <button 
+                className="dropdown-item"
+                onClick={() => {
+                  if (typeof onSiteTypeChange === 'function') {
+                    onSiteTypeChange('gameconnect');
+                  }
+                  setShowSiteTypeDropdown(false);
+                }}
+              >
+                <BsController /> GameConnect
               </button>
             </div>
           )}

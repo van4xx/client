@@ -46,7 +46,8 @@ import {
   BsStarFill,
   BsEmojiLaughingFill,
   BsSliders,
-  BsBriefcaseFill
+  BsBriefcaseFill,
+  BsBook
 } from 'react-icons/bs';
 import './ChatRoom.css';
 import FaceDetectionService from '../services/FaceDetectionService';
@@ -839,6 +840,18 @@ function ChatRoom({ onSiteTypeChange }) {
                 onClick={() => onSiteTypeChange('proconnect')}
               >
                 <BsBriefcaseFill /> ProConnect
+              </button>
+              <button 
+                className="dropdown-item"
+                onClick={() => onSiteTypeChange('eduhub')}
+              >
+                <BsBook /> EduHub
+              </button>
+              <button 
+                className="dropdown-item"
+                onClick={() => onSiteTypeChange('gameconnect')}
+              >
+                <BsController /> GameConnect
               </button>
             </div>
           )}

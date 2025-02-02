@@ -18,7 +18,9 @@ import {
   BsX,
   BsChevronDown,
   BsStarFill,
-  BsHeartFill
+  BsHeartFill,
+  BsBook,
+  BsController
 } from 'react-icons/bs';
 
 function ProConnect({ onSiteTypeChange }) {
@@ -184,6 +186,28 @@ function ProConnect({ onSiteTypeChange }) {
               </button>
               <button className="dropdown-item active">
                 <BsBriefcaseFill /> ProConnect
+              </button>
+              <button 
+                className="dropdown-item"
+                onClick={() => {
+                  if (typeof onSiteTypeChange === 'function') {
+                    onSiteTypeChange('eduhub');
+                  }
+                  setShowSiteTypeDropdown(false);
+                }}
+              >
+                <BsBook /> EduHub
+              </button>
+              <button 
+                className="dropdown-item"
+                onClick={() => {
+                  if (typeof onSiteTypeChange === 'function') {
+                    onSiteTypeChange('gameconnect');
+                  }
+                  setShowSiteTypeDropdown(false);
+                }}
+              >
+                <BsController /> GameConnect
               </button>
             </div>
           )}
