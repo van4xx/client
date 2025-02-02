@@ -1,0 +1,291 @@
+.voice-greeting {
+  background: var(--dark-gray);
+  border-radius: 20px;
+  overflow: hidden;
+  width: 90vw;
+  max-width: 500px;
+  margin: 20px auto;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  animation: fadeIn 0.3s ease;
+}
+
+.greeting-header {
+  padding: 20px;
+  background: linear-gradient(to right, var(--dark-gray), rgba(33, 33, 33, 0.9));
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.greeting-header h2 {
+  margin: 0;
+  color: var(--yellow);
+  font-size: 1.5rem;
+}
+
+.close-button {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 5px;
+  transition: all 0.3s ease;
+}
+
+.close-button:hover {
+  color: var(--yellow);
+  transform: rotate(90deg);
+}
+
+.greeting-content {
+  padding: 30px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 30px;
+}
+
+.recording-visualizer {
+  width: 100%;
+  height: 150px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 15px;
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  overflow: hidden;
+}
+
+.visualizer-bar {
+  width: 4px;
+  background: var(--yellow);
+  border-radius: 2px;
+  transition: height 0.1s ease;
+}
+
+.recording-timer {
+  font-size: 2rem;
+  font-weight: 600;
+  color: var(--yellow);
+  text-shadow: 0 0 10px rgba(255, 183, 0, 0.3);
+}
+
+.recording-controls {
+  display: flex;
+  gap: 20px;
+}
+
+.record-button {
+  background: var(--yellow);
+  color: var(--dark-gray);
+  border: none;
+  padding: 15px 30px;
+  border-radius: 30px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transition: all 0.3s ease;
+}
+
+.record-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(255, 183, 0, 0.3);
+}
+
+.record-button.recording {
+  background: #ff4444;
+  animation: recordingPulse 2s infinite;
+}
+
+.playback-controls {
+  display: flex;
+  gap: 15px;
+}
+
+.play-button,
+.delete-button {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.play-button {
+  background: var(--yellow);
+  color: var(--dark-gray);
+}
+
+.delete-button {
+  background: rgba(255, 255, 255, 0.1);
+  color: #ff4444;
+}
+
+.play-button:hover,
+.delete-button:hover {
+  transform: scale(1.1);
+}
+
+.greeting-actions {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.save-button {
+  background: var(--yellow);
+  color: var(--dark-gray);
+  border: none;
+  padding: 15px 30px;
+  border-radius: 15px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transition: all 0.3s ease;
+}
+
+.save-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(255, 183, 0, 0.3);
+}
+
+.greeting-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+.greeting-info svg {
+  color: var(--yellow);
+  font-size: 1.2rem;
+}
+
+.success-message {
+  padding: 40px 20px;
+  text-align: center;
+  animation: fadeIn 0.3s ease;
+}
+
+.success-message .success-icon {
+  font-size: 3rem;
+  color: #4CAF50;
+  margin-bottom: 20px;
+  animation: successPop 0.5s ease;
+}
+
+.success-message h3 {
+  margin: 0 0 10px 0;
+  color: var(--yellow);
+}
+
+.success-message p {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes recordingPulse {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(255, 68, 68, 0.7);
+  }
+  70% {
+    transform: scale(1.05);
+    box-shadow: 0 0 0 10px rgba(255, 68, 68, 0);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(255, 68, 68, 0);
+  }
+}
+
+@keyframes successPop {
+  0% {
+    transform: scale(0);
+  }
+  50% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+  .voice-greeting {
+    width: 95vw;
+    margin: 10px auto;
+  }
+
+  .greeting-content {
+    padding: 20px;
+    gap: 20px;
+  }
+
+  .recording-visualizer {
+    height: 100px;
+  }
+
+  .recording-timer {
+    font-size: 1.5rem;
+  }
+
+  .record-button {
+    padding: 12px 24px;
+    font-size: 1rem;
+  }
+
+  .play-button,
+  .delete-button {
+    width: 40px;
+    height: 40px;
+    font-size: 1.2rem;
+  }
+}
+
+/* Анимации для визуализатора */
+@keyframes barPulse {
+  0% {
+    transform: scaleY(1);
+  }
+  50% {
+    transform: scaleY(1.5);
+  }
+  100% {
+    transform: scaleY(1);
+  }
+}
+
+.visualizer-bar {
+  animation: barPulse 0.5s infinite;
+  animation-delay: calc(var(--bar-index) * 0.1s);
+} 

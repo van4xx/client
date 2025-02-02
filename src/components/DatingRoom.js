@@ -29,7 +29,9 @@ import {
   BsArrowRight,
   BsArrowLeft,
   BsLightningFill,
-  BsPersonCircle
+  BsPersonCircle,
+  BsJournalText,
+  BsBriefcaseFill
 } from 'react-icons/bs';
 import ProfilePage from './ProfilePage';
 import MessagesPage from './MessagesPage';
@@ -38,6 +40,12 @@ import QuestService from '../services/QuestService';
 import Stories from './Stories';
 import { storiesData } from '../data/storiesData';
 import UserIcon from './UserIcon';
+import DatePlanner from './DatePlanner';
+import RatingSystem from './RatingSystem';
+import VoiceGreeting from './VoiceGreeting';
+import InteractiveQuestionnaire from './InteractiveQuestionnaire';
+import MiniBlog from './MiniBlog';
+import VipStatus from './VipStatus';
 
 function DatingRoom({ onSiteTypeChange }) {
   // Основные состояния
@@ -109,6 +117,14 @@ function DatingRoom({ onSiteTypeChange }) {
 
   // Новые состояния для фотопревью
   const [showPhotoPreview, setShowPhotoPreview] = useState(false);
+
+  // Новые состояния для новых функций
+  const [showDatePlanner, setShowDatePlanner] = useState(false);
+  const [showRating, setShowRating] = useState(false);
+  const [showVoiceGreeting, setShowVoiceGreeting] = useState(false);
+  const [showQuestionnaire, setShowQuestionnaire] = useState(false);
+  const [showMiniBlog, setShowMiniBlog] = useState(false);
+  const [showVipStatus, setShowVipStatus] = useState(false);
 
   // Функции для работы с профилями
   const handleLike = () => {
@@ -302,6 +318,17 @@ function DatingRoom({ onSiteTypeChange }) {
               <button className="dropdown-item active">
                 <BsHeartFill /> Знакомства
               </button>
+              <button 
+                className="dropdown-item"
+                onClick={() => {
+                  if (typeof onSiteTypeChange === 'function') {
+                    onSiteTypeChange('proconnect');
+                  }
+                  setShowSiteTypeDropdown(false);
+                }}
+              >
+                <BsBriefcaseFill /> ProConnect
+              </button>
             </div>
           )}
         </div>
@@ -405,6 +432,24 @@ function DatingRoom({ onSiteTypeChange }) {
             onClick={() => setShowPremiumModal(true)}
           >
             <BsStars /> <span>Premium</span>
+          </button>
+          <button 
+            className="menu-item blog-button"
+            onClick={() => setShowMiniBlog(true)}
+          >
+            <BsJournalText /> <span>Блог</span>
+          </button>
+          <button 
+            className="menu-item planner-button"
+            onClick={() => setShowDatePlanner(true)}
+          >
+            <BsCalendarEvent /> <span>Свидания</span>
+          </button>
+          <button 
+            className="menu-item vip-button"
+            onClick={() => setShowVipStatus(true)}
+          >
+            <BsStars /> <span>VIP</span>
           </button>
         </div>
       </div>
@@ -683,6 +728,61 @@ function DatingRoom({ onSiteTypeChange }) {
               <UserIcon size={300} color="#666" />
             </div>
           )}
+        </div>
+      )}
+
+      {/* Модальные окна для новых функций */}
+      {showDatePlanner && (
+        <div className="modal-overlay">
+          <DatePlanner 
+            user={currentUser}
+            onClose={() => setShowDatePlanner(false)}
+          />
+        </div>
+      )}
+
+      {showRating && (
+        <div className="modal-overlay">
+          <RatingSystem 
+            user={currentUser}
+            onClose={() => setShowRating(false)}
+          />
+        </div>
+      )}
+
+      {showVoiceGreeting && (
+        <div className="modal-overlay">
+          <VoiceGreeting 
+            user={currentUser}
+            onClose={() => setShowVoiceGreeting(false)}
+          />
+        </div>
+      )}
+
+      {showQuestionnaire && (
+        <div className="modal-overlay">
+          <InteractiveQuestionnaire 
+            user={currentUser}
+            onClose={() => setShowQuestionnaire(false)}
+          />
+        </div>
+      )}
+
+      {showMiniBlog && (
+        <div className="modal-overlay">
+          <MiniBlog 
+            user={currentUser}
+            onClose={() => setShowMiniBlog(false)}
+          />
+        </div>
+      )}
+
+      {showVipStatus && (
+        <div className="modal-overlay">
+          <VipStatus 
+            user={currentUser}
+            onClose={() => setShowVipStatus(false)}
+          />
         </div>
       )}
     </div>

@@ -45,7 +45,8 @@ import {
   BsHandThumbsUpFill,
   BsStarFill,
   BsEmojiLaughingFill,
-  BsSliders
+  BsSliders,
+  BsBriefcaseFill
 } from 'react-icons/bs';
 import './ChatRoom.css';
 import FaceDetectionService from '../services/FaceDetectionService';
@@ -832,6 +833,12 @@ function ChatRoom({ onSiteTypeChange }) {
                 onClick={() => onSiteTypeChange('dating')}
               >
                 <BsHeart /> Знакомства
+              </button>
+              <button 
+                className="dropdown-item"
+                onClick={() => onSiteTypeChange('proconnect')}
+              >
+                <BsBriefcaseFill /> ProConnect
               </button>
             </div>
           )}
