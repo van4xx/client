@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import './VipStatus.css';
 import { 
   BsX, 
-  BsCrown, 
+  BsAwardFill, 
   BsEyeFill,
   BsBarChartFill,
   BsShieldFill,
@@ -27,7 +27,7 @@ const VipStatus = ({ user, onClose }) => {
   const renderVipFeatures = () => (
     <div className="vip-features">
       <div className="vip-header">
-        <BsCrown className="vip-icon" />
+        <BsAwardFill className="vip-icon" />
         <h3>VIP-статус</h3>
         <p>Получите доступ к премиум возможностям</p>
       </div>
@@ -174,7 +174,7 @@ const VipStatus = ({ user, onClose }) => {
             className={`tab ${activeTab === 'vip' ? 'active' : ''}`}
             onClick={() => setActiveTab('vip')}
           >
-            <BsCrown /> VIP-статус
+            <BsAwardFill /> VIP-статус
           </button>
           <button 
             className={`tab ${activeTab === 'stats' ? 'active' : ''}`}

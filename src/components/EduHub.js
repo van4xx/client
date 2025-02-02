@@ -23,7 +23,8 @@ import {
   BsPersonVideo3,
   BsClockHistory,
   BsBellFill,
-  BsGlobe
+  BsGlobe,
+  BsController
 } from 'react-icons/bs';
 
 function EduHub({ onSiteTypeChange }) {

@@ -8,7 +8,7 @@ import {
   BsTrash,
   BsCheck2,
   BsX,
-  BsWaveform
+  BsSoundwave
 } from 'react-icons/bs';
 import ProfileFeatures from '../services/ProfileFeatures';
 
@@ -202,7 +202,7 @@ const VoiceGreeting = ({ onClose, currentGreeting }) => {
           )}
 
           <div className="greeting-info">
-            <BsWaveform />
+            <BsSoundwave />
             <p>Запишите короткое приветствие для других пользователей (до 30 секунд)</p>
           </div>
         </div>

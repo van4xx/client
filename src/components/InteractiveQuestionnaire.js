@@ -10,7 +10,7 @@ import {
   BsEmojiSmile,
   BsGlobe,
   BsBook,
-  BsMusic,
+  BsMusicNote,
   BsCamera,
   BsPalette
 } from 'react-icons/bs';
@@ -82,7 +82,7 @@ const InteractiveQuestionnaire = ({ onClose, onSave }) => {
       personality: <BsEmojiSmile />,
       languages: <BsGlobe />,
       education: <BsBook />,
-      music: <BsMusic />,
+      music: <BsMusicNote />,
       photos: <BsCamera />,
       art: <BsPalette />
     };
