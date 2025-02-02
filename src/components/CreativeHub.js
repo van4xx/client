@@ -28,8 +28,11 @@ import {
   BsGearFill,
   BsEye,
   BsChat,
-  BsHeart
+  BsHeart,
+  BsTrophy,
+  BsPeople
 } from 'react-icons/bs';
+import { useNavigate } from 'react-router-dom';
 
 function CreativeHub({ onSiteTypeChange }) {
   const [currentUser, setCurrentUser] = useState(null);
@@ -37,6 +40,7 @@ function CreativeHub({ onSiteTypeChange }) {
   const [activeSection, setActiveSection] = useState('gallery');
   const [searchQuery, setSearchQuery] = useState('');
   const [filterCategory, setFilterCategory] = useState('all');
+  const navigate = useNavigate();
 
   const [artworks, setArtworks] = useState([
     {
@@ -95,6 +99,11 @@ function CreativeHub({ onSiteTypeChange }) {
       photo: 'https://placekitten.com/100/100'
     });
   }, []);
+
+  const handleSiteChange = (type) => {
+    onSiteTypeChange(type);
+    navigate(`/${type}`);
+  };
 
   const renderArtworkCard = (artwork) => (
     <div key={artwork.id} className="artwork-card">
@@ -159,7 +168,7 @@ function CreativeHub({ onSiteTypeChange }) {
               <button 
                 className="dropdown-item"
                 onClick={() => {
-                  onSiteTypeChange('chat');
+                  handleSiteChange('chat');
                   setShowSiteTypeDropdown(false);
                 }}
               >
@@ -168,7 +177,7 @@ function CreativeHub({ onSiteTypeChange }) {
               <button 
                 className="dropdown-item"
                 onClick={() => {
-                  onSiteTypeChange('dating');
+                  handleSiteChange('dating');
                   setShowSiteTypeDropdown(false);
                 }}
               >
@@ -177,7 +186,7 @@ function CreativeHub({ onSiteTypeChange }) {
               <button 
                 className="dropdown-item"
                 onClick={() => {
-                  onSiteTypeChange('proconnect');
+                  handleSiteChange('proconnect');
                   setShowSiteTypeDropdown(false);
                 }}
               >
@@ -186,7 +195,7 @@ function CreativeHub({ onSiteTypeChange }) {
               <button 
                 className="dropdown-item"
                 onClick={() => {
-                  onSiteTypeChange('eduhub');
+                  handleSiteChange('eduhub');
                   setShowSiteTypeDropdown(false);
                 }}
               >
@@ -195,7 +204,7 @@ function CreativeHub({ onSiteTypeChange }) {
               <button 
                 className="dropdown-item"
                 onClick={() => {
-                  onSiteTypeChange('gameconnect');
+                  handleSiteChange('gameconnect');
                   setShowSiteTypeDropdown(false);
                 }}
               >
@@ -204,7 +213,7 @@ function CreativeHub({ onSiteTypeChange }) {
               <button 
                 className="dropdown-item"
                 onClick={() => {
-                  onSiteTypeChange('streamhub');
+                  handleSiteChange('streamhub');
                   setShowSiteTypeDropdown(false);
                 }}
               >
@@ -213,7 +222,7 @@ function CreativeHub({ onSiteTypeChange }) {
               <button 
                 className="dropdown-item"
                 onClick={() => {
-                  onSiteTypeChange('eventhub');
+                  handleSiteChange('eventhub');
                   setShowSiteTypeDropdown(false);
                 }}
               >
@@ -222,7 +231,7 @@ function CreativeHub({ onSiteTypeChange }) {
               <button 
                 className="dropdown-item"
                 onClick={() => {
-                  onSiteTypeChange('skillshare');
+                  handleSiteChange('skillshare');
                   setShowSiteTypeDropdown(false);
                 }}
               >
@@ -234,7 +243,7 @@ function CreativeHub({ onSiteTypeChange }) {
               <button 
                 className="dropdown-item"
                 onClick={() => {
-                  onSiteTypeChange('jobhub');
+                  handleSiteChange('jobhub');
                   setShowSiteTypeDropdown(false);
                 }}
               >
