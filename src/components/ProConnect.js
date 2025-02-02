@@ -20,7 +20,9 @@ import {
   BsStarFill,
   BsHeartFill,
   BsBook,
-  BsController
+  BsController,
+  BsCollectionPlay,
+  BsCalendarEvent
 } from 'react-icons/bs';
 
 function ProConnect({ onSiteTypeChange }) {
@@ -208,6 +210,28 @@ function ProConnect({ onSiteTypeChange }) {
                 }}
               >
                 <BsController /> GameConnect
+              </button>
+              <button 
+                className="dropdown-item"
+                onClick={() => {
+                  if (typeof onSiteTypeChange === 'function') {
+                    onSiteTypeChange('streamhub');
+                  }
+                  setShowSiteTypeDropdown(false);
+                }}
+              >
+                <BsCollectionPlay /> StreamHub
+              </button>
+              <button 
+                className="dropdown-item"
+                onClick={() => {
+                  if (typeof onSiteTypeChange === 'function') {
+                    onSiteTypeChange('eventhub');
+                  }
+                  setShowSiteTypeDropdown(false);
+                }}
+              >
+                <BsCalendarEvent /> EventHub
               </button>
             </div>
           )}

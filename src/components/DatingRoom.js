@@ -33,7 +33,9 @@ import {
   BsJournalText,
   BsBriefcaseFill,
   BsBook,
-  BsController
+  BsController,
+  BsChatDotsFill,
+  BsCollectionPlay
 } from 'react-icons/bs';
 import ProfilePage from './ProfilePage';
 import MessagesPage from './MessagesPage';
@@ -315,7 +317,7 @@ function DatingRoom({ onSiteTypeChange }) {
                   setShowSiteTypeDropdown(false);
                 }}
               >
-                <BsChat /> Рулетка
+                <BsChatDotsFill /> Рулетка
               </button>
               <button className="dropdown-item active">
                 <BsHeartFill /> Знакомства
@@ -352,6 +354,28 @@ function DatingRoom({ onSiteTypeChange }) {
                 }}
               >
                 <BsController /> GameConnect
+              </button>
+              <button 
+                className="dropdown-item"
+                onClick={() => {
+                  if (typeof onSiteTypeChange === 'function') {
+                    onSiteTypeChange('streamhub');
+                  }
+                  setShowSiteTypeDropdown(false);
+                }}
+              >
+                <BsCollectionPlay /> StreamHub
+              </button>
+              <button 
+                className="dropdown-item"
+                onClick={() => {
+                  if (typeof onSiteTypeChange === 'function') {
+                    onSiteTypeChange('eventhub');
+                  }
+                  setShowSiteTypeDropdown(false);
+                }}
+              >
+                <BsCalendarEvent /> EventHub
               </button>
             </div>
           )}

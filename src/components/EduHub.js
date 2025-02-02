@@ -24,7 +24,9 @@ import {
   BsClockHistory,
   BsBellFill,
   BsGlobe,
-  BsController
+  BsController,
+  BsCollectionPlay,
+  BsCalendarEvent
 } from 'react-icons/bs';
 
 function EduHub({ onSiteTypeChange }) {
@@ -270,6 +272,28 @@ function EduHub({ onSiteTypeChange }) {
                 }}
               >
                 <BsController /> GameConnect
+              </button>
+              <button 
+                className="dropdown-item"
+                onClick={() => {
+                  if (typeof onSiteTypeChange === 'function') {
+                    onSiteTypeChange('streamhub');
+                  }
+                  setShowSiteTypeDropdown(false);
+                }}
+              >
+                <BsCollectionPlay /> StreamHub
+              </button>
+              <button 
+                className="dropdown-item"
+                onClick={() => {
+                  if (typeof onSiteTypeChange === 'function') {
+                    onSiteTypeChange('eventhub');
+                  }
+                  setShowSiteTypeDropdown(false);
+                }}
+              >
+                <BsCalendarEvent /> EventHub
               </button>
             </div>
           )}

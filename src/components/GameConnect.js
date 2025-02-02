@@ -22,7 +22,9 @@ import {
   BsLightningFill,
   BsStar,
   BsStopwatch,
-  BsPersonFill
+  BsPersonFill,
+  BsCollectionPlay,
+  BsCalendarEvent
 } from 'react-icons/bs';
 
 function GameConnect({ onSiteTypeChange }) {
@@ -256,6 +258,28 @@ function GameConnect({ onSiteTypeChange }) {
               </button>
               <button className="dropdown-item active">
                 <BsController /> GameConnect
+              </button>
+              <button 
+                className="dropdown-item"
+                onClick={() => {
+                  if (typeof onSiteTypeChange === 'function') {
+                    onSiteTypeChange('streamhub');
+                  }
+                  setShowSiteTypeDropdown(false);
+                }}
+              >
+                <BsCollectionPlay /> StreamHub
+              </button>
+              <button 
+                className="dropdown-item"
+                onClick={() => {
+                  if (typeof onSiteTypeChange === 'function') {
+                    onSiteTypeChange('eventhub');
+                  }
+                  setShowSiteTypeDropdown(false);
+                }}
+              >
+                <BsCalendarEvent /> EventHub
               </button>
             </div>
           )}

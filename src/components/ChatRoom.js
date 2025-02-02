@@ -47,7 +47,10 @@ import {
   BsEmojiLaughingFill,
   BsSliders,
   BsBriefcaseFill,
-  BsBook
+  BsBook,
+  BsChatDotsFill,
+  BsCollectionPlay,
+  BsCalendarEvent
 } from 'react-icons/bs';
 import './ChatRoom.css';
 import FaceDetectionService from '../services/FaceDetectionService';
@@ -827,31 +830,73 @@ function ChatRoom({ onSiteTypeChange }) {
           {showSiteTypeDropdown && (
             <div className="dropdown-menu">
               <button className="dropdown-item active">
-                <BsChat /> Рулетка
+                <BsChatDotsFill /> Рулетка
               </button>
               <button 
                 className="dropdown-item"
-                onClick={() => onSiteTypeChange('dating')}
+                onClick={() => {
+                  if (typeof onSiteTypeChange === 'function') {
+                    onSiteTypeChange('dating');
+                  }
+                  setShowSiteTypeDropdown(false);
+                }}
               >
-                <BsHeart /> Знакомства
+                <BsHeartFill /> Знакомства
               </button>
               <button 
                 className="dropdown-item"
-                onClick={() => onSiteTypeChange('proconnect')}
+                onClick={() => {
+                  if (typeof onSiteTypeChange === 'function') {
+                    onSiteTypeChange('proconnect');
+                  }
+                  setShowSiteTypeDropdown(false);
+                }}
               >
                 <BsBriefcaseFill /> ProConnect
               </button>
               <button 
                 className="dropdown-item"
-                onClick={() => onSiteTypeChange('eduhub')}
+                onClick={() => {
+                  if (typeof onSiteTypeChange === 'function') {
+                    onSiteTypeChange('eduhub');
+                  }
+                  setShowSiteTypeDropdown(false);
+                }}
               >
                 <BsBook /> EduHub
               </button>
               <button 
                 className="dropdown-item"
-                onClick={() => onSiteTypeChange('gameconnect')}
+                onClick={() => {
+                  if (typeof onSiteTypeChange === 'function') {
+                    onSiteTypeChange('gameconnect');
+                  }
+                  setShowSiteTypeDropdown(false);
+                }}
               >
                 <BsController /> GameConnect
+              </button>
+              <button 
+                className="dropdown-item"
+                onClick={() => {
+                  if (typeof onSiteTypeChange === 'function') {
+                    onSiteTypeChange('streamhub');
+                  }
+                  setShowSiteTypeDropdown(false);
+                }}
+              >
+                <BsCollectionPlay /> StreamHub
+              </button>
+              <button 
+                className="dropdown-item"
+                onClick={() => {
+                  if (typeof onSiteTypeChange === 'function') {
+                    onSiteTypeChange('eventhub');
+                  }
+                  setShowSiteTypeDropdown(false);
+                }}
+              >
+                <BsCalendarEvent /> EventHub
               </button>
             </div>
           )}
