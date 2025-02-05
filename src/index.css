@@ -1,9 +1,9 @@
 :root {
-  --dark-gray: #1a1a1a;
-  --medium-gray: #2a2a2a;
-  --gray: #333;
-  --yellow: #FFB700;
-  --yellow-1: #ffd700;
+  --dark-gray: #1e1e1e;
+  --medium-gray: #3b3b3b;
+  --gray: #555555;
+  --yellow: #fcaa22;
+  --yellow-1: #ffc107;
   --yellow-2: #ffb300;
   --menu-blur: blur(10px);
   --glass-border: 1px solid rgba(255, 255, 255, 0.1);

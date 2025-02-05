@@ -5,10 +5,10 @@
 }
 
 :root {
-  --dark-gray: #1a1a1a;
-  --medium-gray: #2a2a2a;
-  --gray: #333;
-  --yellow: #FFB700;
+  --dark-gray: #1e1e1e;
+  --medium-gray: #3b3b3b;
+  --gray: #555555;
+  --yellow: #fcaa22;
   --menu-blur: blur(10px);
   --glass-border: 1px solid rgba(255, 255, 255, 0.1);
 }
@@ -55,17 +55,17 @@
 }
 
 .selector-button:hover {
-  background-color: #444;
+  background-color: #666;
   transform: translateY(-2px);
 }
 
 .selector-button.active {
-  background: linear-gradient(45deg, #4b7bff, #2b5bff);
-  box-shadow: 0 4px 15px rgba(75, 123, 255, 0.3);
+  background: linear-gradient(45deg, var(--yellow), #ffc107);
+  box-shadow: 0 4px 15px rgba(252, 170, 34, 0.3);
 }
 
 .selector-button.active:hover {
-  background: linear-gradient(45deg, #5b8bff, #3b6bff);
+  background: linear-gradient(45deg, #ffc107, var(--yellow));
 }
 
 /* Добавляем анимацию для иконок */

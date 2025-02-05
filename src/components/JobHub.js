@@ -313,19 +313,19 @@ function JobHub({ onSiteTypeChange }) {
           <div className="section-header">
             <div className="section-tabs">
               <button
-                className={`tab-button ${activeSection === 'jobs' ? 'active' : ''}`}
+                className={`job-control-button ${activeSection === 'jobs' ? 'active' : ''}`}
                 onClick={() => setActiveSection('jobs')}
               >
                 <BsBriefcase /> Вакансии
               </button>
               <button
-                className={`tab-button ${activeSection === 'companies' ? 'active' : ''}`}
+                className={`job-control-button ${activeSection === 'companies' ? 'active' : ''}`}
                 onClick={() => setActiveSection('companies')}
               >
                 <BsBuilding /> Компании
               </button>
               <button
-                className={`tab-button ${activeSection === 'resumes' ? 'active' : ''}`}
+                className={`job-control-button ${activeSection === 'resumes' ? 'active' : ''}`}
                 onClick={() => setActiveSection('resumes')}
               >
                 <BsPersonBadge /> Резюме

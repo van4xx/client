@@ -402,6 +402,33 @@
   box-shadow: 0 5px 15px rgba(255, 183, 0, 0.3);
 }
 
+.job-control-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  border-radius: 8px;
+  color: white;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  min-width: 120px;
+  height: 36px;
+}
+
+.job-control-button:hover {
+  background: rgba(255, 255, 255, 0.15);
+  transform: translateY(-1px);
+}
+
+.job-control-button.active {
+  background: var(--yellow);
+  color: var(--dark-gray);
+}
+
 /* Адаптивность */
 @media (max-width: 768px) {
   .job-header {
